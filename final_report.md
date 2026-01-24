@@ -28,6 +28,11 @@ Research code often stays in the lab.
 *   **What we implemented**: We applied Post-Training Quantization to convert the heavy Keras model into a **420KB TFLite model**.
 *   **Why it's novel**: This demonstrates feasibility for deployment on low-power, portable medical devices in resource-constrained settings, bridging the "Research to Real-World" gap.
 
+### D. User Interface Novelty: Professional Clinical Suite
+Medical AI adoption fails when the interface is poor.
+*   **What we implemented**: A **"Theme-Aware" Streamlit Dashboard** with toggle-able Light/Dark modes (Clinical White vs. Dark Slate) and professional iconography.
+*   **Why it's novel**: Unlike typical rudimentary research demos, this UI is designed for real-world usability, featuring responsive Plotly visualizations that adapt to ambient lighting conditions (e.g., night shifts vs. day shifts).
+
 ## 3. Dataset Compliance
 *   **Dataset Used**: CTU-CHB Intrapartum Cardiotocography Database (PhysioNet).
 *   **Compliance**: The pipeline correctly parses the specific `.dat` (signal) and `.hea` (header) formats of this dataset, implementing the strict preprocessing rules (handling signal gaps, ensuring 1Hz resampling, and proper normalization) required for validity.
@@ -38,4 +43,4 @@ It is not just a model script; it is a full-stack Medical MLOps pipeline compris
 1.  **Strict Data Engineering** (reproducible science)
 2.  **Novel Fusion Architecture** (methodological advancement)
 3.  **XAI Visualizer** (clinical utility)
-4.  **Edge Optimization** (practical feasibility)
+4.  **Professional Clinical UI** (deployment readiness)
