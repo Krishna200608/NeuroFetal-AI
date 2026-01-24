@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+*.log
+
+# Environment variables
+.env
+
+# Datasets (Large files)
+Datasets/ctu_uhb_data/*.dat
+Datasets/ctu_uhb_data/*.hea
+Datasets/processed/*.npy
+*.dat
+*.hea
+
+# IDE
+.vscode/
+.idea/
+
+# Models (if large and not tracked)
+# Code/models/*.h5
