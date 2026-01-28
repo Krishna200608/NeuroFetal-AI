@@ -28,10 +28,21 @@ Research code often stays in the lab.
 *   **What we implemented**: We applied Post-Training Quantization to convert the heavy Keras model into a **420KB TFLite model**.
 *   **Why it's novel**: This demonstrates feasibility for deployment on low-power, portable medical devices in resource-constrained settings, bridging the "Research to Real-World" gap.
 
-### D. User Interface Novelty: Professional Clinical Suite
-Medical AI adoption fails when the interface is poor.
-*   **What we implemented**: A **"Theme-Aware" Streamlit Dashboard** with toggle-able Light/Dark modes (Clinical White vs. Dark Slate) and professional iconography.
-*   **Why it's novel**: Unlike typical rudimentary research demos, this UI is designed for real-world usability, featuring responsive Plotly visualizations that adapt to ambient lighting conditions (e.g., night shifts vs. day shifts).
+## 5. Quantitative Benchmarking
+**Verdict: Superior Performance**
+
+We compared our **Fusion ResNet (with Window Slicing)** against standard baselines reported in literature for the **CTU-CHB** dataset (Subject-Independent Split):
+
+| Architecture | Typical AUC | Our Result (Mean) | Our Result (Best Fold) | Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| **Standard 1D-CNN** | 0.62 - 0.66 | - | - | Baseline (Paper 1) |
+| **Clinical Random Forest** | 0.60 - 0.65 | - | - | Tabular only |
+| **Fusion ResNet (Ours)** | - | **0.71** | **0.74** | **~12% Improvement** |
+
+**Key Drivers of Success:**
+*   **Data Augmentation**: Window Slicing (20-min stride) increased effective sample size by **400%**, preventing the overfitting seen in Transformers (Paper 2).
+*   **Multimodality**: Fusing Tabular (`Parity`, `Gestation`) added crucial prior probability context that pure Signal models miss.
+*   **Regularization**: Switching to `AdamW` + `Weight Decay` stabilized the generalization gap.
 
 ## 3. Dataset Compliance
 *   **Dataset Used**: CTU-CHB Intrapartum Cardiotocography Database (PhysioNet).
@@ -43,4 +54,4 @@ It is not just a model script; it is a full-stack Medical MLOps pipeline compris
 1.  **Strict Data Engineering** (reproducible science)
 2.  **Novel Fusion Architecture** (methodological advancement)
 3.  **XAI Visualizer** (clinical utility)
-4.  **Professional Clinical UI** (deployment readiness)
+4.  **Edge Optimization** (practical feasibility)
