@@ -200,8 +200,13 @@ def main():
     X_tabular = []
     y = []
     
+    # Process slices
+    WINDOW_SIZE_SEC = 20 * 60 # 20 minutes
+    STRIDE_SEC = 10 * 60      # 10 minutes overlap
+    
     cnt = 0
     valid_cnt = 0
+    total_slices = 0
     
     for hea_path in record_paths:
         base = os.path.splitext(hea_path)[0]
@@ -210,10 +215,6 @@ def main():
         # Parse Header
         feats = parse_header(hea_path)
         
-        # Check if we have all tabular features
-        # If any is NaN, we might have to drop or impute.
-        # For now, let's collect and see.
-        # But 'is_compromised' depends on pH.
         if feats['pH'] is None or np.isnan(feats['pH']):
             print(f"Skipping {rec_name}: Missing pH")
             continue
@@ -223,30 +224,48 @@ def main():
         
         # Read Signal
         try:
-            # wfdb.rdsamp returns signals, fields
             signals, fields = wfdb.rdsamp(base)
-            # FHR is usually channel 0 (based on my view of 1001.hea line 2)
-            # 1001.dat 16 100(0)/bpm ... FHR
-            # Yes, standard CTU-UHB has FHR at index 0, UC at index 1.
             fhr_signal = signals[:, 0]
             fs = fields['fs']
             
-            # Preprocess Signal
-            processed_fhr = process_signal(fhr_signal, fs)
+            # Preprocess Signal (Full clean 60 mins)
+            # We first get the cleaned last 60 mins (3600 samples @ 1Hz)
+            processed_60min = process_signal(fhr_signal, fs)
             
-            # Prepare Tabular Vector
-            # Age, Parity, Gestation, pH (pH is target, but maybe feature too? NO, pH is output validation, usually not input)
-            # Prompt: "Extract 'Age', 'Parity', 'Gestation', and 'pH'. Target Label: ... is_compromised if pH < 7.05"
-            # Branch 2 Input: "Tabular... (N_features,)". Usually pH is NOT an input feature if it defines the label.
-            # I will exclude pH from X_tabular.
+            # Now slice into windows
+            # Expecting processed_60min to be 3600 samples (60 * 60 * 1Hz)
+            # Window: 1200 samples (20 * 60)
+            # Stride: 600 samples (10 * 60)
             
-            # Need to handle missing tabular inputs?
-            # Assuming linear fill or mean later. Here just raw.
-            tab_vec = [feats['Age'], feats['Parity'], feats['Gestation']]
+            w_size = int(WINDOW_SIZE_SEC * TARGET_FS)
+            stride = int(STRIDE_SEC * TARGET_FS)
             
-            X_fhr.append(processed_fhr)
-            X_tabular.append(tab_vec)
-            y.append(is_compromised)
+            # Verify length
+            if len(processed_60min) < w_size:
+                # Should not happen due to padding in process_signal, but safe check
+                print(f"Signal too short for windowing: {len(processed_60min)}")
+                continue
+                
+            # Generate slices
+            num_slices = (len(processed_60min) - w_size) // stride + 1
+            
+            for i in range(int(num_slices)):
+                start = i * stride
+                end = start + w_size
+                
+                # Double check bounds
+                if end > len(processed_60min):
+                    break
+                    
+                window_signal = processed_60min[start:end]
+                
+                # Tabular data is duplicated for each slice (Patient Level)
+                tab_vec = [feats['Age'], feats['Parity'], feats['Gestation']]
+                
+                X_fhr.append(window_signal)
+                X_tabular.append(tab_vec)
+                y.append(is_compromised)
+                total_slices += 1
             
             valid_cnt += 1
             
@@ -255,16 +274,14 @@ def main():
             
         cnt += 1
         if cnt % 100 == 0:
-            print(f"Processed {cnt} files...")
+            print(f"Processed {cnt} records...")
             
     # Convert to arrays
     X_fhr = np.array(X_fhr)
     X_tabular = np.array(X_tabular)
     y = np.array(y)
     
-    # Handle NaNs in tabular data?
-    # Simple imputation: replace nan with mean
-    # Need to warn user if doing this.
+    # Handle NaNs in tabular data
     col_means = np.nanmean(X_tabular, axis=0)
     inds = np.where(np.isnan(X_tabular))
     X_tabular[inds] = np.take(col_means, inds[1])
@@ -274,7 +291,7 @@ def main():
     np.save(os.path.join(PROCESSED_DATA_DIR, "X_tabular.npy"), X_tabular)
     np.save(os.path.join(PROCESSED_DATA_DIR, "y.npy"), y)
     
-    print(f"Processing complete. Saved {valid_cnt} records.")
+    print(f"Processing complete. Processed {valid_cnt} patients into {total_slices} slices.")
     print(f"Shapes: X_fhr {X_fhr.shape}, X_tabular {X_tabular.shape}, y {y.shape}")
     print(f"Class balance: {np.sum(y)} compromised / {len(y)} total")
 

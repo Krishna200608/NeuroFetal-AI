@@ -22,7 +22,7 @@ def residual_block(x, filters, kernel_size=3, stride=1):
     x = layers.Activation('relu')(x)
     return x
 
-def build_fusion_resnet(input_shape_ts=(3600, 1), input_shape_tab=(3,)):
+def build_fusion_resnet(input_shape_ts=(1200, 1), input_shape_tab=(3,)):
     # --- Branch 1: Time Series (ResNet 1D) ---
     input_ts = Input(shape=input_shape_ts, name='input_fhr')
     

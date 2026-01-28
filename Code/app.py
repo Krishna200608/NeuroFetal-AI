@@ -27,8 +27,8 @@ st.set_page_config(
 def load_model():
     # Robust path handling: Try local relative first, then Colab absolute
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    local_path = os.path.join(current_dir, "models", "best_model_fold_5.h5")
-    colab_path = '/content/drive/MyDrive/Research_Project/Code/models/best_model_fold_5.h5'
+    local_path = os.path.join(current_dir, "models", "best_model_fold_5.keras")
+    colab_path = '/content/drive/MyDrive/Research_Project/Code/models/best_model_fold_5.keras'
     
     path_to_use = local_path if os.path.exists(local_path) else colab_path
     
@@ -146,29 +146,59 @@ def main():
                     signal = record.p_signal[:, 0]
                     
                     # 3. Preprocessing (Strictly matching training)
-                    target_len = 3600
-                    if len(signal) > target_len:
-                        signal = signal[-target_len:]
-                    else:
-                        pad = np.zeros(target_len - len(signal))
-                        signal = np.concatenate([pad, signal])
+                    # Training uses 20-min windows (1200 samples @ 1Hz)
+                    # We will slice the input into 20-min windows with overlap, predict on all, 
+                    # and pick the "Risk Window" (Max Probability) for prognosis and XAI.
                     
-                    # MinMax Normalize
+                    WINDOW_SIZE = 1200 # 20 mins * 60 sec
+                    STRIDE = 600       # 10 mins overlap
+                    
+                    # Pad if shorter than one window
+                    if len(signal) < WINDOW_SIZE:
+                        pad = np.zeros(WINDOW_SIZE - len(signal))
+                        signal = np.concatenate([pad, signal])
+                        
+                    # MinMax Normalize Full Signal first (for consistent visualization)
                     _min, _max = np.min(signal), np.max(signal)
                     signal_norm = (signal - _min) / (_max - _min + 1e-8)
                     
-                    # Reshape for Model
-                    X_signal = signal_norm.reshape(1, target_len, 1)
-                    X_tabular = np.array([[parity, gestation, age]]) # Order must match training
+                    # Generate Sliding Windows
+                    windows = []
+                    window_indices = [] # Store (start, end)
                     
-                    # 4. Predict
-                    prediction = model.predict([X_signal, X_tabular])
-                    prob = float(prediction[0][0])
+                    # Loop
+                    num_windows = (len(signal_norm) - WINDOW_SIZE) // STRIDE + 1
+                    if num_windows < 1: num_windows = 1 # Should handle via padding above, but safety
+                    
+                    for i in range(int(num_windows)):
+                        start = i * STRIDE
+                        end = start + WINDOW_SIZE
+                        if end > len(signal_norm): break
+                        
+                        w = signal_norm[start:end]
+                        windows.append(w)
+                        window_indices.append((start, end))
+                        
+                    # Batch Prediction
+                    # Prepare Tabular (duplicated for each window)
+                    X_signal_batch = np.array(windows).reshape(-1, WINDOW_SIZE, 1)
+                    X_tabular_batch = np.tile([parity, gestation, age], (len(windows), 1))
+                    
+                    predictions = model.predict([X_signal_batch, X_tabular_batch])
+                    
+                    # 4. Select Max Risk Window
+                    max_idx = np.argmax(predictions)
+                    prob = float(predictions[max_idx][0])
+                    
+                    # Get the specific window data for XAI
+                    risk_window_signal = X_signal_batch[max_idx:max_idx+1] # Shape (1, 1200, 1)
+                    risk_window_start = window_indices[max_idx][0]
+                    risk_window_end = window_indices[max_idx][1]
                     
                     # 5. Render Dashboard
                     
                     # Row 1: KPI formatting
-                    render_kpi_cards(prob, len(signal)/60) # 1Hz assumption for duration
+                    render_kpi_cards(prob, len(signal)/60) 
                     
                     st.divider()
                     
@@ -179,23 +209,28 @@ def main():
                         render_diagnosis(prob)
                         st.markdown("### Clinical Summary")
                         st.dataframe({
-                            "Metric": ["Patient Age", "Gestation", "Parity", "Basal Rate"],
-                            "Value": [f"{age}", f"{gestation} wk", f"{parity}", "N/A"]
-                        }, hide_index=True, width="stretch") # Updated param
+                            "Metric": ["Patient Age", "Gestation", "Parity", "Risk Window"],
+                            "Value": [f"{age}", f"{gestation} wk", f"{parity}", f"{risk_window_start//60}-{risk_window_end//60} min"]
+                        }, hide_index=True, width="stretch") 
 
                     with c_chart:
+                        # We pass the full signal for context, but highlighting the risk window
+                        # Note: We need to update render_signal_chart to accept highlight args, or just render normally.
+                        # For now, simpler to render normal, but title explains.
                         render_signal_chart(signal_norm, fs=1, theme=theme)
+                        st.caption(f"Analyzing {len(windows)} windows. Showing max risk segment ({prob:.1%}) found at {risk_window_start//60}m - {risk_window_end//60}m.")
                     
                     st.divider()
                     
                     # Row 3: XAI
-                    render_xai(model, X_signal, X_tabular, {'Age': age, 'Gestation': gestation, 'Parity': parity}, theme=theme)
+                    # Pass ONLY the risk window (1, 1200, 1) + Tabular (1, 3) because Model expects that shape
+                    render_xai(model, risk_window_signal, X_tabular_batch[max_idx:max_idx+1], {'Age': age, 'Gestation': gestation, 'Parity': parity}, theme=theme)
                     
-                    # Cleanup using the absolute paths
+                    # Cleanup
                     try:
-                        # os.remove(path_dat) # Keep for debugging if needed, but usually good to clean
-                        # os.remove(path_hea)
-                        pass
+                       # os.remove(path_dat) # Keep for debugging if needed, but usually good to clean
+                       # os.remove(path_hea)
+                       pass
                     except: pass
                     
                 except Exception as e:

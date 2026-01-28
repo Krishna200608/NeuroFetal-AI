@@ -80,7 +80,7 @@ def main():
     
     # Load separate models or just one?
     # Let's pick the best model from Fold 1
-    model_path = os.path.join(MODEL_DIR, "best_model_fold_1.h5")
+    model_path = os.path.join(MODEL_DIR, "best_model_fold_1.keras")
     if not os.path.exists(model_path):
         print("Model not found. Run training first.")
         return

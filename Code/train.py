@@ -61,14 +61,18 @@ def main():
             tf.keras.metrics.SensitivityAtSpecificity(0.85, name='recall_at_15_fpr')
         ]
         
-        optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
+        if hasattr(tf.keras.optimizers, 'AdamW'):
+            optimizer = tf.keras.optimizers.AdamW(learning_rate=LEARNING_RATE, weight_decay=1e-4) # Standard for modern TF
+        else:
+            # Fallback for older TF (though Colab usually has latest)
+            optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
         
         model.compile(optimizer=optimizer,
                       loss='binary_crossentropy',
                       metrics=metrics)
         
         # Callbacks
-        checkpoint_path = os.path.join(MODEL_DIR, f"best_model_fold_{fold_var}.h5")
+        checkpoint_path = os.path.join(MODEL_DIR, f"best_model_fold_{fold_var}.keras")
         
         callbacks = [
             ModelCheckpoint(checkpoint_path, monitor='val_auc', verbose=1, save_best_only=True, mode='max'),
