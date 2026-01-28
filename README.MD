@@ -34,13 +34,14 @@ Our methodology enhances the approach proposed in:
 ---
 
 ## Key Innovations
-
-| Feature | Description | Impact |
-| :--- | :--- | :--- |
-| **Multi-Modal Fusion** | Hybrid **ResNet-1D (Signal)** + **DenseNet (Tabular)** architecture. | Mimics clinician logic: *Signal + Patient Context = Diagnosis*. |
-| **Explainable AI (XAI)** | Integrated **Grad-CAM** & **SHAP** engines. | Visualizes *why* the AI made a decision (e.g., highlighting hypoxic regions). |
-| **Edge Optimization** | 8-bit Post-Training Quantization (TFLite). | Reduced model size by **84% (420KB)** for deployment on portable monitors. |
-| **High Sensitivity** | **87.5% Recall** on CTU-UHB Database. | Minimizes missed detections of fetal distress. |
+ 
+ | Feature | Description | Impact |
+ | :--- | :--- | :--- |
+ | **Multi-Modal Fusion** | Hybrid **ResNet-1D (Signal)** + **DenseNet (Tabular)**. | Outperforms baselines by **~12%** (Ours: **0.74 AUC** vs Paper 1: 0.66). |
+ | **Window Slicing** | Overlapping 20-min window augmentation (Stride: 10m). | Solved data starvation, quadrupling dataset to 2760 samples. |
+ | **Sliding Inference** | Dynamic full-recording analysis logic. | Scans entire patient history to pinpoint the *specific* 20-min risk window. |
+ | **Explainable AI (XAI)** | Integrated **Grad-CAM** & **SHAP** engines. | Visualizes *why* the AI made a decision (e.g., highlighting hypoxic regions). |
+ | **Edge Optimization** | 8-bit Post-Training Quantization (TFLite). | Reduced model size to **420KB** for portable monitors. |
 
 ---
 
