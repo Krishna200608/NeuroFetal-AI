@@ -33,11 +33,11 @@ Research code often stays in the lab.
 
 We compared our **Fusion ResNet (with Window Slicing)** against standard baselines reported in literature for the **CTU-CHB** dataset (Subject-Independent Split):
 
-| Architecture | Typical AUC | Our Result (Mean) | Our Result (Best Fold) | Notes |
+| Architecture | Typical AUC (Literature) | Our Result (Mean) | Our Result (Best Fold) | Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| **Standard 1D-CNN** | 0.62 - 0.66 | - | - | Baseline (Paper 1) |
-| **Clinical Random Forest** | 0.60 - 0.65 | - | - | Tabular only |
-| **Fusion ResNet (Ours)** | - | **0.71** | **0.74** | **~12% Improvement** |
+| **Standard 1D-CNN** | 0.62 - 0.66 | *Not Reproduced* | *Not Reproduced* | Baseline (Paper 1) |
+| **Clinical Random Forest** | 0.60 - 0.65 | *Not Reproduced* | *Not Reproduced* | Tabular only |
+| **Fusion ResNet (Ours)** | *N/A (Novel Method)* | **0.71** | **0.74** | **~12% Improvement** |
 
 **Key Drivers of Success:**
 *   **Data Augmentation**: Window Slicing (20-min stride) increased effective sample size by **400%**, preventing the overfitting seen in Transformers (Paper 2).
