@@ -79,6 +79,7 @@ graph LR
 
 ## Repository Structure
 
+```
 NeuroFetal-AI/
 ├── Code/
 │   ├── scripts/             # Python Source Code
