@@ -79,15 +79,19 @@ graph LR
 
 ## Repository Structure
 
-```text
 NeuroFetal-AI/
 ├── Code/
-│   ├── app.py               # Clinical Dashboard (Streamlit)
-│   ├── train.py             # Training Pipeline (Stratified 5-Fold CV)
-│   ├── model.py             # Fusion ResNet Architecture
-│   ├── data_ingestion.py    # ETL Pipeline for PhysioNet Data
-│   ├── xai.py               # Explainability Engine
-│   └── Training_Colab.ipynb # Google Colab Notebook (GPU Training)
+│   ├── scripts/             # Python Source Code
+│   │   ├── app.py           # Streamlit Dashboard Logic
+│   │   ├── train.py         # Training Pipeline
+│   │   ├── model.py         # Fusion ResNet Architecture
+│   │   ├── data_ingestion.py # ETL Pipeline
+│   │   └── xai.py           # Explainability Engine
+│   ├── notebooks/           # Jupyter Notebooks
+│   │   └── Training_Colab.ipynb 
+│   ├── utils/               # Helper Functions & UI Components
+│   ├── assets/              # Branding & Logos
+│   └── run_app.py           # Application Entry Point (Launcher)
 ├── Datasets/
 │   └── ctu_uhb_data/        # Raw Medical Data (.dat/.hea)
 ├── final_report.md          # Detailed Research Report
@@ -109,7 +113,11 @@ pip install -r requirements.txt
 ### 2. Run Clinical Dashboard
 Launch the web interface locally:
 ```bash
-streamlit run Code/app.py
+# Recommended: Uses run_app.py launcher
+python Code/run_app.py
+
+# Alternative: Direct Streamlit run
+streamlit run Code/scripts/app.py
 ```
 
 ### 3. Expose to Internet (Optional)
@@ -128,7 +136,7 @@ To share the dashboard publicly using `ngrok` (like in Colab):
 ### 4. Model Training
 To retrain the model from scratch (Google Colab Recommended due to high computational load):
 1. Upload the project to Google Drive.
-2. Open `Code/Training_Colab.ipynb` in Colab.
+2. Open `Code/notebooks/Training_Colab.ipynb` in Colab.
 3. Add Ngrok Token in the last cell.
 4. Run all cells to train and generate new models.
 5. Download the best model to `Code/models/`.
