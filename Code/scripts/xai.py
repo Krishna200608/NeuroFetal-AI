@@ -7,7 +7,7 @@ from model import build_fusion_resnet
 import glob
 
 # Constants
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PROCESSED_DATA_DIR = os.path.join(BASE_DIR, "Datasets", "processed")
 MODEL_DIR = os.path.join(BASE_DIR, "Code", "models")
 FIGURE_DIR = os.path.join(BASE_DIR, "Code", "figures")

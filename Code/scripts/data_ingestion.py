@@ -6,7 +6,7 @@ import pandas as pd
 from scipy.interpolate import interp1d
 
 # Constants
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 RAW_DATA_DIR = os.path.join(BASE_DIR, "Datasets", "ctu_uhb_data")
 PROCESSED_DATA_DIR = os.path.join(BASE_DIR, "Datasets", "processed")
 TARGET_FS = 1  # 1 Hz

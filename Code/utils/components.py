@@ -5,13 +5,42 @@ from plotly.subplots import make_subplots
 import numpy as np
 import tensorflow as tf
 
+import base64
+import os
+
+def get_base64_image(image_path):
+    if not os.path.exists(image_path):
+        return None
+    with open(image_path, "rb") as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
 def render_header():
-    st.markdown("""
-    <div class="header-container">
-        <div style="display: flex; align-items: center; gap: 15px;">
+    # Logo Path (Relative to app.py execution)
+    logo_path = os.path.join("assets", "logo.jpg")
+    logo_b64 = get_base64_image(logo_path)
+    
+    # Icon or Image HTML
+    if logo_b64:
+        # Rounded image matching the previous container style
+        img_html = f'<img src="data:image/jpg;base64,{logo_b64}" style="width: 55px; height: 55px; border-radius: 12px; object-fit: cover;">'
+        icon_container = f"""
+            <div style="border-radius: 12px; overflow: hidden; display: flex; align-items: center;">
+                {img_html}
+            </div>
+        """
+    else:
+        # Fallback
+        icon_container = """
             <div style="background: #e1f5fe; padding: 10px; border-radius: 12px; color: #0288d1;">
                 <span class="material-symbols-rounded" style="font-size: 32px;">cardiology</span>
             </div>
+        """
+
+    st.markdown(f"""
+    <div class="header-container">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            {icon_container}
             <div>
                 <h1 class="app-title">NeuroFetal AI</h1>
                 <p class="app-subtitle">Clinical Decision Support System v2.0</p>

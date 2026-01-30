@@ -3,6 +3,10 @@ import numpy as np
 import tensorflow as tf
 import wfdb
 import os
+import sys
+
+# Add parent directory to path to allow importing 'utils'
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import from utils
 from utils.helpers import inject_custom_css, parse_header_metadata
@@ -17,7 +21,7 @@ from utils.components import (
 # --- CONFIGURATION & STYLING ---
 st.set_page_config(
     page_title="NeuroFetal AI | Clinical Monitor",
-    page_icon="🏥",
+    page_icon="assets/logo.jpg",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -27,7 +31,8 @@ st.set_page_config(
 def load_model():
     # Robust path handling: Try local relative first, then Colab absolute
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    local_path = os.path.join(current_dir, "models", "best_model_fold_5.keras")
+    # Models are now in ../models relative to scripts/app.py
+    local_path = os.path.join(current_dir, "..", "models", "best_model_fold_5.keras")
     colab_path = '/content/drive/MyDrive/Research_Project/Code/models/best_model_fold_5.keras'
     
     path_to_use = local_path if os.path.exists(local_path) else colab_path
@@ -44,7 +49,7 @@ model, model_path_loaded = load_model()
 # --- UI COMPONENTS ---
 
 def render_sidebar():
-    st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3004/3004458.png", width=60)
+    st.sidebar.image("assets/logo.jpg", width=80)
     st.sidebar.title("NeuroFetal AI")
     
     # Theme Toggle

@@ -6,7 +6,7 @@ from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLRO
 from model import build_fusion_resnet
 
 # Constants
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PROCESSED_DATA_DIR = os.path.join(BASE_DIR, "Datasets", "processed")
 MODEL_DIR = os.path.join(BASE_DIR, "Code", "models")
 BATCH_SIZE = 32

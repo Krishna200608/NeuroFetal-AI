@@ -37,16 +37,20 @@ def main():
     print("🔐 Authenticating with ngrok...")
     ngrok.set_auth_token(auth_token)
 
-    # 3. Start Streamlit App in Background
+    # 4. Start Streamlit App in Background
     print("🚀 Starting Streamlit Server...")
-    # Using subprocess to run the command: streamlit run app.py
-    # We assume run_app.py is in the same directory as app.py
+    # Using subprocess to run the command: streamlit run scripts/app.py
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    app_path = os.path.join(current_dir, "app.py")
+    app_path = os.path.join(current_dir, "scripts", "app.py")
+    
+    # Add Current Dir (Code/) to PYTHONPATH so scripts/app.py can import utils
+    env = os.environ.copy()
+    env["PYTHONPATH"] = current_dir + os.pathsep + env.get("PYTHONPATH", "")
     
     # Run streamlit
     process = subprocess.Popen(
         [sys.executable, "-m", "streamlit", "run", app_path, "--server.port", "8501", "--server.headless", "true"],
+        env=env,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE
     )
