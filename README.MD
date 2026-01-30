@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Code/assets/Logo-black.png" width="120" alt="NeuroFetal AI Logo" style="background-color: white; padding: 10px; border-radius: 10px;">
+  <img src="Code/assets/Github_logo.png" width="120" alt="NeuroFetal AI Logo" style="background-color: white; padding: 10px; border-radius: 10px;">
 </p>
 
 # NeuroFetal AI: Intelligent Intrapartum Monitoring System
