@@ -29,16 +29,16 @@ def main():
     # 1. Get Auth Token
     auth_token = os.getenv("NGROK_AUTH_TOKEN")
     if not auth_token:
-        print("❌ Error: NGROK_AUTH_TOKEN not found in .env file.")
+        print("Error: NGROK_AUTH_TOKEN not found in .env file.")
         print("Please create a .env file in the Code directory with NGROK_AUTH_TOKEN=your_token_here")
         return
 
     # 2. Authenticate ngrok
-    print("🔐 Authenticating with ngrok...")
+    print("Authenticating with ngrok...")
     ngrok.set_auth_token(auth_token)
 
     # 4. Start Streamlit App in Background
-    print("🚀 Starting Streamlit Server...")
+    print("Starting Streamlit Server...")
     # Using subprocess to run the command: streamlit run scripts/app.py
     current_dir = os.path.dirname(os.path.abspath(__file__))
     app_path = os.path.join(current_dir, "scripts", "app.py")
@@ -59,32 +59,40 @@ def main():
     time.sleep(3)
 
     if process.poll() is not None:
-        print("❌ Streamlit failed to start.")
+        print("Streamlit failed to start.")
         print(process.stderr.read().decode())
         return
 
-    # 4. Open ngrok Tunnel
-    print("🌍 Opening public tunnel...")
+    # 4. Open ngrok Tunnel (Optional)
+    print("Attempting to open public tunnel...")
+    public_url = None
     try:
         # Create a tunnel to port 8501
         public_url = ngrok.connect(8501).public_url
         print("\n" + "="*60)
-        print(f"   🟢 DASHBOARD LIVE AT: {public_url}")
+        print(f"   DASHBOARD LIVE AT: {public_url}")
+        print(f"   LOCAL ADDRESS:     http://localhost:8501")
         print("="*60 + "\n")
-        print("Press Ctrl+C to stop the server.")
         
-        # Keep the script running
-        try:
-            process.wait()
-        except KeyboardInterrupt:
-            print("\n🛑 Shutting down...")
-            process.terminate()
-            ngrok.kill()
-            print("Done.")
-
     except Exception as e:
-        print(f"❌ Error connecting ngrok: {e}")
+        print(f"Ngrok Connection Failed: {e}")
+        print("   (Continuing in Local-Only Mode)")
+        print("\n" + "="*60)
+        print(f"   LOCAL ADDRESS:     http://localhost:8501")
+        print("="*60 + "\n")
+
+    print("Press Ctrl+C to stop the server.")
+    
+    # Keep the script running
+    try:
+        process.wait()
+    except KeyboardInterrupt:
+        print("\nShutting down...")
         process.terminate()
+        try:
+            ngrok.kill()
+        except: pass
+        print("Done.")
 
 if __name__ == "__main__":
     main()

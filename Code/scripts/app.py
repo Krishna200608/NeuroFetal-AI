@@ -15,13 +15,15 @@ from utils.components import (
     render_kpi_cards, 
     render_diagnosis, 
     render_signal_chart, 
-    render_xai
+    render_xai,
+    render_mismatch_error
 )
 
 # --- CONFIGURATION & STYLING ---
+# --- CONFIGURATION & STYLING ---
 st.set_page_config(
     page_title="NeuroFetal AI | Clinical Monitor",
-    page_icon="assets/logo.jpg",
+    page_icon="assets/Logo.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -49,7 +51,7 @@ model, model_path_loaded = load_model()
 # --- UI COMPONENTS ---
 
 def render_sidebar():
-    st.sidebar.image("assets/logo.jpg", width=80)
+    st.sidebar.image("assets/Logo-black.png", width=120)
     st.sidebar.title("NeuroFetal AI")
     
     # Theme Toggle
@@ -81,7 +83,7 @@ def render_sidebar():
                     if 'parity' in meta: st.session_state['parity'] = meta['parity']
                     if 'gestation' in meta: st.session_state['gestation'] = meta['gestation']
                     st.session_state['last_loaded_header'] = uploaded_header.name
-                    st.toast("✅ Clinical features auto-filled from Header file!", icon="📋")
+                    st.toast("Clinical features auto-filled from Header file!", icon="📋")
                 except Exception as e:
                     st.error(f"Error parsing header: {e}")
         
@@ -116,20 +118,30 @@ def main():
     inject_custom_css(theme)
     
     # Header
-    render_header()
+    render_header(theme)
     
     if run_btn:
         if uploaded_file and uploaded_header:
+            
+            # --- VALIDATION: Check for filename mismatch ---
+            base_name_dat = os.path.splitext(uploaded_file.name)[0]
+            base_name_hea = os.path.splitext(uploaded_header.name)[0]
+            
+            if base_name_dat != base_name_hea:
+                render_mismatch_error(uploaded_file.name, uploaded_header.name, theme)
+                return
+            # ---------------------------------------------
+
             if model is None:
                 st.error("Model not loaded.")
                 return
 
-            with st.spinner("🔄 Processing signal and generating diagnosis..."):
+            with st.spinner("Processing signal and generating diagnosis..."):
                 try:
                     # 1. Save temp files using absolute paths to avoid ambiguity
                     # We use a unique name to prevent collisions if using multiple sessions (though simple for now)
                     # Force the file extension to be consistent
-                    base_name = uploaded_file.name.split('.')[0]
+                    base_name = base_name_dat # They are equal now
                     # Create absolute paths
                     temp_dir = os.path.dirname(os.path.abspath(__file__))
                     path_dat = os.path.join(temp_dir, f"{base_name}.dat")

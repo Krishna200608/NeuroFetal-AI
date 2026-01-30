@@ -15,50 +15,47 @@ def get_base64_image(image_path):
         data = f.read()
     return base64.b64encode(data).decode()
 
-def render_header():
+def render_header(theme="Light"):
     # Logo Path (Relative to app.py execution)
-    logo_path = os.path.join("assets", "logo.jpg")
+    # User Request: Use Logo-black.png for Dark Mode, Logo.svg for Light Mode
+    logo_file = "Logo-black.png" if theme == "Dark" else "Logo.svg"
+    logo_path = os.path.join("assets", logo_file)
     logo_b64 = get_base64_image(logo_path)
+    
+    # Determine MIME type based on extension
+    mime_type = "image/png" if logo_file.endswith(".png") else "image/svg+xml"
     
     # Icon or Image HTML
     if logo_b64:
-        # Rounded image matching the previous container style
-        img_html = f'<img src="data:image/jpg;base64,{logo_b64}" style="width: 55px; height: 55px; border-radius: 12px; object-fit: cover;">'
-        icon_container = f"""
-            <div style="border-radius: 12px; overflow: hidden; display: flex; align-items: center;">
-                {img_html}
-            </div>
-        """
+        # Dynamic MIME type rendering
+        img_html = f'<img src="data:{mime_type};base64,{logo_b64}" style="width: 60px; height: 60px; vertical-align: middle;">'
+        icon_container = f"""<div style="display: flex; align-items: center; justify-content: center;">{img_html}</div>"""
     else:
         # Fallback
-        icon_container = """
-            <div style="background: #e1f5fe; padding: 10px; border-radius: 12px; color: #0288d1;">
-                <span class="material-symbols-rounded" style="font-size: 32px;">cardiology</span>
-            </div>
-        """
+        icon_container = """<div style="background: #e1f5fe; padding: 10px; border-radius: 12px; color: #0288d1;"><span class="material-symbols-rounded" style="font-size: 32px;">cardiology</span></div>"""
 
     st.markdown(f"""
-    <div class="header-container">
-        <div style="display: flex; align-items: center; gap: 15px;">
-            {icon_container}
-            <div>
-                <h1 class="app-title">NeuroFetal AI</h1>
-                <p class="app-subtitle">Clinical Decision Support System v2.0</p>
-            </div>
-        </div>
-        <div style="display: flex; gap: 10px;">
-            <div class="status-pill status-online">
-                <span class="material-symbols-rounded" style="font-size: 16px;">check_circle</span> System Online
-            </div>
-            <div class="status-pill status-info">
-                <span class="material-symbols-rounded" style="font-size: 16px;">neurology</span> Fusion ResNet
-            </div>
-            <div class="status-pill status-info">
-                <span class="material-symbols-rounded" style="font-size: 16px;">bolt</span> Edge Optimized
-            </div>
+<div class="header-container">
+    <div style="display: flex; align-items: center; gap: 15px;">
+        {icon_container}
+        <div>
+            <h1 class="app-title">NeuroFetal AI</h1>
+            <p class="app-subtitle">Clinical Decision Support System v2.0</p>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    <div style="display: flex; gap: 10px;">
+        <div class="status-pill status-online">
+            <span class="material-symbols-rounded" style="font-size: 16px;">check_circle</span> System Online
+        </div>
+        <div class="status-pill status-info">
+            <span class="material-symbols-rounded" style="font-size: 16px;">neurology</span> Fusion ResNet
+        </div>
+        <div class="status-pill status-info">
+            <span class="material-symbols-rounded" style="font-size: 16px;">bolt</span> Edge Optimized
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 def render_kpi_cards(prob, signal_dur_min):
     col1, col2, col3, col4 = st.columns(4)
@@ -97,9 +94,9 @@ def render_kpi_cards(prob, signal_dur_min):
     with col4:
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-label"><span class="material-symbols-rounded" style="font-size:18px; color:#64748b; margin-right:5px;">timer</span> Signal Duration</div>
-            <div class="metric-value">{signal_dur_min:.0f} min</div>
-            <div class="metric-delta">Analysis Window</div>
+            <div class="metric-label"><span class="material-symbols-rounded" style="font-size:18px; color:#64748b; margin-right:5px;">timer</span> Duration</div>
+            <div class="metric-value text-blue">{signal_dur_min:.1f} m</div>
+            <div class="metric-delta">Signal Length</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -289,3 +286,35 @@ def render_xai(model, signal, tabular, inputs_dict, theme="Light"):
             st.progress(min(parity/5, 1.0))
 
         st.info("ℹ️ The Dense Tabular Branch of Fusion ResNet processes these features in parallel with the signal to adjust the final risk probability.")
+
+def render_mismatch_error(dat_name, hea_name, theme="Light"):
+    # Theme colors
+    bg_color = "#fef2f2" if theme == "Light" else "#2b1515"
+    border_color = "#fecaca" if theme == "Light" else "#451a1a"
+    text_color = "#991b1b" if theme == "Light" else "#fecaca"
+    subtext_color = "#b91c1c" if theme == "Light" else "#fca5a5"
+    
+    st.markdown(f"""
+<div style="text-align: center; padding: 40px; background-color: {bg_color}; border: 2px dashed {border_color}; border-radius: 16px; max-width: 700px; margin: 20px auto;">
+<span class="material-symbols-rounded" style="font-size: 56px; color: #ef4444; margin-bottom: 15px; display: block;">folder_off</span>
+<h2 style="color: {text_color}; margin: 0 0 10px 0; font-size: 1.8rem;">File Mismatch Detected</h2>
+<p style="color: {subtext_color}; font-size: 1.1rem; margin-bottom: 25px;">The uploaded files do not identify to the same PhysioNet record.</p>
+<div style="display: flex; justify-content: center; gap: 20px; align-items: flex-start; margin-bottom: 25px;">
+<div style="text-align: right; flex: 1;">
+<span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: {subtext_color}; opacity: 0.8;">Signal File</span>
+<div style="font-family: monospace; font-size: 1.2rem; font-weight: 600; color: {text_color}; background: rgba(255,0,0,0.05); padding: 8px 12px; border-radius: 8px; border: 1px solid {border_color};">{dat_name}</div>
+</div>
+<div style="display: flex; align-items: center; height: 100%; padding-top: 20px;">
+<span class="material-symbols-rounded" style="color: #ef4444; font-size: 32px;">link_off</span>
+</div>
+<div style="text-align: left; flex: 1;">
+<span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: {subtext_color}; opacity: 0.8;">Header File</span>
+<div style="font-family: monospace; font-size: 1.2rem; font-weight: 600; color: {text_color}; background: rgba(255,0,0,0.05); padding: 8px 12px; border-radius: 8px; border: 1px solid {border_color};">{hea_name}</div>
+</div>
+</div>
+<div style="background: rgba(239, 68, 68, 0.1); display: inline-block; padding: 8px 16px; border-radius: 20px; color: {text_color}; font-weight: 500;">
+<span class="material-symbols-rounded" style="font-size: 16px; vertical-align: text-bottom; margin-right: 5px;">info</span>
+Please ensure both files share the same record ID (e.g., <b>1001.dat</b> and <b>1001.hea</b>)
+</div>
+</div>
+""", unsafe_allow_html=True)
