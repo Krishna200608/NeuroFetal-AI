@@ -1,4 +1,4 @@
-# Research Proposal: Multi-Modal Intelligent Intrapartum Monitoring System
+# Research Proposal: NeuroFetal AI: Intelligent Intrapartum Monitoring System
 
 **Proposed Project:** NeuroFetal AI  
 **Date:** 1 February 2026
