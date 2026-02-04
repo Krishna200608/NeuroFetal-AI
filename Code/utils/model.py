@@ -160,7 +160,7 @@ def build_enhanced_fusion_resnet(
     use_se_blocks=True,
     use_attention=True,
     use_multi_scale=False,
-    dropout_rate=0.3
+    dropout_rate=0.4  # Increased from 0.3 for better regularization
 ):
     """
     Enhanced 3-input Fusion ResNet with attention mechanisms.
@@ -319,7 +319,7 @@ def build_model_for_ablation(config):
             use_se_blocks=config.get('use_se', True),
             use_attention=config.get('use_attention', True),
             use_multi_scale=config.get('use_multi_scale', False),
-            dropout_rate=config.get('dropout_rate', 0.3)
+            dropout_rate=config.get('dropout_rate', 0.4)  # Increased default
         )
 
 

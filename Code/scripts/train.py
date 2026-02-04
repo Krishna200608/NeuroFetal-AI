@@ -37,7 +37,7 @@ LOG_DIR = os.path.join(BASE_DIR, "Reports", "training_logs")
 
 # Training hyperparameters
 BATCH_SIZE = 32
-EPOCHS = 50
+EPOCHS = 75  # Increased from 50 for better convergence
 LEARNING_RATE = 0.001
 N_FOLDS = 5
 
@@ -197,7 +197,7 @@ def train_fold(
     callbacks = [
         ModelCheckpoint(checkpoint_path, monitor='val_auc', verbose=1, 
                        save_best_only=True, mode='max'),
-        EarlyStopping(monitor='val_auc', patience=10, mode='max', 
+        EarlyStopping(monitor='val_auc', patience=15, mode='max',  # Increased from 10
                      verbose=1, restore_best_weights=True),
         ReduceLROnPlateau(monitor='val_auc', factor=0.5, patience=5, 
                          min_lr=1e-6, verbose=1)

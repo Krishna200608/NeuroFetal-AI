@@ -190,6 +190,48 @@ def process_signal(signal, fs):
         
     return resampled_signal
 
+
+def process_uc_signal(signal, fs):
+    """
+    Process UC (Uterine Contraction) signal:
+    1. Crop last 60 mins.
+    2. Resample to 1Hz.
+    3. Normalize (MinMax).
+    
+    Note: UC signal does NOT use 0 as missing value marker like FHR.
+    UC values are continuous tocodynamometer readings.
+    """
+    # Crop last 60 minutes
+    required_samples = DURATION_SEC * fs
+    
+    if len(signal) < required_samples:
+        # Pad with zeros if too short
+        pad_len = int(required_samples - len(signal))
+        processed_signal = np.pad(signal, (pad_len, 0), 'constant')
+    else:
+        processed_signal = signal[-int(required_samples):]
+        
+    # Resample to 1Hz
+    num_samples_target = DURATION_SEC * TARGET_FS
+    
+    x_old = np.linspace(0, DURATION_SEC, len(processed_signal))
+    x_new = np.linspace(0, DURATION_SEC, num_samples_target)
+    
+    f_resample = interp1d(x_old, processed_signal, kind='linear', bounds_error=False, fill_value=0)
+    resampled_signal = f_resample(x_new)
+    
+    # Normalize MinMax (0-1)
+    _min = np.min(resampled_signal)
+    _max = np.max(resampled_signal)
+    
+    if _max > _min:
+        resampled_signal = (resampled_signal - _min) / (_max - _min)
+    else:
+        resampled_signal = np.zeros_like(resampled_signal)
+        
+    return resampled_signal
+
+
 def main():
     ensure_dir(PROCESSED_DATA_DIR)
     
@@ -197,6 +239,7 @@ def main():
     print(f"Found {len(record_paths)} records.")
     
     X_fhr = []
+    X_uc = []  # NEW: UC signal data
     X_tabular = []
     y = []
     
@@ -226,11 +269,17 @@ def main():
         try:
             signals, fields = wfdb.rdsamp(base)
             fhr_signal = signals[:, 0]
+            uc_signal = signals[:, 1] if signals.shape[1] > 1 else None  # NEW: Extract UC
             fs = fields['fs']
             
-            # Preprocess Signal (Full clean 60 mins)
+            # Preprocess FHR Signal (Full clean 60 mins)
             # We first get the cleaned last 60 mins (3600 samples @ 1Hz)
-            processed_60min = process_signal(fhr_signal, fs)
+            processed_60min_fhr = process_signal(fhr_signal, fs)
+            
+            # Preprocess UC Signal (if available)
+            processed_60min_uc = None
+            if uc_signal is not None:
+                processed_60min_uc = process_uc_signal(uc_signal, fs)
             
             # Now slice into windows
             # Expecting processed_60min to be 3600 samples (60 * 60 * 1Hz)
@@ -241,28 +290,35 @@ def main():
             stride = int(STRIDE_SEC * TARGET_FS)
             
             # Verify length
-            if len(processed_60min) < w_size:
+            if len(processed_60min_fhr) < w_size:
                 # Should not happen due to padding in process_signal, but safe check
-                print(f"Signal too short for windowing: {len(processed_60min)}")
+                print(f"FHR signal too short for windowing: {len(processed_60min_fhr)}")
                 continue
                 
             # Generate slices
-            num_slices = (len(processed_60min) - w_size) // stride + 1
+            num_slices = (len(processed_60min_fhr) - w_size) // stride + 1
             
             for i in range(int(num_slices)):
                 start = i * stride
                 end = start + w_size
                 
                 # Double check bounds
-                if end > len(processed_60min):
+                if end > len(processed_60min_fhr):
                     break
                     
-                window_signal = processed_60min[start:end]
+                window_fhr = processed_60min_fhr[start:end]
+                
+                # UC window (same slice position)
+                if processed_60min_uc is not None and end <= len(processed_60min_uc):
+                    window_uc = processed_60min_uc[start:end]
+                else:
+                    window_uc = np.zeros(w_size)  # Fallback if UC missing
                 
                 # Tabular data is duplicated for each slice (Patient Level)
                 tab_vec = [feats['Age'], feats['Parity'], feats['Gestation']]
                 
-                X_fhr.append(window_signal)
+                X_fhr.append(window_fhr)
+                X_uc.append(window_uc)
                 X_tabular.append(tab_vec)
                 y.append(is_compromised)
                 total_slices += 1
@@ -278,6 +334,7 @@ def main():
             
     # Convert to arrays
     X_fhr = np.array(X_fhr)
+    X_uc = np.array(X_uc)  # NEW: UC array
     X_tabular = np.array(X_tabular)
     y = np.array(y)
     
@@ -286,13 +343,17 @@ def main():
     inds = np.where(np.isnan(X_tabular))
     X_tabular[inds] = np.take(col_means, inds[1])
     
+    # Handle NaNs in UC data (if any)
+    X_uc = np.nan_to_num(X_uc, nan=0.0)
+    
     # Save
     np.save(os.path.join(PROCESSED_DATA_DIR, "X_fhr.npy"), X_fhr)
+    np.save(os.path.join(PROCESSED_DATA_DIR, "X_uc.npy"), X_uc)  # NEW: Save UC
     np.save(os.path.join(PROCESSED_DATA_DIR, "X_tabular.npy"), X_tabular)
     np.save(os.path.join(PROCESSED_DATA_DIR, "y.npy"), y)
     
     print(f"Processing complete. Processed {valid_cnt} patients into {total_slices} slices.")
-    print(f"Shapes: X_fhr {X_fhr.shape}, X_tabular {X_tabular.shape}, y {y.shape}")
+    print(f"Shapes: X_fhr {X_fhr.shape}, X_uc {X_uc.shape}, X_tabular {X_tabular.shape}, y {y.shape}")
     print(f"Class balance: {np.sum(y)} compromised / {len(y)} total")
 
 if __name__ == "__main__":
