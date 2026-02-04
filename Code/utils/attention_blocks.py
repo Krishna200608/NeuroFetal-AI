@@ -126,8 +126,14 @@ class PositionalEncoding(layers.Layer):
         else:
             pe[:, 1::2] = np.cos(position * div_term[:-1])
             
-        # Store as float32, will cast in call()
-        self.pe = tf.constant(pe, dtype=tf.float32)
+        # Use add_weight to properly register tensor (fixes TF graph scope issue)
+        self.pe = self.add_weight(
+            name='positional_encoding',
+            shape=(self.max_len, self.d_model),
+            initializer=tf.constant_initializer(pe),
+            trainable=False,
+            dtype=tf.float32
+        )
         
         super(PositionalEncoding, self).build(input_shape)
         
