@@ -33,39 +33,27 @@ class FocalLoss(losses.Loss):
     
     def call(self, y_true, y_pred):
         """
-        Compute focal loss with improved numerical stability.
-        
-        Args:
-            y_true: Ground truth labels (0 or 1)
-            y_pred: Predicted probabilities [0, 1]
-            
-        Returns:
-            focal_loss: Computed loss
+        Compute focal loss with Keras-native numerical stability.
         """
-        # Cast to float32 and flatten
+        # Cast and flatten
         y_true = tf.cast(tf.reshape(y_true, [-1]), tf.float32)
         y_pred = tf.cast(tf.reshape(y_pred, [-1]), tf.float32)
         
-        # Use larger epsilon for stability (especially with mixed precision)
+        # Clip predictions
         epsilon = 1e-7
         y_pred = tf.clip_by_value(y_pred, epsilon, 1.0 - epsilon)
         
-        # Compute p_t (probability of correct class)
-        p_t = y_true * y_pred + (1 - y_true) * (1 - y_pred)
+        # Use Keras backend BCE (numerically stable via log-sum-exp)
+        bce = tf.keras.backend.binary_crossentropy(y_true, y_pred)
         
-        # Compute focal weight: (1 - p_t)^gamma
+        # Compute p_t and focal weight
+        p_t = y_true * y_pred + (1 - y_true) * (1 - y_pred)
         focal_weight = tf.pow(1.0 - p_t, self.gamma)
         
-        # Compute binary cross entropy
-        bce = -y_true * tf.math.log(y_pred) - (1 - y_true) * tf.math.log(1 - y_pred)
-        
-        # Alpha weighting: alpha for positive, (1-alpha) for negative
+        # Alpha weighting
         alpha_weight = y_true * self.alpha + (1 - y_true) * (1 - self.alpha)
         
-        # Final focal loss
-        focal_loss = alpha_weight * focal_weight * bce
-        
-        return focal_loss
+        return alpha_weight * focal_weight * bce
 
 
 class WeightedFocalLoss(losses.Loss):
@@ -87,32 +75,28 @@ class WeightedFocalLoss(losses.Loss):
     
     def call(self, y_true, y_pred):
         """
-        Compute weighted focal loss with improved numerical stability.
+        Compute weighted focal loss with Keras-native numerical stability.
         """
-        # Cast to float32 and flatten
+        # Cast and flatten
         y_true = tf.cast(tf.reshape(y_true, [-1]), tf.float32)
         y_pred = tf.cast(tf.reshape(y_pred, [-1]), tf.float32)
         
-        # Use larger epsilon for stability
+        # Clip predictions
         epsilon = 1e-7
         y_pred = tf.clip_by_value(y_pred, epsilon, 1.0 - epsilon)
         
-        # Compute p_t (probability of correct class)
-        p_t = y_true * y_pred + (1 - y_true) * (1 - y_pred)
+        # Use Keras backend BCE (numerically stable)
+        bce = tf.keras.backend.binary_crossentropy(y_true, y_pred)
         
-        # Focal weight: (1 - p_t)^gamma
+        # Compute p_t and focal weight
+        p_t = y_true * y_pred + (1 - y_true) * (1 - y_pred)
         focal_weight = tf.pow(1.0 - p_t, self.gamma)
         
-        # Binary cross entropy
-        bce = -y_true * tf.math.log(y_pred) - (1 - y_true) * tf.math.log(1 - y_pred)
-        
-        # Weighted focal loss (alpha for balance, pos_weight for class imbalance)
+        # Alpha and class weighting
         alpha_weight = y_true * self.alpha + (1 - y_true) * (1 - self.alpha)
         class_weight = y_true * self.pos_weight + (1 - y_true) * 1.0
         
-        focal_loss = alpha_weight * class_weight * focal_weight * bce
-        
-        return focal_loss
+        return alpha_weight * class_weight * focal_weight * bce
 
 
 def get_focal_loss(alpha=0.25, gamma=2.0, use_weighted=False, pos_weight=5.0):

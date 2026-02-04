@@ -240,6 +240,22 @@ def main():
     
     X_fhr, X_tabular, y, X_uc = load_data()
     
+    # Check for NaN/Inf in data (critical for debugging)
+    def check_data(arr, name):
+        if np.isnan(arr).any():
+            print(f"  WARNING: {name} contains NaN values!")
+            arr = np.nan_to_num(arr, nan=0.0)
+        if np.isinf(arr).any():
+            print(f"  WARNING: {name} contains Inf values!")
+            arr = np.nan_to_num(arr, posinf=1e6, neginf=-1e6)
+        return arr
+    
+    X_fhr = check_data(X_fhr, "X_fhr")
+    X_tabular = check_data(X_tabular, "X_tabular")
+    y = check_data(y, "y")
+    if X_uc is not None:
+        X_uc = check_data(X_uc, "X_uc")
+    
     print(f"Data loaded:")
     print(f"  FHR: {X_fhr.shape}")
     print(f"  Tabular: {X_tabular.shape}")
