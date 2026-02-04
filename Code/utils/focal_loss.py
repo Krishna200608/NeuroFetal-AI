@@ -33,7 +33,7 @@ class FocalLoss(losses.Loss):
     
     def call(self, y_true, y_pred):
         """
-        Compute focal loss.
+        Compute focal loss with improved numerical stability.
         
         Args:
             y_true: Ground truth labels (0 or 1)
@@ -42,21 +42,28 @@ class FocalLoss(losses.Loss):
         Returns:
             focal_loss: Computed loss
         """
-        # Clip predictions to prevent log(0)
-        epsilon = tf.keras.backend.epsilon()
+        # Cast to float32 and flatten
+        y_true = tf.cast(tf.reshape(y_true, [-1]), tf.float32)
+        y_pred = tf.cast(tf.reshape(y_pred, [-1]), tf.float32)
+        
+        # Use larger epsilon for stability (especially with mixed precision)
+        epsilon = 1e-7
         y_pred = tf.clip_by_value(y_pred, epsilon, 1.0 - epsilon)
         
-        # Compute binary cross entropy
-        ce_loss = -y_true * tf.math.log(y_pred) - (1 - y_true) * tf.math.log(1 - y_pred)
-        
-        # Compute modulating factor
-        # For positive samples: p_t = y_pred, so (1 - p_t) = 1 - y_pred
-        # For negative samples: p_t = 1 - y_pred, so (1 - p_t) = y_pred
+        # Compute p_t (probability of correct class)
         p_t = y_true * y_pred + (1 - y_true) * (1 - y_pred)
-        modulating_factor = (1 - p_t) ** self.gamma
         
-        # Apply focal term
-        focal_loss = self.alpha * modulating_factor * ce_loss
+        # Compute focal weight: (1 - p_t)^gamma
+        focal_weight = tf.pow(1.0 - p_t, self.gamma)
+        
+        # Compute binary cross entropy
+        bce = -y_true * tf.math.log(y_pred) - (1 - y_true) * tf.math.log(1 - y_pred)
+        
+        # Alpha weighting: alpha for positive, (1-alpha) for negative
+        alpha_weight = y_true * self.alpha + (1 - y_true) * (1 - self.alpha)
+        
+        # Final focal loss
+        focal_loss = alpha_weight * focal_weight * bce
         
         return focal_loss
 
@@ -80,25 +87,32 @@ class WeightedFocalLoss(losses.Loss):
     
     def call(self, y_true, y_pred):
         """
-        Compute weighted focal loss.
+        Compute weighted focal loss with improved numerical stability.
         """
-        epsilon = tf.keras.backend.epsilon()
+        # Cast to float32 and flatten
+        y_true = tf.cast(tf.reshape(y_true, [-1]), tf.float32)
+        y_pred = tf.cast(tf.reshape(y_pred, [-1]), tf.float32)
+        
+        # Use larger epsilon for stability
+        epsilon = 1e-7
         y_pred = tf.clip_by_value(y_pred, epsilon, 1.0 - epsilon)
         
-        # BCE
-        ce_loss = -y_true * tf.math.log(y_pred) - (1 - y_true) * tf.math.log(1 - y_pred)
-        
-        # Focal term
+        # Compute p_t (probability of correct class)
         p_t = y_true * y_pred + (1 - y_true) * (1 - y_pred)
-        modulating_factor = (1 - p_t) ** self.gamma
         
-        # Weighted focal loss
-        focal_loss = modulating_factor * ce_loss
+        # Focal weight: (1 - p_t)^gamma
+        focal_weight = tf.pow(1.0 - p_t, self.gamma)
         
-        # Apply class weighting: upweight positive class
-        weighted_loss = y_true * self.pos_weight * focal_loss + (1 - y_true) * focal_loss
+        # Binary cross entropy
+        bce = -y_true * tf.math.log(y_pred) - (1 - y_true) * tf.math.log(1 - y_pred)
         
-        return weighted_loss
+        # Weighted focal loss (alpha for balance, pos_weight for class imbalance)
+        alpha_weight = y_true * self.alpha + (1 - y_true) * (1 - self.alpha)
+        class_weight = y_true * self.pos_weight + (1 - y_true) * 1.0
+        
+        focal_loss = alpha_weight * class_weight * focal_weight * bce
+        
+        return focal_loss
 
 
 def get_focal_loss(alpha=0.25, gamma=2.0, use_weighted=False, pos_weight=5.0):
