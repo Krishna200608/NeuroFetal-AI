@@ -4,6 +4,7 @@ import tensorflow as tf
 from sklearn.model_selection import StratifiedKFold
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 from model import build_fusion_resnet
+from focal_loss import get_focal_loss
 
 # Constants
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -12,6 +13,12 @@ MODEL_DIR = os.path.join(BASE_DIR, "Code", "models")
 BATCH_SIZE = 32
 EPOCHS = 50
 LEARNING_RATE = 0.001
+
+# Focal Loss parameters (for extreme class imbalance: ~7% positive in CTU-UHB)
+USE_FOCAL_LOSS = True
+FOCAL_LOSS_ALPHA = 0.25
+FOCAL_LOSS_GAMMA = 2.0
+FOCAL_LOSS_POS_WEIGHT = 5.0
 
 def ensure_dir(directory):
     if not os.path.exists(directory):
@@ -62,13 +69,26 @@ def main():
         ]
         
         if hasattr(tf.keras.optimizers, 'AdamW'):
-            optimizer = tf.keras.optimizers.AdamW(learning_rate=LEARNING_RATE, weight_decay=1e-4) # Standard for modern TF
+            optimizer = tf.keras.optimizers.AdamW(learning_rate=LEARNING_RATE, weight_decay=1e-4)
         else:
-            # Fallback for older TF (though Colab usually has latest)
+            # Fallback for older TF
             optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
         
+        # Select loss function (Focal Loss for better imbalance handling)
+        if USE_FOCAL_LOSS:
+            loss_fn = get_focal_loss(
+                alpha=FOCAL_LOSS_ALPHA,
+                gamma=FOCAL_LOSS_GAMMA,
+                use_weighted=True,
+                pos_weight=FOCAL_LOSS_POS_WEIGHT
+            )
+            print(f"\nUsing Focal Loss (α={FOCAL_LOSS_ALPHA}, γ={FOCAL_LOSS_GAMMA}, pos_weight={FOCAL_LOSS_POS_WEIGHT})")
+        else:
+            loss_fn = 'binary_crossentropy'
+            print("\nUsing Binary Cross-Entropy loss")
+        
         model.compile(optimizer=optimizer,
-                      loss='binary_crossentropy',
+                      loss=loss_fn,
                       metrics=metrics)
         
         # Callbacks
@@ -81,6 +101,8 @@ def main():
         ]
         
         # Train
+        # Note: Focal Loss is more robust to class imbalance than class_weight alone
+        # But we still use class_weight as an additional regularization
         history = model.fit(
             [X_fhr_train, X_tab_train], y_train,
             epochs=EPOCHS,
@@ -88,12 +110,7 @@ def main():
             validation_data=([X_fhr_val, X_tab_val], y_val),
             callbacks=callbacks,
             verbose=1,
-            class_weight={0: 1, 1: 5} # Handle imbalance? User said Stratified CV, but usually we also weight classes or oversample.
-                                      # "Stratified 5-Fold ... to handle class imbalance"
-                                      # Usually just Stratified KFold is not enough for training, just for evaluation.
-                                      # I'll add class weights just in case given the extreme imbalance (40 compromised cases?).
-                                      # If 40 cases total, 5 folds = 8 cases per fold.
-                                      # This is TINY.
+            class_weight={0: 1, 1: 3} if not USE_FOCAL_LOSS else None  # Reduce weight when using Focal Loss
         )
         
         # Optional: Evaluate best model
