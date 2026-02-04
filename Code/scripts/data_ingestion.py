@@ -7,7 +7,7 @@ from scipy.interpolate import interp1d
 
 # Constants
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-RAW_DATA_DIR = os.path.join(BASE_DIR, "Datasets", "ctu_uhb_data")
+RAW_DATA_DIR = os.path.join(BASE_DIR, "Datasets", "ctu-uhb-ctgdb")
 PROCESSED_DATA_DIR = os.path.join(BASE_DIR, "Datasets", "processed")
 TARGET_FS = 1  # 1 Hz
 DURATION_MIN = 60
