@@ -42,7 +42,7 @@ LEARNING_RATE = 0.001
 N_FOLDS = 5
 
 # Focal Loss parameters (for extreme class imbalance: ~7% positive in CTU-UHB)
-USE_FOCAL_LOSS = True
+USE_FOCAL_LOSS = False  # TEMP: Disabled to debug NaN - using BCE instead
 FOCAL_LOSS_ALPHA = 0.25
 FOCAL_LOSS_GAMMA = 2.0
 FOCAL_LOSS_POS_WEIGHT = 5.0
@@ -290,6 +290,9 @@ def main():
                 X_fhr_train, X_uc_train, y_train,
                 X_fhr_val, X_uc_val
             )
+            # Check CSP features for NaN/Inf
+            X_csp_train = check_data(X_csp_train, "X_csp_train")
+            X_csp_val = check_data(X_csp_val, "X_csp_val")
             print(f"  CSP features: train={X_csp_train.shape}, val={X_csp_val.shape}")
         else:
             X_csp_train, X_csp_val = None, None
