@@ -104,10 +104,26 @@ NeuroFetal-AI/
 ## Quick Start
 
 ### 1. Installation
-Clone the repository and install dependencies:
+Clone the repository, create a Python 3.11+ virtual environment inside the Code folder, and install dependencies from the Code folder:
 ```bash
 git clone https://github.com/your-repo/neurofetal-ai.git
 cd neurofetal-ai
+cd Code
+python -m venv .venv
+```
+Activate the virtual environment:
+```bash
+# Windows (PowerShell)
+.\.venv\Scripts\Activate.ps1
+
+# Windows (cmd)
+.venv\Scripts\activate.bat
+
+# macOS/Linux
+source .venv/bin/activate
+```
+Install requirements from the Code folder:
+```bash
 pip install -r requirements.txt
 ```
 
