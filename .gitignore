@@ -10,12 +10,8 @@ venv/
 # Environment variables
 .env
 
-# Datasets (Large files)
-Datasets/ctu_uhb_data/*.dat
-Datasets/ctu_uhb_data/*.hea
+# Datasets (Large files - processed only)
 Datasets/processed/*.npy
-*.dat
-*.hea
 
 # IDE
 .vscode/
