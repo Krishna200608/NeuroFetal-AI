@@ -51,6 +51,7 @@ FOCAL_LOSS_POS_WEIGHT = 5.0
 USE_ENHANCED_MODEL = True  # Use 3-input model with attention
 USE_SE_BLOCKS = True
 USE_ATTENTION = True
+USE_CSP = None  # Auto-detect: True only if real UC data exists (set in main())
 
 
 def ensure_dir(directory):
@@ -263,12 +264,17 @@ def main():
     print(f"  UC: {'Available' if X_uc is not None else 'Not available (will use synthetic)'}")
     print(f"  Class balance: {np.mean(y):.2%} positive (compromised)")
     
-    # If UC not available, create synthetic for CSP demonstration
+    # Determine whether to use CSP features
+    global USE_CSP
     if X_uc is None:
-        print("\nGenerating synthetic UC signal for CSP demonstration...")
-        X_uc = np.sin(np.linspace(0, 4*np.pi, X_fhr.shape[1]))[np.newaxis, :].repeat(len(X_fhr), axis=0)
-        X_uc = X_uc + np.random.normal(0, 0.1, X_uc.shape)
-        X_uc = np.clip(X_uc, 0, 1)
+        print("\n⚠️  Real UC data not available - DISABLING CSP features.")
+        print("   (Synthetic UC produces meaningless CSP; using 2-input model instead)")
+        USE_CSP = False
+        # Create dummy X_uc to avoid errors (won't be used)
+        X_uc = np.zeros((len(X_fhr), X_fhr.shape[1]))
+    else:
+        print("\n✓ Real UC data available - CSP features ENABLED.")
+        USE_CSP = True
     
     # Cross-validation
     skf = StratifiedKFold(n_splits=N_FOLDS, shuffle=True, random_state=42)
@@ -283,8 +289,8 @@ def main():
         y_train, y_val = y[train_idx], y[val_idx]
         X_uc_train, X_uc_val = X_uc[train_idx], X_uc[val_idx]
         
-        # Extract CSP features (fit on training only!)
-        if USE_ENHANCED_MODEL:
+        # Extract CSP features (fit on training only!) - ONLY if real UC is available
+        if USE_ENHANCED_MODEL and USE_CSP:
             print(f"\nExtracting CSP features for Fold {fold_num}...")
             X_csp_train, X_csp_val, csp_extractor = extract_csp_features_for_fold(
                 X_fhr_train, X_uc_train, y_train,
@@ -295,6 +301,8 @@ def main():
             X_csp_val = check_data(X_csp_val, "X_csp_val")
             print(f"  CSP features: train={X_csp_train.shape}, val={X_csp_val.shape}")
         else:
+            if USE_ENHANCED_MODEL and not USE_CSP:
+                print(f"\nFold {fold_num}: Skipping CSP (no real UC data)")
             X_csp_train, X_csp_val = None, None
         
         # Train fold
