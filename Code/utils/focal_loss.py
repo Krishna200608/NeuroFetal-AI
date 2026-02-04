@@ -26,7 +26,7 @@ class FocalLoss(losses.Loss):
     - reduction: Reduction method ('auto', 'sum', 'none')
     """
     
-    def __init__(self, alpha=0.25, gamma=2.0, reduction=losses.Reduction.AUTO, name="focal_loss"):
+    def __init__(self, alpha=0.25, gamma=2.0, reduction="sum_over_batch_size", name="focal_loss"):
         super().__init__(reduction=reduction, name=name)
         self.alpha = alpha
         self.gamma = gamma
@@ -72,7 +72,7 @@ class WeightedFocalLoss(losses.Loss):
     - pos_weight: Additional weight multiplier for positive class
     """
     
-    def __init__(self, alpha=0.25, gamma=2.0, pos_weight=5.0, reduction=losses.Reduction.AUTO):
+    def __init__(self, alpha=0.25, gamma=2.0, pos_weight=5.0, reduction="sum_over_batch_size"):
         super().__init__(reduction=reduction)
         self.alpha = alpha
         self.gamma = gamma
