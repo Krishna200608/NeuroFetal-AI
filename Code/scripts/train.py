@@ -42,9 +42,9 @@ LEARNING_RATE = 0.001
 N_FOLDS = 5
 
 # Focal Loss parameters (for extreme class imbalance: ~7% positive in CTU-UHB)
-USE_FOCAL_LOSS = False  # TEMP: Disabled to debug NaN - using BCE instead
+USE_FOCAL_LOSS = True  # Re-enabled with lower gamma for stability
 FOCAL_LOSS_ALPHA = 0.25
-FOCAL_LOSS_GAMMA = 2.0
+FOCAL_LOSS_GAMMA = 1.0  # Reduced from 2.0 to prevent extreme gradients early
 FOCAL_LOSS_POS_WEIGHT = 5.0
 
 # Model configuration

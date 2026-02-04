@@ -55,6 +55,11 @@ class CSPFeatureExtractor:
         """
         signal_centered = signal - np.mean(signal, axis=0)
         cov = np.dot(signal_centered.T, signal_centered) / signal.shape[0]
+        
+        # Add small regularization for numerical stability (prevents singular matrices)
+        n_channels = signal.shape[1]
+        cov = cov + 1e-6 * np.eye(n_channels)
+        
         return cov
     
     def fit(self, X_normal, X_pathological):
@@ -82,13 +87,28 @@ class CSPFeatureExtractor:
         # Solve generalized eigenvalue problem
         # Maximize: trace(w^T * Cov_pathological * w)
         # Subject to: w^T * Cov_normal * w = 1
-        eigenvalues, eigenvectors = eigh(cov_pathological, cov_normal)
+        try:
+            eigenvalues, eigenvectors = eigh(cov_pathological, cov_normal)
+            
+            # Check for NaN in eigenvectors (can happen with ill-conditioned matrices)
+            if np.isnan(eigenvectors).any() or np.isinf(eigenvectors).any():
+                raise ValueError("NaN/Inf in eigenvectors")
+                
+        except Exception as e:
+            # Fallback: use identity-like filters if eigenvalue decomposition fails
+            print(f"Warning: CSP eigenvalue decomposition failed ({e}). Using fallback filters.")
+            eigenvectors = np.eye(n_channels)
+            eigenvalues = np.ones(n_channels)
         
         # Select top and bottom components (most discriminative)
         idx = np.argsort(eigenvalues)
         idx_selected = np.concatenate([idx[:self.n_components//2], idx[-self.n_components//2:]])
         
         self.csp_filters = eigenvectors[:, idx_selected].T  # Shape: (n_components, n_channels)
+        
+        # Final NaN check on filters
+        self.csp_filters = np.nan_to_num(self.csp_filters, nan=0.0)
+        
         self.is_fitted = True
     
     def transform(self, X):
@@ -125,7 +145,11 @@ class CSPFeatureExtractor:
             csp_signal = np.dot(self.csp_filters, signal.T)  # (n_components, signal_length)
             # Log-variance feature
             variances = np.var(csp_signal, axis=1)
-            features[i] = np.log(variances + 1e-6)  # Add epsilon for numerical stability
+            log_vars = np.log(variances + 1e-6)  # Add epsilon for numerical stability
+            
+            # Handle any remaining NaN/Inf (failsafe)
+            log_vars = np.nan_to_num(log_vars, nan=0.0, posinf=10.0, neginf=-10.0)
+            features[i] = log_vars
         
         return features
     
