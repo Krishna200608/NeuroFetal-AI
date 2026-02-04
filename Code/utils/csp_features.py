@@ -8,14 +8,24 @@ Features extracted:
 - CSP spatial filters (maximize variance between Normal vs Pathological)
 - Log-variance features per filter
 - Cross-correlation metrics between FHR and UC
+- MAD (Median Absolute Deviation) - From Paper 4 (DeepCTG 1.0)
+- Beta_0 (Baseline intercept) - From Paper 7 (Fusion ResNet)
+- Labor Stage flag - From Paper 5
+- Signal Quality Index (SQI)
 
 Reference: Paper 6 - "Fetal Hypoxia Classification from Cardiotocography Signals 
 Using Instantaneous Frequency and Common Spatial Pattern"
+
+Enhancements:
+- Paper 4: MAD and Beta_0 for baseline variability
+- Paper 5: Labor stage flag for temporal context
+- Paper 7: Signal quality for robustness
 """
 
 import numpy as np
 from scipy.linalg import eigh
 from scipy.signal import correlate
+from scipy.stats import skew, kurtosis
 
 
 class CSPFeatureExtractor:
@@ -129,39 +139,144 @@ class CSPFeatureExtractor:
         return self.transform(X_all)
 
 
+# ============================================================================
+# Enhanced Statistical Features (Paper 4, 5, 7)
+# ============================================================================
+
+def calculate_mad(signal):
+    """
+    Median Absolute Deviation - robust variability measure.
+    From Paper 4 (DeepCTG 1.0) and clinical practice.
+    
+    MAD is more robust to outliers than standard deviation,
+    making it suitable for FHR signals with artifacts.
+    """
+    median = np.median(signal)
+    return np.median(np.abs(signal - median))
+
+
+def calculate_beta0(signal):
+    """
+    Baseline intercept from linear regression.
+    From Paper 7 (Fusion ResNet) - represents the signal baseline.
+    
+    Beta_0 captures the overall level of the signal,
+    useful for detecting bradycardia or tachycardia trends.
+    """
+    x = np.arange(len(signal))
+    try:
+        coeffs = np.polyfit(x, signal, 1)
+        return coeffs[1]  # Intercept
+    except:
+        return np.mean(signal)  # Fallback
+
+
+def calculate_signal_quality(signal, min_valid=50, max_valid=200):
+    """
+    Signal Quality Index (SQI) - proportion of valid samples.
+    
+    Returns the fraction of samples within physiologically valid range.
+    Low SQI indicates poor signal quality requiring UC cleaning.
+    """
+    valid_mask = (signal > min_valid) & (signal < max_valid)
+    return np.mean(valid_mask)
+
+
+def calculate_labor_stage_flag(window_start_sec, total_duration_sec):
+    """
+    Labor Stage proxy flag from Paper 5.
+    
+    Returns 1 if window is in the last 30 minutes before delivery
+    (proxy for Stage 2 labor), otherwise 0.
+    
+    This feature is important because fetal compromise risk
+    increases significantly during Stage 2 labor.
+    """
+    time_to_delivery = total_duration_sec - window_start_sec
+    return 1.0 if time_to_delivery <= 30 * 60 else 0.0
+
+
 class MultimodalFeatureExtractor:
     """
-    Complete multimodal feature extraction combining CSP + statistical features.
+    Complete multimodal feature extraction combining:
+    - CSP spatial filters
+    - Statistical features (mean, std, min, max)
+    - Advanced features (MAD, Beta_0, SQI)
+    - Temporal context (labor stage)
+    - Cross-correlation metrics
+    
+    Total features: 17 (vs original 13)
     """
     
-    def __init__(self, n_csp_components=4):
+    def __init__(self, n_csp_components=4, total_duration_sec=3600):
         self.csp = CSPFeatureExtractor(n_components=n_csp_components)
+        self.n_csp_components = n_csp_components
+        self.total_duration_sec = total_duration_sec  # Default: 60 min recording
         self.is_fitted = False
     
-    def extract_statistical_features(self, fhr, uc):
+    @staticmethod
+    def get_feature_names(n_csp=4):
         """
-        Extract classical statistical features from FHR and UC.
+        Returns list of feature names for reference.
+        Useful for SHAP explainability.
+        """
+        names = [
+            # Basic FHR stats
+            'fhr_mean', 'fhr_std', 'fhr_min', 'fhr_max',
+            # Advanced FHR stats (Paper 4 & 7)
+            'fhr_mad', 'fhr_beta0', 'fhr_skewness', 'fhr_kurtosis', 'fhr_sqi',
+            # UC stats
+            'uc_mean', 'uc_std', 'uc_count',
+            # Cross-correlation
+            'cross_corr_max', 'cross_corr_mean',
+            # Temporal context (Paper 5)
+            'labor_stage_flag',
+        ]
+        # CSP features
+        names.extend([f'csp_{i}' for i in range(n_csp)])
+        return names
+    
+    def extract_statistical_features(self, fhr, uc, window_start_sec=0):
+        """
+        Extract classical + advanced statistical features from FHR and UC.
+        
+        Args:
+            fhr: FHR signal (1D array)
+            uc: UC signal (1D array)
+            window_start_sec: Start time of this window in seconds (for labor stage)
         
         Returns:
             features: Dict of extracted features
         """
         features = {}
         
-        # FHR Features
+        # ====== FHR Basic Features ======
         features['fhr_mean'] = np.mean(fhr)
         features['fhr_std'] = np.std(fhr)
         features['fhr_min'] = np.min(fhr)
         features['fhr_max'] = np.max(fhr)
         
-        # UC Features
+        # ====== FHR Advanced Features (Paper 4 & 7) ======
+        features['fhr_mad'] = calculate_mad(fhr)
+        features['fhr_beta0'] = calculate_beta0(fhr)
+        features['fhr_skewness'] = skew(fhr) if len(fhr) > 2 else 0.0
+        features['fhr_kurtosis'] = kurtosis(fhr) if len(fhr) > 2 else 0.0
+        features['fhr_sqi'] = calculate_signal_quality(fhr)
+        
+        # ====== UC Features ======
         features['uc_mean'] = np.mean(uc)
         features['uc_std'] = np.std(uc)
         features['uc_count'] = np.sum(uc > 0.5)  # Number of contractions
         
-        # Cross-correlation (FHR response to UC)
+        # ====== Cross-correlation (FHR response to UC) ======
         cross_corr = correlate(fhr, uc, mode='same')
         features['cross_corr_max'] = np.max(np.abs(cross_corr))
         features['cross_corr_mean'] = np.mean(np.abs(cross_corr))
+        
+        # ====== Labor Stage Flag (Paper 5) ======
+        features['labor_stage_flag'] = calculate_labor_stage_flag(
+            window_start_sec, self.total_duration_sec
+        )
         
         return features
     

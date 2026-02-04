@@ -1,10 +1,14 @@
 import os
+import sys
 import numpy as np
 import tensorflow as tf
 import shap
 import matplotlib.pyplot as plt
-from model import build_fusion_resnet
 import glob
+
+# Add utils to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'utils'))
+from model import build_fusion_resnet
 
 # Constants
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
