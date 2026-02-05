@@ -4,9 +4,9 @@
 
 # NeuroFetal AI: Advanced Intrapartum Monitoring System
 
-[![Python](https://img.shields.io/badge/Python-3.13-blue?logo=python&logoColor=white)](https://www.python.org/)
-[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.14-orange?logo=tensorflow&logoColor=white)](https://www.tensorflow.org/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![Python](https://img.shields.io/badge/Python-3.13-blue)](https://www.python.org/)
+[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.14-orange)](https://www.tensorflow.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-App-FF4B4B)](https://streamlit.io/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-SOTA%20Performance-success)]()
 
@@ -14,11 +14,11 @@
 
 ---
 
-## 🚀 Project Overview & Achievements
+## Project Overview & Achievements
 
 **NeuroFetal AI** captures the nuanced decision-making process of obstetricians by fusing **Cardiotocography (CTG)** time-series signals with **Maternal Clinical Features** (Age, Parity, Gestation).
 
-### 🏆 Final Performance (Feb 2026)
+### Final Performance (Feb 2026)
 | Metric | Baseline (Paper) | Previous State | **NeuroFetal AI (Final)** | Impact |
 | :--- | :--- | :--- | :--- | :--- |
 | **AUC** | 0.63 - 0.66 | 0.74 | **0.78** | **+15% vs SOTA** |
@@ -27,7 +27,7 @@
 
 ---
 
-## 🔬 Key Innovations
+## Key Innovations
 
 ### 1. Tri-Modal Deep Fusion
 Unlike traditional models that only look at heart rate, our **"AttentionFusionResNet"** processes three data streams simultaneously:
@@ -47,7 +47,7 @@ We don't just give a prediction; we give a **Confidence Score**.
 
 ---
 
-## 🛠️ System Architecture
+## System Architecture
 
 The pipeline follows a rigorous **Medical MLOps** workflow:
 
@@ -65,7 +65,7 @@ graph LR
 
 ---
 
-## 💻 Tech Stack
+## Tech Stack
 
 *   **Core**: Python 3.13, NumPy, Pandas, Scipy
 *   **Deep Learning**: TensorFlow/Keras (Functional API), **MC Dropout**
@@ -74,7 +74,7 @@ graph LR
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```
 NeuroFetal-AI/
@@ -99,7 +99,7 @@ NeuroFetal-AI/
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 ### 1. Installation
 Clone the repository and install dependencies:
@@ -125,7 +125,7 @@ python scripts/evaluate_ensemble.py
 
 ---
 
-## 👥 Authors & Acknowledgments
+## Authors & Acknowledgments
 
 **Project Developed at:**  
 **Indian Institute of Information Technology Algorithm (IIIT), Allahabad**  

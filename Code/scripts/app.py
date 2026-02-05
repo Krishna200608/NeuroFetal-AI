@@ -43,7 +43,7 @@ def load_model():
         model = tf.keras.models.load_model(path_to_use)
         return model, path_to_use
     except Exception as e:
-        st.error(f"❌ Critical Error: Model not found at {path_to_use}. Please verify paths.")
+        st.error(f"Critical Error: Model not found at {path_to_use}. Please verify paths.")
         return None, None
 
 model, model_path_loaded = load_model()
@@ -83,7 +83,7 @@ def render_sidebar():
                     if 'parity' in meta: st.session_state['parity'] = meta['parity']
                     if 'gestation' in meta: st.session_state['gestation'] = meta['gestation']
                     st.session_state['last_loaded_header'] = uploaded_header.name
-                    st.toast("Clinical features auto-filled from Header file!", icon="📋")
+                    st.toast("Clinical features auto-filled from Header file!")
                 except Exception as e:
                     st.error(f"Error parsing header: {e}")
         
@@ -250,7 +250,7 @@ def main():
                     st.error(f"Analysis Failed: {str(e)}")
                     st.exception(e)
         else:
-            st.warning("⚠️ Please upload both .dat and .hea files to proceed.")
+            st.warning("Please upload both .dat and .hea files to proceed.")
             
     else:
         # Welcome / Empty State

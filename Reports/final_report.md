@@ -1,4 +1,4 @@
-# 🎓 Final Project Report: NeuroFetal AI
+# Final Project Report: NeuroFetal AI
 
 **Date:** February 5, 2026
 **Status:** Completed & Validated (SOTA Performance)

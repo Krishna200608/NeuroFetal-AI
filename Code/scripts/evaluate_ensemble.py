@@ -170,9 +170,9 @@ def main():
     
     print("\n" + "-"*60)
     if mean_auc > 0.80 or global_auc_rank > 0.80:
-        print("✅ SUCCESS: > 0.80 AUC Achieved (SOTA Level)")
+        print("SUCCESS: > 0.80 AUC Achieved (SOTA Level)")
     else:
-        print("⚠️  Result solid (~0.77). Rank Normalization recovered calibration loss.")
+        print("Result solid (~0.77). Rank Normalization recovered calibration loss.")
         
     print("-" * 60)
 
