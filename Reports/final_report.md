@@ -35,11 +35,12 @@ The dataset is heavily imbalanced (only 7.25% pathological cases). We solved thi
 ## 3. Quantitative Results
 
 ### Benchmarking against SOTA
-| Model Approach | AUC Score | Status |
-| :--- | :--- | :--- |
-| Baseline (Mendis et al.) | 0.84 (w/ Private Data) | Pre-trained |
-| Our Phase 1 (Basic Fusion) | 0.74 | Surpassed |
-| **Our Final Phase (Deep Fusion + CSP + Ensemble)** | **0.78** | **Final Result** |
+### Benchmarking against SOTA
+| Model Approach | Data Usage | AUC Score | Status |
+| :--- | :--- | :--- | :--- |
+| **Baseline (Mendis et al.)** | **FHR + Tabular** | **0.84** (Private Data) | SOTA Benchmark |
+| Our Phase 1 (Basic Fusion) | FHR + Clinical | 0.74 | Surpassed |
+| **Our Final Phase (NeuroFetal AI)** | **FHR + UC + Clinical** | **0.78** (Public Data) | **Comparable Performance** |
 
 ### Robustness & Uncertainty
 *   **Mean Fold AUC**: 0.7731
