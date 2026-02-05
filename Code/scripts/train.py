@@ -38,14 +38,14 @@ LOG_DIR = os.path.join(BASE_DIR, "Reports", "training_logs")
 
 # Training hyperparameters
 BATCH_SIZE = 32
-EPOCHS = 75  # Increased from 50 for better convergence
-LEARNING_RATE = 0.001
+EPOCHS = 150  # Increased from 75 for deep convergence
+LEARNING_RATE = 0.0005  # Lower initial LR for stability
 N_FOLDS = 5
 
-# Focal Loss parameters (for extreme class imbalance: ~7% positive in CTU-UHB)
-USE_FOCAL_LOSS = True  # Re-enabled with lower gamma for stability
-FOCAL_LOSS_ALPHA = 0.25
-FOCAL_LOSS_GAMMA = 1.0  # Reduced from 2.0 to prevent extreme gradients early
+# Focal Loss parameters (Aggressive for extreme class imbalance)
+USE_FOCAL_LOSS = True
+FOCAL_LOSS_ALPHA = 0.75  # Increased focus on minority class
+FOCAL_LOSS_GAMMA = 2.5   # Harder mining
 FOCAL_LOSS_POS_WEIGHT = 5.0
 
 # Model configuration
@@ -64,11 +64,82 @@ LABEL_SMOOTHING = 0.1  # Smoothing factor (0.1 = soft labels [0.05, 0.95])
 
 # NOVEL: Cosine Annealing LR Scheduler
 USE_COSINE_ANNEALING = True  # Use cosine annealing instead of ReduceLROnPlateau
+WARMUP_EPOCHS = 5  # Linear warmup to stabilize deep model training
+
+# Class Balancing
+USE_SMOTE = True
+
+try:
+    from imblearn.over_sampling import SMOTE
+except ImportError:
+    print("WARNING: imblearn not found. SMOTE disabled.")
+    USE_SMOTE = False
 
 
 def ensure_dir(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+
+def apply_smote(X_fhr, X_tab, X_uc, y, random_state=42):
+    """
+    Apply SMOTE to multimodal data by flattening and concatenating.
+    
+    Args:
+        X_fhr: (N, 1200, 1)
+        X_tab: (N, 16)
+        X_uc: (N, 1200, 1) or None
+        y: (N,)
+        
+    Returns:
+        Augmented/Balanced X_fhr, X_tab, X_uc, y
+    """
+    n_samples = X_fhr.shape[0]
+    
+    # 1. Flatten Multimodal Data
+    # ---------------------------
+    X_fhr_flat = X_fhr.reshape(n_samples, -1)  # (N, 1200)
+    
+    if X_uc is not None:
+        X_uc_flat = X_uc.reshape(n_samples, -1)  # (N, 1200)
+        # Concatenate: [FHR, UC, Tabular]
+        X_combined = np.hstack([X_fhr_flat, X_uc_flat, X_tab])
+        fhr_dim = X_fhr_flat.shape[1]
+        uc_dim = X_uc_flat.shape[1]
+    else:
+        # Concatenate: [FHR, Tabular]
+        X_combined = np.hstack([X_fhr_flat, X_tab])
+        fhr_dim = X_fhr_flat.shape[1]
+        uc_dim = 0
+        
+    print(f"  SMOTE Input: {X_combined.shape} (Pos Class: {np.sum(y)} samples)")
+    
+    # 2. Apply SMOTE
+    # --------------
+    # Standard SMOTE (auto = balance to 1:1)
+    smote = SMOTE(sampling_strategy=0.5, random_state=random_state) # 1:2 ratio (safer than 1:1)
+    X_resampled, y_resampled = smote.fit_resample(X_combined, y)
+    
+    print(f"  SMOTE Output: {X_resampled.shape} (Pos Class: {np.sum(y_resampled)} samples)")
+    
+    # 3. Reshape back to original dimensions
+    # --------------------------------------
+    # Extract FHR
+    X_fhr_res = X_resampled[:, :fhr_dim]
+    X_fhr_res = X_fhr_res.reshape(-1, 1200, 1)
+    
+    # Extract UC if exists
+    if X_uc is not None:
+        X_uc_res = X_resampled[:, fhr_dim:fhr_dim+uc_dim]
+        X_uc_res = X_uc_res.reshape(-1, 1200, 1)
+        # Extract Tabular
+        X_tab_res = X_resampled[:, fhr_dim+uc_dim:]
+    else:
+        X_uc_res = None
+        # Extract Tabular
+        X_tab_res = X_resampled[:, fhr_dim:]
+        
+    return X_fhr_res, X_tab_res, X_uc_res, y_resampled
 
 
 def load_data():
@@ -259,20 +330,23 @@ def train_fold(
     
     # NOVEL: Cosine Annealing with Warm Restarts for better convergence
     if USE_COSINE_ANNEALING:
-        # Calculate steps per epoch for cosine annealing
-        steps_per_epoch = len(y_train) // BATCH_SIZE
-        total_steps = EPOCHS * steps_per_epoch
-        
-        lr_scheduler = tf.keras.callbacks.LearningRateScheduler(
-            lambda epoch: LEARNING_RATE * 0.5 * (1 + np.cos(np.pi * epoch / EPOCHS)),
-            verbose=0
-        )
-        print("Using Cosine Annealing LR Scheduler")
+        # Cosine Annealing with Warmup
+        def lr_schedule(epoch):
+            if epoch < WARMUP_EPOCHS:
+                # Linear Warmup
+                return LEARNING_RATE * (epoch + 1) / WARMUP_EPOCHS
+            else:
+                # Cosine Decay
+                progress = (epoch - WARMUP_EPOCHS) / (EPOCHS - WARMUP_EPOCHS)
+                return LEARNING_RATE * 0.5 * (1 + np.cos(np.pi * progress))
+                
+        lr_scheduler = tf.keras.callbacks.LearningRateScheduler(lr_schedule, verbose=0)
+        print("Using Cosine Annealing with Warmup LR Scheduler")
         
         callbacks = [
             ModelCheckpoint(checkpoint_path, monitor='val_auc', verbose=1, 
                            save_best_only=True, mode='max'),
-            EarlyStopping(monitor='val_auc', patience=20, mode='max',  # Increased patience
+            EarlyStopping(monitor='val_auc', patience=30, mode='max',  # Increased patience to 30
                          verbose=1, restore_best_weights=True),
             lr_scheduler
         ]
@@ -371,6 +445,17 @@ def main():
         X_tab_train, X_tab_val = X_tabular[train_idx], X_tabular[val_idx]
         y_train, y_val = y[train_idx], y[val_idx]
         X_uc_train, X_uc_val = X_uc[train_idx], X_uc[val_idx]
+        
+        # =====================================================================
+        # NOVEL: Apply SMOTE for Class Balancing (Phase 2)
+        # =====================================================================
+        if USE_SMOTE:
+            print(f"\nApplying SMOTE to Fold {fold_num}...")
+            print(f"  Before SMOTE: {np.sum(y_train)} positives / {len(y_train)} total")
+            X_fhr_train, X_tab_train, X_uc_train, y_train = apply_smote(
+                X_fhr_train, X_tab_train, X_uc_train, y_train
+            )
+            print(f"  After SMOTE:  {np.sum(y_train)} positives / {len(y_train)} total")
         
         # Extract CSP features (fit on training only!) - ONLY if real UC is available
         if USE_ENHANCED_MODEL and USE_CSP:

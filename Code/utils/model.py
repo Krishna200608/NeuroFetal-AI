@@ -255,17 +255,35 @@ def build_attention_fusion_resnet(
     x1 = layers.Activation('relu', name='fhr_relu1')(x1)
     x1 = layers.MaxPooling1D(3, strides=2, padding='same', name='fhr_pool1')(x1)
     
-    # Residual blocks with SE attention
+    # =========================================================================
+    # DEEPER ARCHITECTURE: 6 ResBlocks (64→128→256) for improved feature extraction
+    # Stage 1: Low-level features
+    # =========================================================================
     x1 = residual_block(x1, 64, use_se=use_se_blocks)
+    x1 = residual_block(x1, 64, use_se=use_se_blocks)
+    
+    # =========================================================================
+    # Stage 2: Mid-level features (downsample)
+    # =========================================================================
     x1 = residual_block(x1, 128, stride=2, use_se=use_se_blocks)
     x1 = residual_block(x1, 128, use_se=use_se_blocks)
     
-    # Temporal self-attention (captures long-range dependencies in FHR)
+    # Mid-stage temporal attention (captures medium-range patterns)
     if use_temporal_attention:
         x1 = temporal_attention_inline(x1, num_heads=4, key_dim=32)
     
+    # =========================================================================
+    # Stage 3: High-level features (downsample again)
+    # =========================================================================
+    x1 = residual_block(x1, 256, stride=2, use_se=use_se_blocks)
+    x1 = residual_block(x1, 256, use_se=use_se_blocks)
+    
+    # Final temporal attention (captures long-range dependencies)
+    if use_temporal_attention:
+        x1 = temporal_attention_inline(x1, num_heads=8, key_dim=64)
+    
     # Global pooling
-    fhr_features = layers.GlobalAveragePooling1D(name='fhr_gap')(x1)  # (batch, 128)
+    fhr_features = layers.GlobalAveragePooling1D(name='fhr_gap')(x1)  # (batch, 256)
     
     # =========================================================================
     # Branch 2: Clinical/Tabular Features
@@ -274,8 +292,8 @@ def build_attention_fusion_resnet(
     
     x2 = layers.Dense(64, activation='relu', name='tab_dense1')(input_tabular)
     x2 = layers.Dropout(dropout_rate, name='tab_drop1')(x2)
-    x2 = layers.Dense(128, activation='relu', name='tab_dense2')(x2)
-    clinical_features = x2  # (batch, 128) - Used for gating
+    x2 = layers.Dense(256, activation='relu', name='tab_dense2')(x2)
+    clinical_features = x2  # (batch, 256) - Used for gating
     
     # =========================================================================
     # Branch 3: CSP Features (FHR-UC Spatial Patterns)
@@ -284,8 +302,8 @@ def build_attention_fusion_resnet(
     
     x3 = layers.Dense(64, activation='relu', name='csp_dense1')(input_csp)
     x3 = layers.Dropout(dropout_rate, name='csp_drop1')(x3)
-    x3 = layers.Dense(128, activation='relu', name='csp_dense2')(x3)
-    csp_features = x3  # (batch, 128)
+    x3 = layers.Dense(256, activation='relu', name='csp_dense2')(x3)
+    csp_features = x3  # (batch, 256)
     
     # =========================================================================
     # NOVEL: Cross-Modal Attention Fusion
@@ -293,7 +311,7 @@ def build_attention_fusion_resnet(
     if use_cross_modal_attention:
         # FHR attends to CSP patterns, gated by clinical context
         cross_modal_attn = CrossModalAttention(
-            embed_dim=128, 
+            embed_dim=256, 
             num_heads=4, 
             dropout=dropout_rate,
             name='cross_modal_attention'
