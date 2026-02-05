@@ -25,6 +25,10 @@
 | **Data Usage** | FHR Only | FHR + Tabular | **FHR + UC + Clinical** | Full Context |
 | **Confidence** | None | Probability | **Uncertainty (MC Dropout)** | Trustworthy AI |
 
+### Baseline Reference
+This project replicates and extends the work presented in:
+> **"Fusing Tabular Features and Deep Learning for Fetal Heart Rate Analysis: A Clinically Interpretable Model for Fetal Compromise Detection"**
+
 ---
 
 ## Key Innovations
