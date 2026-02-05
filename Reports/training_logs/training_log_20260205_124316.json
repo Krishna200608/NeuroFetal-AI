@@ -1,0 +1,49 @@
+{
+  "config": {
+    "use_enhanced_model": true,
+    "use_se_blocks": true,
+    "use_attention": true,
+    "use_focal_loss": true,
+    "focal_loss_alpha": 0.75,
+    "focal_loss_gamma": 2.5,
+    "epochs": 150,
+    "batch_size": 32,
+    "learning_rate": 0.0005
+  },
+  "results": [
+    {
+      "loss": 0.23985019326210022,
+      "auc": 0.825512707233429,
+      "sens_at_spec_85": 0.6000000238418579,
+      "fold": 1
+    },
+    {
+      "loss": 0.16710127890110016,
+      "auc": 0.7652832269668579,
+      "sens_at_spec_85": 0.6000000238418579,
+      "fold": 2
+    },
+    {
+      "loss": 0.3247477114200592,
+      "auc": 0.7532227039337158,
+      "sens_at_spec_85": 0.42500001192092896,
+      "fold": 3
+    },
+    {
+      "loss": 0.2978907823562622,
+      "auc": 0.780346691608429,
+      "sens_at_spec_85": 0.6000000238418579,
+      "fold": 4
+    },
+    {
+      "loss": 0.07854431867599487,
+      "auc": 0.7413574457168579,
+      "sens_at_spec_85": 0.32499998807907104,
+      "fold": 5
+    }
+  ],
+  "summary": {
+    "mean_auc": 0.7731445550918579,
+    "std_auc": 0.029200668091673362
+  }
+}
