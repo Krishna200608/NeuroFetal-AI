@@ -104,3 +104,30 @@ You should answer:
 
 **Q: "So you don't use a CNN for Contractions?"**
 *"We process the Contractions PRE-model using the CSP algorithm to extract features first, then feed those features into a Dense Network. This is more efficient than a raw CNN for this specific signal relationship."*
+
+**Q: "What is CSP algorithm? Explain it simply."**
+
+**The "Cocktail Party" Analogy:**
+Imagine you are at a noisy party (The Signal). You want to hear *only* your friend (The Distress Pattern) and ignore the background music (Normal Heart Rate).
+
+CSP is a mathematical "Filter" that does exactly this:
+1.  It looks at all the "Healthy" signals.
+2.  It looks at all the "Pathological" signals.
+3.  It designs a custom filter that **maximizes the volume** of the Pathological signals while **muting** the Healthy ones.
+
+So, instead of feeding the raw noisy signal to the model, we feed it the *filtered* version where the "Distress" patterns are shouting and the noise is whispering. This makes it much easier for the **Dense Network (Branch 2)** to classify.
+
+**Q: "What is a Dense Network and why do we use it?"**
+
+*   **What it is:** A standard neural network (Multi-Layer Perceptron) where every neuron is connected to every other neuron in the next layer. It's the "calculator" of Deep Learning.
+*   **Why we use it instead of another ResNet:**
+    *   **ResNet** is designed for **"Pictures" or "Signals"** where the *order* matters (Time).
+    *   **Dense Network** is designed for **"Spreadsheets"** (Tabular Data) where we just have a list of numbers (e.g., Age: 30, CSP Value: 0.5).
+    *   Since our Clinical Data and CSP Features are just lists of numbers without a time sequence, a Dense Network is the fastest and most accurate tool to process them.
+
+**Q: "Where are we getting this UC data from? The .dat or .hea file?"**
+
+*   **The Short Answer:** Both.
+*   **The .dat File:** Contains the **Actual Numbers** (The raw signal waves for both Heart Rate and Contractions).
+*   **The .hea File:** Contains the **Instructions** (It tells the computer "Column 1 is Heart Rate, Column 2 is Contractions").
+*   *Analogy:* The `.dat` file is the music file (.mp3), and the `.hea` file is the label that tells you the Artist and Song Name. You need both to play it correctly.
