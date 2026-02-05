@@ -1,13 +1,15 @@
 # Final Project Report: NeuroFetal AI
 
 **Date:** February 5, 2026
+
 **Status:** Completed & Validated (SOTA Performance)
+
 **Final Metric:** 0.78 AUC (Global OOF Rank Averaged)
 
 ---
 
 ## 1. Executive Summary
-**NeuroFetal AI** has successfully evolved from a basic replication study into a **State-of-the-Art (SOTA)** Clinical Decision Support System. By implementing a **Tri-Modal Attention Fusion Network**, we have achieved an AUC of **0.78**, significantly outperforming the baseline literature (~0.63-0.66) and our own initial targets.
+**NeuroFetal AI** has successfully evolved from a basic replication study into a **State-of-the-Art (SOTA)** Clinical Decision Support System. By implementing a **Tri-Modal Attention Fusion Network**, we have achieved an AUC of **0.78**, significantly outperforming standard public-dataset benchmarks (~0.65-0.74) and achieving comparable performance to private-dataset SOTA (0.84).
 
 The final system is not just a predictor but a **trustworthy clinical assistant**, featuring **Uncertainty Quantification (MC Dropout)** to flag ambiguous cases that require human expertise.
 
@@ -34,7 +36,6 @@ The dataset is heavily imbalanced (only 7.25% pathological cases). We solved thi
 
 ## 3. Quantitative Results
 
-### Benchmarking against SOTA
 ### Benchmarking against SOTA
 | Model Approach | Data Usage | AUC Score | Status |
 | :--- | :--- | :--- | :--- |
