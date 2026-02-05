@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'utils'))
 from model import build_fusion_resnet, build_enhanced_fusion_resnet, build_attention_fusion_resnet
 from focal_loss import get_focal_loss
 from csp_features import MultimodalFeatureExtractor
+from augmentation import TimeSeriesAugmentor, apply_label_smoothing
 
 
 # ============================================================================
@@ -54,6 +55,12 @@ USE_ATTENTION = True
 USE_CSP = None  # Auto-detect: True only if real UC data exists (set in main())
 USE_CROSS_MODAL_ATTENTION = True  # NOVEL: Enable cross-modal attention fusion
 MC_DROPOUT = False  # NOVEL: Enable MC Dropout for uncertainty (set True for inference)
+
+# NOVEL: Data Augmentation Configuration
+USE_AUGMENTATION = True  # Enable time-series augmentation
+AUGMENT_EXPAND_FACTOR = 2  # 2x data expansion (original + augmented)
+USE_LABEL_SMOOTHING = True  # Enable label smoothing regularization
+LABEL_SMOOTHING = 0.1  # Smoothing factor (0.1 = soft labels [0.05, 0.95])
 
 
 def ensure_dir(directory):
@@ -130,7 +137,7 @@ def train_fold(
     use_enhanced=True
 ):
     """
-    Train a single fold.
+    Train a single fold with data augmentation.
     
     Args:
         fold_num: Fold number for logging
@@ -147,7 +154,44 @@ def train_fold(
     print(f"Training Fold {fold_num}")
     print(f"{'='*60}")
     
+    # =========================================================================
+    # NOVEL: Apply Data Augmentation
+    # =========================================================================
+    if USE_AUGMENTATION:
+        print(f"Applying data augmentation (expand_factor={AUGMENT_EXPAND_FACTOR})...")
+        augmentor = TimeSeriesAugmentor(
+            p=0.5,
+            time_warp_sigma=0.2,
+            jitter_sigma=0.03,
+            scale_sigma=0.1,
+            mixup_alpha=0.2
+        )
+        
+        # Augment FHR signal
+        X_fhr_train, y_train = augmentor.augment_batch(
+            X_fhr_train, y_train, 
+            expand_factor=AUGMENT_EXPAND_FACTOR
+        )
+        
+        # Replicate tabular and CSP features to match augmented FHR
+        n_original = X_tab_train.shape[0]
+        n_augmented = X_fhr_train.shape[0]
+        if n_augmented > n_original:
+            repeat_factor = n_augmented // n_original
+            X_tab_train = np.tile(X_tab_train, (repeat_factor, 1))
+            if X_csp_train is not None:
+                X_csp_train = np.tile(X_csp_train, (repeat_factor, 1))
+        
+        print(f"  Augmented training samples: {n_original} → {n_augmented}")
+    
+    # Apply label smoothing
+    if USE_LABEL_SMOOTHING:
+        y_train = apply_label_smoothing(y_train, smoothing=LABEL_SMOOTHING)
+        print(f"Applied label smoothing (factor={LABEL_SMOOTHING})")
+    
+    # =========================================================================
     # Build model
+    # =========================================================================
     if use_enhanced and X_csp_train is not None:
         # Use NOVEL Cross-Modal Attention model for publication
         if USE_CROSS_MODAL_ATTENTION:
