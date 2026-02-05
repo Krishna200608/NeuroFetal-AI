@@ -14,11 +14,18 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'utils'))
 try:
     from model import CrossModalAttention
+    from attention_blocks import SEBlock, TemporalAttention
 except ImportError:
-    print("Warning: Could not import CrossModalAttention from utils. Defining dummy for loading.")
-    # Fallback if utils not found (e.g. slight path mismatch)
+    print("Warning: Could not import custom layers from utils. Defining dummies for loading.")
+    # Fallback if utils not found definition
     class CrossModalAttention(tf.keras.layers.Layer):
         def __init__(self, embed_dim=256, num_heads=4, dropout=0.1, **kwargs):
+            super().__init__(**kwargs)
+    class SEBlock(tf.keras.layers.Layer):
+        def __init__(self, reduction_ratio=16, **kwargs):
+            super().__init__(**kwargs)
+    class TemporalAttention(tf.keras.layers.Layer):
+         def __init__(self, output_dim, **kwargs):
             super().__init__(**kwargs)
 
 # Configuration
@@ -42,7 +49,12 @@ def convert_model():
     try:
         model = tf.keras.models.load_model(
             model_path,
-            custom_objects={'CrossModalAttention': CrossModalAttention},
+            custom_objects={
+                'CrossModalAttention': CrossModalAttention,
+                'SEBlock': SEBlock,
+                'TemporalAttention': TemporalAttention,
+                'F1Score': None # Ignore metrics if they cause issues
+            },
             compile=False # We don't need the optimizer/loss for inference conversion
         )
     except Exception as e:
