@@ -20,7 +20,8 @@ import os
 import sys
 import numpy as np
 import tensorflow as tf
-from sklearn.metrics import roc_auc_score, precision_recall_curve, calibration_curve
+from sklearn.metrics import roc_auc_score, precision_recall_curve
+from sklearn.calibration import calibration_curve
 import matplotlib.pyplot as plt
 
 # Setup paths
