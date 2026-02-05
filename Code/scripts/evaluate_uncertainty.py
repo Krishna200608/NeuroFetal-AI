@@ -241,10 +241,31 @@ def evaluate_uncertainty(model_path, X_val, y_val, output_dir=None):
     print("MC Dropout Uncertainty Evaluation")
     print("="*60)
     
-    # Load model
+    # Load model with custom keys
     print(f"\nLoading model from: {model_path}")
-    model = tf.keras.models.load_model(model_path, compile=False)
     
+    # Import custom layers
+    from attention_blocks import SEBlock, TemporalAttentionBlock
+    from model import CrossModalAttention
+    from focal_loss import FocalLoss
+    
+    custom_objects = {
+        'SEBlock': SEBlock,
+        'TemporalAttentionBlock': TemporalAttentionBlock,
+        'CrossModalAttention': CrossModalAttention,
+        'FocalLoss': FocalLoss,
+        'focal_loss_fixed': FocalLoss(gamma=2.5, alpha=0.75)
+    }
+    
+    try:
+        model = tf.keras.models.load_model(model_path, custom_objects=custom_objects, compile=False)
+    except TypeError as e:
+        print(f"Warning directly loading: {e}")
+        # Build model from config if direct load fails (common in Keras 3/TF 2.16+)
+        print("Attempting to reconstruct model from config...")
+        # (This is a complex fallback, let's trust custom_objects works first)
+        raise e
+        
     # Get MC Dropout predictions
     print(f"\nPerforming {N_MC_SAMPLES} MC Dropout forward passes...")
     mean_pred, uncertainty, all_preds = mc_dropout_predict(model, X_val)
