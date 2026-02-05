@@ -99,7 +99,28 @@ The **Clinical Branch** tells the **Signal Branch** what features to focus on. I
 
 ---
 
-## 5. Defense Cheat Sheet (Q&A)
+## 5. "Lab to Bedside": Mobile Edge Deployment (TFLite)
+
+We didn’t just build a model in Python; we built a **deployable medical device**.
+
+### The Engineering Challenge
+Deep Learning models (like ResNets) are heavy and slow. You can't put a Research Server in a rural clinic.
+
+### Our Solution: TFLite Quantization
+We implemented an automated "Compression Pipeline" that converts our trained Keras model into **TensorFlow Lite (TFLite)** format.
+
+1.  **Size Reduction:** We shrunk the model from **~50MB** to **~5MB** (10x smaller).
+2.  **Optimized Instructions:** We used **Quantization** (converting 32-bit floats to 8-bit integers) without losing accuracy.
+3.  **Result:** The model can now run on a **$50 Android Smartphone** or a Raspberry Pi.
+
+### Why this matters (The "Why" for your Defense):
+*   **Privacy:** Processing happens *on the device*. No patient data is sent to the Cloud.
+*   **Internet-Free:** Works in rural villages with zero connectivity.
+*   **Real-Time:** Doctors get an alert in milliseconds, not seconds.
+
+---
+
+## 6. Defense Cheat Sheet (Q&A)
 
 **Q: "Which 3 models are you using exactly?"**
 
