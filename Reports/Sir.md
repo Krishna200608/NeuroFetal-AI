@@ -88,7 +88,14 @@ The **Clinical Branch** tells the **Signal Branch** what features to focus on. I
 ---
 
 ## Summary for Sir
-*"Sir, we moved beyond simple signal processing. We built a system that **emulates a clinician**. We feed it the Contractions (Cause), the Heart Rate (Effect), and the Mother's Profile (Context) simultaneously. We train it as one unified 'brain' so these inputs clarify each other. That is why we achieve 78% AUC where others fail."*
+*"Sir, while existing methods treat this as a simple signal processing task, we built a system that **thinks like a clinician**.*
+
+*Instead of looking at the heart rate in isolation, our model simultaneously analyzes:*
+1.  ***The Cause:** Uterine Contractions (via CSP).*
+2.  ***The Effect:** Fetal Heart Rate patterns.*
+3.  ***The Context:** Maternal features (Gestation, Age).*
+
+*By training these three streams as one unified 'brain', the model learns to interpret distress signals within the correct context. This 'Clinical Mimicry' is the key reason we achieve 78% AUC where standard methods fail."*
 
 ---
 
@@ -131,3 +138,13 @@ So, instead of feeding the raw noisy signal to the model, we feed it the *filter
 *   **The .dat File:** Contains the **Actual Numbers** (The raw signal waves for both Heart Rate and Contractions).
 *   **The .hea File:** Contains the **Instructions** (It tells the computer "Column 1 is Heart Rate, Column 2 is Contractions").
 *   *Analogy:* The `.dat` file is the music file (.mp3), and the `.hea` file is the label that tells you the Artist and Song Name. You need both to play it correctly.
+
+**Q: "When is this model used? During the whole pregnancy?"**
+
+*   **No. It is used specifically during LABOR (Intrapartum Monitoring).**
+*   **Why then?**
+    *   Labor is the most dangerous time for the baby. The strong **Uterine Contractions** can act like a clamp, squeezing the umbilical cord or placenta.
+    *   If this happens too often, the baby runs out of oxygen (**Hypoxia**) within minutes, leading to brain damage or death.
+*   **Utility:**
+    *   Doctors get tired during long labors (12+ hours).
+    *   Our AI acts as a **"24/7 Safety Alarm"** that never gets tired. It watches the screen continuously to scream "Oxygen dropping!" the second a dangerous pattern appears, telling the doctor: *"You might need to do a C-Section NOW."*
