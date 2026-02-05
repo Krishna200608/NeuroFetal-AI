@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 
 # Setup paths
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'utils'))
-from csp_features import CSPFeatureExtractor
+from csp_features import MultimodalFeatureExtractor
 # ============================================================================
 # Configuration
 # ============================================================================
@@ -358,8 +358,9 @@ def main():
              X_fhr_val_2d = X_fhr_val.squeeze()
              X_uc_val_2d = X_uc_val.squeeze()
              
-             # Create and Fit CSP
-             extractor = CSPFeatureExtractor(n_components=19) # Match model input dim
+             # Create and Fit Multimodal Extractor
+             # Default n_csp=4 + 15 stats = 19 features (Matches model input)
+             extractor = MultimodalFeatureExtractor(n_csp_components=4)
              
              # Normal/Pathologic masks for CSP
              normal_mask = (y_train_fold == 0)
