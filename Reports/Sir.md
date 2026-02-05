@@ -58,9 +58,9 @@ By adding UC, we give the model the **"Cause and Effect"** context.
 **We use an End-to-End "Parallel" Pipeline:**
 Imagine three separate pipes flowing into one big mixer *at the same time*.
 
-1.  **Branch 1 (The Eye):** A Deep Neural Network (ResNet) watches the **Heart Rate**.
-2.  **Branch 2 (The Sensor):** Deep layers analyze the **Contractions**.
-3.  **Branch 3 (The Brain):** A Dense Network reads the **Clinical File** (Age, Parity).
+1.  **Branch 1 (The Eye):** A **1D ResNet (Residual Network)** watches the **Heart Rate**.
+2.  **Branch 2 (The Sensor):** A **Dense Network (MLP)** analyzes the **Contractions** (via CSP features).
+3.  **Branch 3 (The Brain):** A **Dense Network (MLP)** reads the **Clinical File** (Age, Gestation, Parity).
 
 **Crucially:** We train them **all together** at the exact same time.
 *   This allows "Backpropagation" (learning) to flow across all branches.
@@ -89,3 +89,18 @@ The **Clinical Branch** tells the **Signal Branch** what features to focus on. I
 
 ## Summary for Sir
 *"Sir, we moved beyond simple signal processing. We built a system that **emulates a clinician**. We feed it the Contractions (Cause), the Heart Rate (Effect), and the Mother's Profile (Context) simultaneously. We train it as one unified 'brain' so these inputs clarify each other. That is why we achieve 78% AUC where others fail."*
+
+---
+
+## 5. Defense Cheat Sheet (Q&A)
+
+**Q: "Which 3 models are you using exactly?"**
+
+You should answer:
+*"We use a hybrid architecture composed of three specific sub-networks:"*
+1.  **For Heart Rate (Time-Series):** A **1D ResNet** (Residual Network).
+2.  **For Clinical Data (Tabular):** A **Multi-Layer Perceptron** (Dense Network).
+3.  **For Contractions (Spatial Interaction):** A second **Dense Network** that processes the "Common Spatial Patterns" (CSP) features extracted from the relationship between Heart Rate and Contractions.
+
+**Q: "So you don't use a CNN for Contractions?"**
+*"We process the Contractions PRE-model using the CSP algorithm to extract features first, then feed those features into a Dense Network. This is more efficient than a raw CNN for this specific signal relationship."*
