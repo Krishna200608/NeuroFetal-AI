@@ -153,6 +153,15 @@ So, instead of feeding the raw noisy signal to the model, we feed it the *filter
     *   **Dense Network** is designed for **"Spreadsheets"** (Tabular Data) where we just have a list of numbers (e.g., Age: 30, CSP Value: 0.5).
     *   Since our Clinical Data and CSP Features are just lists of numbers without a time sequence, a Dense Network is the fastest and most accurate tool to process them.
 
+**Q: "What is Monte Carlo Dropout? Explain it simply."**
+
+**The "Second Opinion" Analogy:**
+*   **Standard AI:** Like asking **one** doctor for a diagnosis. They might be wrong, but they'll say it with 100% confidence.
+*   **MC Dropout:** Like asking **20 slightly different doctors** (or the same doctor in 20 different moods).
+    *   **Scenario A:** If all 20 say "Pathological", the AI is **Certain** (High Confidence).
+    *   **Scenario B:** If 10 say "Pathological" and 10 say "Healthy", the AI is **Uncertain** (Low Confidence).
+*   **Why we need it:** In medicine, we cannot afford to be "confidently wrong". If the AI is unsure (Scenario B), we flag it for a human expert instead of guessing.
+
 **Q: "Where are we getting this UC data from? The .dat or .hea file?"**
 
 *   **The Short Answer:** Both.
