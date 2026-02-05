@@ -22,7 +22,7 @@
 | Metric | Baseline (Mendis et al.) | Previous State | **NeuroFetal AI (Final)** | Impact |
 | :--- | :--- | :--- | :--- | :--- |
 | **AUC** | 0.84 (w/ 10k Private Samples) | 0.74 | **0.78** | **Comparable (Public Data Only)** |
-| **Data Usage** | FHR Only | FHR + Tabular | **FHR + UC + Clinical** | Full Context |
+| **Data Usage** | FHR + Tabular | FHR + Tabular | **FHR + UC + Clinical** | Full Context |
 | **Confidence** | None | Probability | **Uncertainty (MC Dropout)** | Trustworthy AI |
 
 ### Baseline Reference
