@@ -188,18 +188,23 @@ def extract_csp_features_for_fold(
     path_mask = (y_train == 1)
     
     # FHR needs to be 2D for CSP: (n_samples, signal_length)
+    # FHR needs to be 2D for CSP: (n_samples, signal_length)
     X_fhr_train_2d = X_fhr_train.squeeze()
     X_fhr_val_2d = X_fhr_val.squeeze()
     
+    # UC also needs to be 2D
+    X_uc_train_2d = X_uc_train.squeeze()
+    X_uc_val_2d = X_uc_val.squeeze()
+    
     # Fit CSP on TRAINING DATA ONLY (prevents data leakage)
     extractor.fit(
-        X_fhr_train_2d[normal_mask], X_uc_train[normal_mask],
-        X_fhr_train_2d[path_mask], X_uc_train[path_mask]
+        X_fhr_train_2d[normal_mask], X_uc_train_2d[normal_mask],
+        X_fhr_train_2d[path_mask], X_uc_train_2d[path_mask]
     )
     
     # Transform both train and validation
-    X_csp_train = extractor.extract_batch(X_fhr_train_2d, X_uc_train)
-    X_csp_val = extractor.extract_batch(X_fhr_val_2d, X_uc_val)
+    X_csp_train = extractor.extract_batch(X_fhr_train_2d, X_uc_train_2d)
+    X_csp_val = extractor.extract_batch(X_fhr_val_2d, X_uc_val_2d)
     
     return X_csp_train, X_csp_val, extractor
 
