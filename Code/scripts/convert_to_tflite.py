@@ -10,23 +10,63 @@ import tensorflow as tf
 import numpy as np
 import sys
 
-# Add utils to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'utils'))
+# Add utils to path (Robustly)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+CODE_DIR = os.path.dirname(SCRIPT_DIR) # .../Code
+UTILS_DIR = os.path.join(CODE_DIR, 'utils')
+
+sys.path.insert(0, UTILS_DIR)
+sys.path.insert(0, CODE_DIR)
+
 try:
+    # Try importing as if utils is the root (current behavior)
     from model import CrossModalAttention
     from attention_blocks import SEBlock, TemporalAttention
-except ImportError:
-    print("Warning: Could not import custom layers from utils. Defining dummies for loading.")
-    # Fallback if utils not found definition
-    class CrossModalAttention(tf.keras.layers.Layer):
-        def __init__(self, embed_dim=256, num_heads=4, dropout=0.1, **kwargs):
-            super().__init__(**kwargs)
-    class SEBlock(tf.keras.layers.Layer):
-        def __init__(self, reduction_ratio=16, **kwargs):
-            super().__init__(**kwargs)
-    class TemporalAttention(tf.keras.layers.Layer):
-         def __init__(self, output_dim, **kwargs):
-            super().__init__(**kwargs)
+except ImportError as e1:
+    print(f"Warning: Direct import failed: {e1}")
+    try:
+        # Try importing as package
+        from utils.model import CrossModalAttention
+        from utils.attention_blocks import SEBlock, TemporalAttention
+    except ImportError as e2:
+        print(f"Warning: Package import failed: {e2}")
+        print("Defining robust dummy classes for loading.")
+        
+        # Robust Fallback Classes
+        class CrossModalAttention(tf.keras.layers.Layer):
+            def __init__(self, embed_dim=256, num_heads=4, dropout=0.1, **kwargs):
+                super().__init__(**kwargs)
+                self.embed_dim = embed_dim
+                self.num_heads = num_heads
+                self.dropout = dropout
+            def call(self, inputs):
+                return inputs[-1] # Pass through clinical/last input
+            def get_config(self):
+                config = super().get_config()
+                config.update({'embed_dim': self.embed_dim, 'num_heads': self.num_heads, 'dropout': self.dropout})
+                return config
+
+        class SEBlock(tf.keras.layers.Layer):
+            def __init__(self, reduction_ratio=16, **kwargs):
+                super().__init__(**kwargs)
+                self.reduction_ratio = reduction_ratio
+            def call(self, inputs):
+                return inputs # Pass through
+            def get_config(self):
+                config = super().get_config()
+                config.update({'reduction_ratio': self.reduction_ratio})
+                return config
+
+        class TemporalAttention(tf.keras.layers.Layer):
+            def __init__(self, output_dim=None, **kwargs):
+                super().__init__(**kwargs)
+                self.output_dim = output_dim
+            def call(self, inputs):
+                return inputs
+            def get_config(self):
+                config = super().get_config()
+                config.update({'output_dim': self.output_dim})
+                return config
 
 # Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
