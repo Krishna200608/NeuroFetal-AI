@@ -74,8 +74,9 @@ def mc_dropout_predict(model, X, n_samples=N_MC_SAMPLES):
     
     for i in range(n_samples):
         # Run with training=True to enable dropout
-        pred = model.predict(X, verbose=0)
-        predictions.append(pred.flatten())
+        # Note: model() call handles list inputs correctly for multi-input models
+        pred = model(X, training=True)
+        predictions.append(pred.numpy().flatten())
     
     predictions = np.array(predictions)  # (n_samples, n_data_points)
     
