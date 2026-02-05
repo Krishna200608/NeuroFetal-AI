@@ -54,11 +54,11 @@ USE_SE_BLOCKS = True
 USE_ATTENTION = True
 USE_CSP = None  # Auto-detect: True only if real UC data exists (set in main())
 USE_CROSS_MODAL_ATTENTION = True  # NOVEL: Enable cross-modal attention fusion
-MC_DROPOUT = True  # NOVEL: Enable MC Dropout for uncertainty estimation
+MC_DROPOUT = False  # Keep False during training; enable only for inference uncertainty
 
 # NOVEL: Data Augmentation Configuration
 USE_AUGMENTATION = True  # Enable time-series augmentation
-AUGMENT_EXPAND_FACTOR = 3  # 3x data expansion (increased from 2x)
+AUGMENT_EXPAND_FACTOR = 2  # 2x data expansion (reverted from 3x for stability)
 USE_LABEL_SMOOTHING = True  # Enable label smoothing regularization
 LABEL_SMOOTHING = 0.1  # Smoothing factor (0.1 = soft labels [0.05, 0.95])
 

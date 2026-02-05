@@ -453,6 +453,23 @@ class MultimodalFeatureExtractor:
         # Combine
         features = np.hstack([stat_array, csp_array])
         
+        # NOVEL: Robust NaN imputation - replace NaN with column median
+        # This prevents training instability from CSP numerical issues
+        for col in range(features.shape[1]):
+            col_data = features[:, col]
+            nan_mask = np.isnan(col_data) | np.isinf(col_data)
+            if nan_mask.any():
+                # Use median of non-NaN values, or 0 if all NaN
+                valid_data = col_data[~nan_mask]
+                if len(valid_data) > 0:
+                    fill_value = np.median(valid_data)
+                else:
+                    fill_value = 0.0
+                features[nan_mask, col] = fill_value
+        
+        # Final clip to prevent extreme values
+        features = np.clip(features, -100.0, 100.0)
+        
         return features
 
 
