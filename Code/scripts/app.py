@@ -138,29 +138,29 @@ def main():
 
             with st.spinner("Processing signal and generating diagnosis..."):
                 try:
-                    # 1. Save temp files using absolute paths to avoid ambiguity
-                    # We use a unique name to prevent collisions if using multiple sessions (though simple for now)
-                    # Force the file extension to be consistent
-                    base_name = base_name_dat # They are equal now
-                    # Create absolute paths
-                    temp_dir = os.path.dirname(os.path.abspath(__file__))
-                    path_dat = os.path.join(temp_dir, f"{base_name}.dat")
-                    path_hea = os.path.join(temp_dir, f"{base_name}.hea")
+                    # 1. Use a temporary directory for secure processing and auto-cleanup
+                    import tempfile
                     
-                    # Write files
-                    with open(path_dat, "wb") as f:
-                        f.write(uploaded_file.getbuffer())
-                    with open(path_hea, "wb") as f:
-                        f.write(uploaded_header.getbuffer())
+                    signal = None
                     
-                    # Verify existence
-                    if not os.path.exists(path_dat):
-                        raise FileNotFoundError(f"Failed to create {path_dat}")
+                    # Context manager ensures directory is deleted after block exits
+                    with tempfile.TemporaryDirectory() as temp_dir:
+                        base_name = base_name_dat
+                        path_dat = os.path.join(temp_dir, f"{base_name}.dat")
+                        path_hea = os.path.join(temp_dir, f"{base_name}.hea")
+                        
+                        # Write buffers to temp files
+                        with open(path_dat, "wb") as f:
+                            f.write(uploaded_file.getbuffer())
+                        with open(path_hea, "wb") as f:
+                            f.write(uploaded_header.getbuffer())
+                        
+                        # 2. Read Record using WFDB
+                        # WFDB reads from disk, so we do this inside the temp context
+                        record_path = os.path.join(temp_dir, base_name)
+                        record = wfdb.rdrecord(record_path)
+                        signal = record.p_signal[:, 0].copy() # Copy to memory so we can close temp dir
 
-                    # 2. Read Record using WFDB (pass the full path without extension)
-                    record_path = os.path.join(temp_dir, base_name)
-                    record = wfdb.rdrecord(record_path)
-                    signal = record.p_signal[:, 0]
                     
                     # 3. Preprocessing (Strictly matching training)
                     # Training uses 20-min windows (1200 samples @ 1Hz)
@@ -244,11 +244,7 @@ def main():
                     render_xai(model, risk_window_signal, X_tabular_batch[max_idx:max_idx+1], {'Age': age, 'Gestation': gestation, 'Parity': parity}, theme=theme)
                     
                     # Cleanup
-                    try:
-                       # os.remove(path_dat) # Keep for debugging if needed, but usually good to clean
-                       # os.remove(path_hea)
-                       pass
-                    except: pass
+
                     
                 except Exception as e:
                     st.error(f"Analysis Failed: {str(e)}")
