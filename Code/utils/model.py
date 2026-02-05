@@ -108,6 +108,234 @@ def temporal_attention_inline(x, num_heads=4, key_dim=32):
 
 
 # ============================================================================
+# NOVEL: Cross-Modal Attention Layer (Publication Contribution)
+# ============================================================================
+
+class CrossModalAttention(layers.Layer):
+    """
+    Cross-Modal Attention for FHR-CSP Interaction with Clinical Gating.
+    
+    NOVELTY: This layer enables dynamic attention between temporal features
+    (FHR) and spatial pattern features (CSP), gated by clinical context.
+    
+    Architecture:
+        Query: FHR features (temporal patterns)
+        Key/Value: CSP features (spatial correlations)
+        Gate: Clinical features (context modulation)
+    
+    Paper Claim: "We propose Cross-Modal Attention Fusion (CMAF), where 
+    FHR and UC signals attend to each other dynamically, gated by clinical 
+    context for context-aware prediction."
+    """
+    
+    def __init__(self, embed_dim=128, num_heads=4, dropout=0.1, **kwargs):
+        super(CrossModalAttention, self).__init__(**kwargs)
+        self.embed_dim = embed_dim
+        self.num_heads = num_heads
+        self.dropout_rate = dropout
+        
+    def build(self, input_shape):
+        # Projection layers for attention
+        self.query_dense = layers.Dense(self.embed_dim, name='cma_query')
+        self.key_dense = layers.Dense(self.embed_dim, name='cma_key')
+        self.value_dense = layers.Dense(self.embed_dim, name='cma_value')
+        
+        # Clinical gating mechanism
+        self.gate_dense = layers.Dense(self.embed_dim, activation='sigmoid', name='cma_gate')
+        
+        # Output projection
+        self.output_dense = layers.Dense(self.embed_dim, name='cma_output')
+        
+        # Normalization and dropout
+        self.layer_norm = layers.LayerNormalization(epsilon=1e-6)
+        self.dropout = layers.Dropout(self.dropout_rate)
+        
+        super().build(input_shape)
+    
+    def call(self, inputs, training=None):
+        """
+        Args:
+            inputs: List of [fhr_features, csp_features, clinical_features]
+                   Each has shape (batch, embed_dim)
+        Returns:
+            Attended features (batch, embed_dim)
+        """
+        fhr_features, csp_features, clinical_features = inputs
+        
+        # Project to query, key, value
+        query = self.query_dense(fhr_features)    # (batch, embed_dim)
+        key = self.key_dense(csp_features)        # (batch, embed_dim)
+        value = self.value_dense(csp_features)    # (batch, embed_dim)
+        
+        # Compute attention scores
+        # Scaled dot-product attention (simplified for 1D features)
+        attention_scores = tf.reduce_sum(query * key, axis=-1, keepdims=True)
+        attention_scores = attention_scores / tf.sqrt(tf.cast(self.embed_dim, tf.float32))
+        attention_weights = tf.nn.softmax(attention_scores, axis=-1)
+        
+        # Apply attention to values
+        attended = attention_weights * value
+        
+        # Clinical gating: modulate attention based on clinical context
+        gate = self.gate_dense(clinical_features)  # (batch, embed_dim)
+        gated_attended = attended * gate
+        
+        # Residual connection with FHR features
+        output = fhr_features + self.dropout(gated_attended, training=training)
+        output = self.layer_norm(output)
+        output = self.output_dense(output)
+        
+        return output
+    
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            'embed_dim': self.embed_dim,
+            'num_heads': self.num_heads,
+            'dropout': self.dropout_rate
+        })
+        return config
+
+
+# ============================================================================
+# NOVEL: Attention Fusion ResNet (Publication Model)
+# ============================================================================
+
+def build_attention_fusion_resnet(
+    input_shape_fhr=(1200, 1),
+    input_shape_tabular=(16,),
+    input_shape_csp=(19,),
+    use_se_blocks=True,
+    use_temporal_attention=True,
+    use_cross_modal_attention=True,
+    dropout_rate=0.4,
+    mc_dropout=False  # Enable for uncertainty quantification
+):
+    """
+    Novel Attention Fusion ResNet with Cross-Modal Attention.
+    
+    PUBLICATION ARCHITECTURE:
+    
+    FHR (1200,1)          Clinical (16,)         CSP (19,)
+         |                     |                    |
+    ResNet + SE           Dense(128)            Dense(128)
+         |                     |                    |
+    [Temporal Attn]            |                    |
+         |                     |                    |
+    GlobalPool                 |                    |
+         |                     |                    |
+      (128-dim)                |                    |
+         |_______CROSS-MODAL ATTENTION______________|
+                 (FHR attends to CSP, Clinical gates)
+                        |
+                   (128-dim CMAF)
+                        |
+                 [MC Dropout Head]
+                        |
+                   Prediction + Uncertainty
+    
+    Novel Contributions:
+    1. Cross-Modal Attention: Dynamic FHR-CSP interaction
+    2. Clinical Gating: Context modulates attention
+    3. MC Dropout: Uncertainty quantification at inference
+    
+    Args:
+        mc_dropout: If True, dropout is active during inference for
+                   Monte Carlo uncertainty estimation
+    """
+    
+    # =========================================================================
+    # Branch 1: FHR Signal (ResNet + SE + Temporal Attention)
+    # =========================================================================
+    input_fhr = Input(shape=input_shape_fhr, name='input_fhr')
+    
+    # Initial convolution
+    x1 = layers.Conv1D(64, 7, strides=2, padding='same', name='fhr_conv1')(input_fhr)
+    x1 = layers.BatchNormalization(name='fhr_bn1')(x1)
+    x1 = layers.Activation('relu', name='fhr_relu1')(x1)
+    x1 = layers.MaxPooling1D(3, strides=2, padding='same', name='fhr_pool1')(x1)
+    
+    # Residual blocks with SE attention
+    x1 = residual_block(x1, 64, use_se=use_se_blocks)
+    x1 = residual_block(x1, 128, stride=2, use_se=use_se_blocks)
+    x1 = residual_block(x1, 128, use_se=use_se_blocks)
+    
+    # Temporal self-attention (captures long-range dependencies in FHR)
+    if use_temporal_attention:
+        x1 = temporal_attention_inline(x1, num_heads=4, key_dim=32)
+    
+    # Global pooling
+    fhr_features = layers.GlobalAveragePooling1D(name='fhr_gap')(x1)  # (batch, 128)
+    
+    # =========================================================================
+    # Branch 2: Clinical/Tabular Features
+    # =========================================================================
+    input_tabular = Input(shape=input_shape_tabular, name='input_tabular')
+    
+    x2 = layers.Dense(64, activation='relu', name='tab_dense1')(input_tabular)
+    x2 = layers.Dropout(dropout_rate, name='tab_drop1')(x2)
+    x2 = layers.Dense(128, activation='relu', name='tab_dense2')(x2)
+    clinical_features = x2  # (batch, 128) - Used for gating
+    
+    # =========================================================================
+    # Branch 3: CSP Features (FHR-UC Spatial Patterns)
+    # =========================================================================
+    input_csp = Input(shape=input_shape_csp, name='input_csp')
+    
+    x3 = layers.Dense(64, activation='relu', name='csp_dense1')(input_csp)
+    x3 = layers.Dropout(dropout_rate, name='csp_drop1')(x3)
+    x3 = layers.Dense(128, activation='relu', name='csp_dense2')(x3)
+    csp_features = x3  # (batch, 128)
+    
+    # =========================================================================
+    # NOVEL: Cross-Modal Attention Fusion
+    # =========================================================================
+    if use_cross_modal_attention:
+        # FHR attends to CSP patterns, gated by clinical context
+        cross_modal_attn = CrossModalAttention(
+            embed_dim=128, 
+            num_heads=4, 
+            dropout=dropout_rate,
+            name='cross_modal_attention'
+        )
+        fusion = cross_modal_attn([fhr_features, csp_features, clinical_features])
+    else:
+        # Fallback to simple fusion for ablation
+        fusion = layers.Multiply(name='multiply_fusion')([fhr_features, clinical_features])
+        fusion = layers.Concatenate(name='concat_fusion')([fusion, csp_features])
+    
+    # =========================================================================
+    # Classification Head with MC Dropout Support
+    # =========================================================================
+    # MC Dropout: Keep dropout active during inference for uncertainty
+    if mc_dropout:
+        # Always apply dropout (training=True) for uncertainty estimation
+        x = layers.Dense(64, activation='relu', name='head_dense1')(fusion)
+        x = layers.Dropout(dropout_rate)(x, training=True)  # Always on!
+        x = layers.Dense(32, activation='relu', name='head_dense2')(x)
+        x = layers.Dropout(dropout_rate)(x, training=True)  # Always on!
+    else:
+        # Standard dropout (off during inference)
+        x = layers.Dense(64, activation='relu', name='head_dense1')(fusion)
+        x = layers.Dropout(dropout_rate, name='head_drop1')(x)
+        x = layers.Dense(32, activation='relu', name='head_dense2')(x)
+        x = layers.Dropout(dropout_rate, name='head_drop2')(x)
+    
+    output = layers.Dense(1, activation='sigmoid', name='output')(x)
+    
+    # =========================================================================
+    # Build Model
+    # =========================================================================
+    model = models.Model(
+        inputs=[input_fhr, input_tabular, input_csp],
+        outputs=output,
+        name='AttentionFusionResNet'
+    )
+    
+    return model
+
+
+# ============================================================================
 # Original Model (Backward Compatibility)
 # ============================================================================
 

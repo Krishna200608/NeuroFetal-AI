@@ -21,7 +21,7 @@ from datetime import datetime
 # Local imports (from utils folder)
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'utils'))
-from model import build_fusion_resnet, build_enhanced_fusion_resnet
+from model import build_fusion_resnet, build_enhanced_fusion_resnet, build_attention_fusion_resnet
 from focal_loss import get_focal_loss
 from csp_features import MultimodalFeatureExtractor
 
@@ -52,6 +52,8 @@ USE_ENHANCED_MODEL = True  # Use 3-input model with attention
 USE_SE_BLOCKS = True
 USE_ATTENTION = True
 USE_CSP = None  # Auto-detect: True only if real UC data exists (set in main())
+USE_CROSS_MODAL_ATTENTION = True  # NOVEL: Enable cross-modal attention fusion
+MC_DROPOUT = False  # NOVEL: Enable MC Dropout for uncertainty (set True for inference)
 
 
 def ensure_dir(directory):
@@ -147,13 +149,26 @@ def train_fold(
     
     # Build model
     if use_enhanced and X_csp_train is not None:
-        model = build_enhanced_fusion_resnet(
-            input_shape_fhr=(X_fhr_train.shape[1], X_fhr_train.shape[2]),
-            input_shape_tabular=(X_tab_train.shape[1],),
-            input_shape_csp=(X_csp_train.shape[1],),
-            use_se_blocks=USE_SE_BLOCKS,
-            use_attention=USE_ATTENTION
-        )
+        # Use NOVEL Cross-Modal Attention model for publication
+        if USE_CROSS_MODAL_ATTENTION:
+            model = build_attention_fusion_resnet(
+                input_shape_fhr=(X_fhr_train.shape[1], X_fhr_train.shape[2]),
+                input_shape_tabular=(X_tab_train.shape[1],),
+                input_shape_csp=(X_csp_train.shape[1],),
+                use_se_blocks=USE_SE_BLOCKS,
+                use_temporal_attention=USE_ATTENTION,
+                use_cross_modal_attention=True,
+                mc_dropout=MC_DROPOUT
+            )
+            print("Using NOVEL AttentionFusionResNet with Cross-Modal Attention")
+        else:
+            model = build_enhanced_fusion_resnet(
+                input_shape_fhr=(X_fhr_train.shape[1], X_fhr_train.shape[2]),
+                input_shape_tabular=(X_tab_train.shape[1],),
+                input_shape_csp=(X_csp_train.shape[1],),
+                use_se_blocks=USE_SE_BLOCKS,
+                use_attention=USE_ATTENTION
+            )
         train_inputs = [X_fhr_train, X_tab_train, X_csp_train]
         val_inputs = [X_fhr_val, X_tab_val, X_csp_val]
     else:
