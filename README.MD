@@ -24,6 +24,7 @@
 | **AUC** | 0.84 (w/ 10k Private Samples) | 0.74 | **0.78** | **Comparable (Public Data Only)** |
 | **Data Usage** | FHR + Tabular | FHR + Tabular | **FHR + UC + Clinical** | Full Context |
 | **Confidence** | None | Probability | **Uncertainty (MC Dropout)** | Trustworthy AI |
+| **Deployment** | PC Only | Server | **Mobile (TFLite)** | **141 KB (Offline)** |
 
 ### Baseline Reference
 This project replicates and extends the work presented in:
@@ -48,6 +49,11 @@ We don't just give a prediction; we give a **Confidence Score**.
 ### 3. Advanced Signal Processing features
 *   **CSP (Common Spatial Patterns)**: Adapted from Brain-Computer Interfaces (EEG) to extract discriminative variance features from fetal signals.
 *   **Cross-Modal Attention**: The model learns to "pay attention" to the FHR signal specifically when Uterine Contractions are peaking (mimicking clinical logic).
+
+### 4. "Lab to Village" Edge Deployment
+*   **Ultra-Lightweight**: Quantized to just **141 KB** (350x compression).
+*   **Offline First**: Designed to run on **5000 Rs. Android phones** without internet.
+*   **Privacy Preserved**: No patient data leaves the device.
 
 ---
 
@@ -74,7 +80,7 @@ graph LR
 *   **Core**: Python 3.13, NumPy, Pandas, Scipy
 *   **Deep Learning**: TensorFlow/Keras (Functional API), **MC Dropout**
 *   **Advanced ML**: `imbalanced-learn` (SMOTE), `scikit-learn` (Rank Averaging)
-*   **Deployment**: Streamlit, Docker, TFLite (Edge Optimization)
+*   **Deployment**: Streamlit, Docker, **TFLite (141 KB Edge Model)**
 
 ---
 

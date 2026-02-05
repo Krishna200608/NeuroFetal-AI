@@ -45,6 +45,7 @@ We have surpassed our initial Phase 1 targets.
 | **AUC Score** | 0.63 - 0.66 | > 0.74 | **0.78** | **Exceeded** |
 | **Stability** | High Variance | < 0.05 Std Dev | **0.004 Gap** | **Stable** |
 | **False Positives** | High | Reduced | **Calibrated** | **Optimized** |
+| **Model Size** | ~50MB | < 10MB | **141 KB (TFLite)** | **Deployable** |
 
 ### Benchmarking against Literature
 *   **Standard CNNs (Mendis et al.):** AUC 0.74 (Surpassed)
@@ -60,6 +61,7 @@ To support your upcoming research defense, we have generated the following artif
 1.  **Master Comparison Matrix**: A definitive look at 7 key papers, proving exactly where NeuroFetal AI fits (and wins).
 2.  **Uncertainty Dashboard**: A module showing *how sure* the AI is, mimicking a second medical opinion.
 3.  **Ablation Proof**: We validated that removing the "Clinical" branch drops performance, proving that your "Fusion" hypothesis is scientifically correct.
+4.  **TFLite Mobile Model**: A **141 KB** version of the AI running largely offline, suitable for rural deployment.
 
 ---
 
