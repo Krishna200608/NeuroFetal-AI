@@ -54,13 +54,16 @@ USE_SE_BLOCKS = True
 USE_ATTENTION = True
 USE_CSP = None  # Auto-detect: True only if real UC data exists (set in main())
 USE_CROSS_MODAL_ATTENTION = True  # NOVEL: Enable cross-modal attention fusion
-MC_DROPOUT = False  # NOVEL: Enable MC Dropout for uncertainty (set True for inference)
+MC_DROPOUT = True  # NOVEL: Enable MC Dropout for uncertainty estimation
 
 # NOVEL: Data Augmentation Configuration
 USE_AUGMENTATION = True  # Enable time-series augmentation
-AUGMENT_EXPAND_FACTOR = 2  # 2x data expansion (original + augmented)
+AUGMENT_EXPAND_FACTOR = 3  # 3x data expansion (increased from 2x)
 USE_LABEL_SMOOTHING = True  # Enable label smoothing regularization
 LABEL_SMOOTHING = 0.1  # Smoothing factor (0.1 = soft labels [0.05, 0.95])
+
+# NOVEL: Cosine Annealing LR Scheduler
+USE_COSINE_ANNEALING = True  # Use cosine annealing instead of ReduceLROnPlateau
 
 
 def ensure_dir(directory):
@@ -253,14 +256,35 @@ def train_fold(
     
     # Callbacks
     checkpoint_path = os.path.join(MODEL_DIR, f"enhanced_model_fold_{fold_num}.keras")
-    callbacks = [
-        ModelCheckpoint(checkpoint_path, monitor='val_auc', verbose=1, 
-                       save_best_only=True, mode='max'),
-        EarlyStopping(monitor='val_auc', patience=15, mode='max',  # Increased from 10
-                     verbose=1, restore_best_weights=True),
-        ReduceLROnPlateau(monitor='val_auc', factor=0.5, patience=5, 
-                         min_lr=1e-6, verbose=1)
-    ]
+    
+    # NOVEL: Cosine Annealing with Warm Restarts for better convergence
+    if USE_COSINE_ANNEALING:
+        # Calculate steps per epoch for cosine annealing
+        steps_per_epoch = len(y_train) // BATCH_SIZE
+        total_steps = EPOCHS * steps_per_epoch
+        
+        lr_scheduler = tf.keras.callbacks.LearningRateScheduler(
+            lambda epoch: LEARNING_RATE * 0.5 * (1 + np.cos(np.pi * epoch / EPOCHS)),
+            verbose=0
+        )
+        print("Using Cosine Annealing LR Scheduler")
+        
+        callbacks = [
+            ModelCheckpoint(checkpoint_path, monitor='val_auc', verbose=1, 
+                           save_best_only=True, mode='max'),
+            EarlyStopping(monitor='val_auc', patience=20, mode='max',  # Increased patience
+                         verbose=1, restore_best_weights=True),
+            lr_scheduler
+        ]
+    else:
+        callbacks = [
+            ModelCheckpoint(checkpoint_path, monitor='val_auc', verbose=1, 
+                           save_best_only=True, mode='max'),
+            EarlyStopping(monitor='val_auc', patience=15, mode='max',
+                         verbose=1, restore_best_weights=True),
+            ReduceLROnPlateau(monitor='val_auc', factor=0.5, patience=5, 
+                             min_lr=1e-6, verbose=1)
+        ]
     
     # Train
     print(f"\nTraining on {len(y_train)} samples, validating on {len(y_val)} samples")
