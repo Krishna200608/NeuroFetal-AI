@@ -394,6 +394,8 @@ class MultimodalFeatureExtractor:
         X_normal = np.stack([X_fhr_normal, X_uc_normal], axis=2)
         X_path = np.stack([X_fhr_path, X_uc_path], axis=2)
         
+        print(f"DEBUG: CSP fit inputs - Normal: {X_normal.shape}, Path: {X_path.shape}")
+        
         self.csp.fit(X_normal, X_path)
         self.is_fitted = True
     
