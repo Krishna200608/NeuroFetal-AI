@@ -132,7 +132,7 @@ python scripts/evaluate_ensemble.py
 ## Authors & Acknowledgments
 
 **Project Developed at:**  
-**Indian Institute of Information Technology Algorithm (IIIT), Allahabad**  
+**Indian Institute of Information Technology, Allahabad**  
 *B.Tech 6th Semester Project*
 
 **Team Members:**

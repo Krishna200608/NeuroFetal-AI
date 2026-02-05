@@ -25,7 +25,7 @@
 
 | Comparison Dimension | The "Standard" Approach (Papers 1-6) | NeuroFetal AI Approach | Scientific Justification (Defense) |
 | :--- | :--- | :--- | :--- |
-| **Input Modality** | Usually Unimodal (FHR only) or simple statistical features. | **Multimodal:** FHR + Tabular Clinical Data (+ UC planned). | Paper 7 proves **Fusion > Unimodal** (AUC 0.84 vs 0.80). Clinical context clarifies ambiguous signals. |
+| **Input Modality** | Usually Unimodal (FHR only) or simple statistical features. | **Multimodal:** FHR + UC + Clinical Data. | Paper 7 proves **Fusion > Unimodal** (AUC 0.84 vs 0.80). Clinical context clarifies ambiguous signals. |
 | **Sampling Rate** | 4Hz (Raw) or Statistical averages. | **1Hz Downsampling** | Paper 3 proved **1Hz** retains all diagnostic info while reducing compute by 75% (crucial for Edge). |
 | **Architecture** | LSTMs (unstable) or heavy Transformers (Paper 2). | **1D-ResNet (Feature Learning)** | Paper 3 & 7 confirm ResNet is the most robust architecture for physiological signals. |
 | **Fusion Strategy** | Concatenation (Early Fusion) or None. | **Element-wise Multiplication (Late Fusion)** | Paper 7 ablation study showed Multiplication forces specific interaction between Risk Factors and Signal. |
