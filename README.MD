@@ -19,9 +19,9 @@
 **NeuroFetal AI** captures the nuanced decision-making process of obstetricians by fusing **Cardiotocography (CTG)** time-series signals with **Maternal Clinical Features** (Age, Parity, Gestation).
 
 ### Final Performance (Feb 2026)
-| Metric | Baseline (Paper) | Previous State | **NeuroFetal AI (Final)** | Impact |
+| Metric | Baseline (Mendis et al.) | Previous State | **NeuroFetal AI (Final)** | Impact |
 | :--- | :--- | :--- | :--- | :--- |
-| **AUC** | 0.63 - 0.66 | 0.74 | **0.78** | **+15% vs SOTA** |
+| **AUC** | 0.84 (w/ 10k Private Samples) | 0.74 | **0.78** | **Comparable (Public Data Only)** |
 | **Data Usage** | FHR Only | FHR + Tabular | **FHR + UC + Clinical** | Full Context |
 | **Confidence** | None | Probability | **Uncertainty (MC Dropout)** | Trustworthy AI |
 

@@ -37,7 +37,7 @@ The dataset is heavily imbalanced (only 7.25% pathological cases). We solved thi
 ### Benchmarking against SOTA
 | Model Approach | AUC Score | Status |
 | :--- | :--- | :--- |
-| Literature Baseline (1D-CNN) | 0.63 - 0.66 | Surpassed |
+| Baseline (Mendis et al.) | 0.84 (w/ Private Data) | Pre-trained |
 | Our Phase 1 (Basic Fusion) | 0.74 | Surpassed |
 | **Our Final Phase (Deep Fusion + CSP + Ensemble)** | **0.78** | **Final Result** |
 
