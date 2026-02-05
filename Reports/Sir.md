@@ -109,7 +109,7 @@ Deep Learning models (like ResNets) are heavy and slow. You can't put a Research
 ### Our Solution: TFLite Quantization
 We implemented an automated "Compression Pipeline" that converts our trained Keras model into **TensorFlow Lite (TFLite)** format.
 
-1.  **Size Reduction:** We shrunk the model from **~50MB** to **~5MB** (10x smaller).
+1.  **Size Reduction:** We shrunk the model from **~50MB** to **~141 KB** (>350x smaller).
 2.  **Optimized Instructions:** We used **Quantization** (converting 32-bit floats to 8-bit integers) without losing accuracy.
 3.  **Result:** The model can now run on a **$50 Android Smartphone** or a Raspberry Pi.
 
