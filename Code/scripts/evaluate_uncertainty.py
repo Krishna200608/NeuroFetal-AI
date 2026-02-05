@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 
 # Setup paths
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'utils'))
-
+from csp_features import CSPFeatureExtractor
 # ============================================================================
 # Configuration
 # ============================================================================
@@ -300,43 +300,107 @@ def evaluate_uncertainty(model_path, X_val, y_val, output_dir=None):
     return results
 
 
+
+
 def main():
     """Main entry point for uncertainty evaluation."""
     
-    # Load validation data
+    # Load all data
     PROCESSED_DATA_DIR = os.path.join(BASE_DIR, "Datasets", "processed")
     
-    print("Loading validation data...")
+    print("Loading data...")
     X_fhr = np.load(os.path.join(PROCESSED_DATA_DIR, "X_fhr.npy"))
     X_tab = np.load(os.path.join(PROCESSED_DATA_DIR, "X_tabular.npy"))
     y = np.load(os.path.join(PROCESSED_DATA_DIR, "y.npy"))
     
-    # Load CSP features if available
-    csp_path = os.path.join(PROCESSED_DATA_DIR, "X_csp.npy")
-    if os.path.exists(csp_path):
-        X_csp = np.load(csp_path)
-        X_val = [X_fhr, X_tab, X_csp]
+    # Load UC features for CSP
+    uc_path = os.path.join(PROCESSED_DATA_DIR, "X_uc.npy")
+    if os.path.exists(uc_path):
+        print("Detailed: Loaded UC signals for CSP.")
+        X_uc = np.load(uc_path)
     else:
-        X_val = [X_fhr, X_tab]
+        print("Warning: UC signals not found. Using 2-input mode (No CSP).")
+        X_uc = None
     
-    # Evaluate each fold's model
+    # Create results directory
     os.makedirs(RESULTS_DIR, exist_ok=True)
     
-    for fold in range(1, 6):
-        model_path = os.path.join(MODEL_DIR, f"enhanced_model_fold_{fold}.keras")
-        if os.path.exists(model_path):
-            fold_output_dir = os.path.join(RESULTS_DIR, f"fold_{fold}")
-            results = evaluate_uncertainty(
-                model_path, X_val, y,
-                output_dir=fold_output_dir
-            )
-            print(f"\nFold {fold} uncertainty analysis complete.")
-        else:
-            print(f"Model not found: {model_path}")
+    # Replicate StratifiedKFold to get the same validation splits as training
+    from sklearn.model_selection import StratifiedKFold
+    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     
-    print("\n" + "="*60)
-    print("Uncertainty evaluation complete!")
-    print("="*60)
+    fold_metrics = []
+    
+    for fold, (train_idx, val_idx) in enumerate(skf.split(X_fhr, y), 1):
+        print(f"\nProcessing Fold {fold}...")
+        
+        model_path = os.path.join(MODEL_DIR, f"enhanced_model_fold_{fold}.keras")
+        if not os.path.exists(model_path):
+            print(f"Model not found: {model_path}. Skipping.")
+            continue
+            
+        # Prepare data for this fold
+        X_fhr_train = X_fhr[train_idx]
+        X_fhr_val = X_fhr[val_idx]
+        
+        X_tab_val = X_tab[val_idx]
+        y_val_fold = y[val_idx]
+        y_train_fold = y[train_idx]
+        
+        if X_uc is not None:
+             X_uc_train = X_uc[train_idx]
+             X_uc_val = X_uc[val_idx]
+             
+             # Squeeze for CSP (N, L)
+             X_fhr_train_2d = X_fhr_train.squeeze()
+             X_uc_train_2d = X_uc_train.squeeze()
+             X_fhr_val_2d = X_fhr_val.squeeze()
+             X_uc_val_2d = X_uc_val.squeeze()
+             
+             # Create and Fit CSP
+             extractor = CSPFeatureExtractor(n_components=19) # Match model input dim
+             
+             # Normal/Pathologic masks for CSP
+             normal_mask = (y_train_fold == 0)
+             path_mask = (y_train_fold == 1)
+             
+             extractor.fit(
+                X_fhr_train_2d[normal_mask], X_uc_train_2d[normal_mask],
+                X_fhr_train_2d[path_mask], X_uc_train_2d[path_mask]
+             )
+             
+             # Transform Validation Data
+             X_csp_val = extractor.extract_batch(X_fhr_val_2d, X_uc_val_2d)
+             
+             X_val_inputs = [X_fhr_val, X_tab_val, X_csp_val]
+        else:
+             X_val_inputs = [X_fhr_val, X_tab_val]
+             
+        # Evaluate
+        fold_output_dir = os.path.join(RESULTS_DIR, f"fold_{fold}")
+        results = evaluate_uncertainty(
+            model_path, X_val_inputs, y_val_fold,
+            output_dir=fold_output_dir
+        )
+        fold_metrics.append(results)
+        print(f"Fold {fold} AUC: {results['auc']:.4f}")
+
+    if fold_metrics:
+        # Average metrics
+        mean_auc = np.mean([r['auc'] for r in fold_metrics])
+        mean_ece = np.mean([r['ece'] for r in fold_metrics])
+        mean_unc = np.mean([r['mean_uncertainty'] for r in fold_metrics])
+        
+        print(f"\n{'='*60}")
+        print(f"Overall Evaluation Results (Mean across {len(fold_metrics)} folds)")
+        print(f"{'='*60}")
+        print(f"Mean AUC: {mean_auc:.4f}")
+        print(f"Mean ECE: {mean_ece:.4f}")
+        print(f"Mean Uncertainty: {mean_unc:.4f}")
+    
+    print("\nUncertainty evaluation complete!")
+
+
 
 
 if __name__ == "__main__":
