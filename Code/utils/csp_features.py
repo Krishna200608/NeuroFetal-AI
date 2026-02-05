@@ -398,8 +398,8 @@ class MultimodalFeatureExtractor:
         # X shape: (n_epochs, n_channels, n_times) -> MNE expects features across time
         # MNE CSP expects: (n_epochs, n_channels, n_times)
         # We stacked as (n, len, 2) -> (n, 2, len)
-        X_normal = np.transpose(X_normal, (0, 2, 1))
-        X_path = np.transpose(X_path, (0, 2, 1))
+        # UPDATE: The custom CSPFeatureExtractor expects (n_samples, time, channels)
+        # So we do NOT transpose.
         
         X_train = np.concatenate([X_normal, X_path])
         y_train = np.concatenate([np.zeros(len(X_normal)), np.ones(len(X_path))])
