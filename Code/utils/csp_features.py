@@ -401,10 +401,7 @@ class MultimodalFeatureExtractor:
         # UPDATE: The custom CSPFeatureExtractor expects (n_samples, time, channels)
         # So we do NOT transpose.
         
-        X_train = np.concatenate([X_normal, X_path])
-        y_train = np.concatenate([np.zeros(len(X_normal)), np.ones(len(X_path))])
-        
-        self.csp.fit(X_train, y_train)
+        self.csp.fit(X_normal, X_path)
         self.is_fitted = True
     
     def extract(self, fhr, uc):
