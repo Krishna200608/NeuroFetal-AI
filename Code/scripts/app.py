@@ -51,7 +51,11 @@ model, model_path_loaded = load_model()
 # --- UI COMPONENTS ---
 
 def render_sidebar():
-    st.sidebar.image("assets/Logo-black.png", width=120)
+    # Robust Path for Logo
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    logo_path = os.path.join(current_dir, "..", "assets", "Logo-black.png")
+    
+    st.sidebar.image(logo_path, width=120)
     st.sidebar.title("NeuroFetal AI")
     
     # Theme Toggle
