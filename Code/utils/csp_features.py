@@ -394,9 +394,17 @@ class MultimodalFeatureExtractor:
         X_normal = np.stack([X_fhr_normal, X_uc_normal], axis=2)
         X_path = np.stack([X_fhr_path, X_uc_path], axis=2)
         
-        print(f"DEBUG: CSP fit inputs - Normal: {X_normal.shape}, Path: {X_path.shape}")
+        # Fit MNE CSP
+        # X shape: (n_epochs, n_channels, n_times) -> MNE expects features across time
+        # MNE CSP expects: (n_epochs, n_channels, n_times)
+        # We stacked as (n, len, 2) -> (n, 2, len)
+        X_normal = np.transpose(X_normal, (0, 2, 1))
+        X_path = np.transpose(X_path, (0, 2, 1))
         
-        self.csp.fit(X_normal, X_path)
+        X_train = np.concatenate([X_normal, X_path])
+        y_train = np.concatenate([np.zeros(len(X_normal)), np.ones(len(X_path))])
+        
+        self.csp.fit(X_train, y_train)
         self.is_fitted = True
     
     def extract(self, fhr, uc):
