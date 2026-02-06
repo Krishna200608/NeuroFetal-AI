@@ -173,7 +173,8 @@ So, instead of feeding the raw noisy signal to the model, we feed it the *filter
 
 **Step 2: Slicing (The "Windowing" Phase)**
 *   Instead of feeding the whole hour at once, we slice it into **20-minute windows** with a **10-minute overlap**.
-*   **Why?** This multiplies our data (Data Augmentation) and helps the AI focus on short-term distress patterns without losing context.
+*   **The Math:** (60min - 20min) / 10min + 1 = **5 Slices per Patient**.
+*   **Why?** This gives us **5x more training data** (Data Augmentation) and helps the AI focus on short-term distress patterns without losing context.
 
 **Step 3: Dual-Stream Inputs**
 *   **Time-Series Stream:** The 20-min segments of FHR and UC go into the **ResNet**.
