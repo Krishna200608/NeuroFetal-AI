@@ -32,6 +32,10 @@ The dataset is heavily imbalanced (only 7.25% pathological cases). We solved thi
 2.  **Focal Loss**: A loss function ($\gamma=2.5, \alpha=0.75$) that forces the model to focus on "hard" examples.
 3.  **Rank Averaging**: A rigorous ensemble technique that normalizes prediction ranks across folds to ensure robust global calibration.
 
+### D. Data Augmentation (The 5x Multiplier)
+To overcome the small dataset size (552 raw recordings), we implemented a **Overlap-Windowing Strategy (20-min window, 10-min stride)**.
+*   **Result**: This technique effectively multiplied our training data by 5x (**552 Recordings $\rightarrow$ 2,760 Training Samples**), allowing the deep ResNet to learn without overfitting.
+
 ---
 
 ## 3. Quantitative Results
