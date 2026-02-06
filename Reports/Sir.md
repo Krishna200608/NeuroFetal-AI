@@ -162,6 +162,23 @@ So, instead of feeding the raw noisy signal to the model, we feed it the *filter
     *   **Scenario B:** If 10 say "Pathological" and 10 say "Healthy", the AI is **Uncertain** (Low Confidence).
 *   **Why we need it:** In medicine, we cannot afford to be "confidently wrong". If the AI is unsure (Scenario B), we flag it for a human expert instead of guessing.
 
+**Q: "Walk me through your Data Processing Pipeline. How do you handle the raw signals?"**
+
+**Step 1: Ingestion & Filtering (The "Quality Control" Phase)**
+*   **Raw Input:** We take the **last 60 minutes** of FHR (Fetal Heart Rate) and UC (Uterine Contraction) signals. This is the most critical period before birth.
+*   **Cleaning:**
+    *   **FHR:** We remove 0s (sensor loss) and interpolate small gaps (<15s).
+    *   **UC (New):** We use a **Rolling Standard Deviation** filter to detect "flatlines" (sensor disconnects) and remove non-physiological spikes.
+*   **Normalization:** We scale everything between 0 and 1 so the AI sees consistent patterns.
+
+**Step 2: Slicing (The "Windowing" Phase)**
+*   Instead of feeding the whole hour at once, we slice it into **20-minute windows** with a **10-minute overlap**.
+*   **Why?** This multiplies our data (Data Augmentation) and helps the AI focus on short-term distress patterns without losing context.
+
+**Step 3: Dual-Stream Inputs**
+*   **Time-Series Stream:** The 20-min segments of FHR and UC go into the **ResNet**.
+*   **Clinical Stream:** Tabular data (Age, Parity, Gestation) goes into the **Dense Network**.
+
 **Q: "Where are we getting this UC data from? The .dat or .hea file?"**
 
 *   **The Short Answer:** Both.
