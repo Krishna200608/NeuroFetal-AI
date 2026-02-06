@@ -174,6 +174,7 @@ So, instead of feeding the raw noisy signal to the model, we feed it the *filter
 **Step 2: Slicing (The "Windowing" Phase)**
 *   Instead of feeding the whole hour at once, we slice it into **20-minute windows** with a **10-minute overlap**.
 *   **The Math:** (60min - 20min) / 10min + 1 = **5 Slices per Patient**.
+*   **Result:** We turn **552 Raw Recordings** $\rightarrow$ **2,760 Training Samples**.
 *   **Why?** This gives us **5x more training data** (Data Augmentation) and helps the AI focus on short-term distress patterns without losing context.
 
 **Step 3: Dual-Stream Inputs**
