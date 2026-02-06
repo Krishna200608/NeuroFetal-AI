@@ -62,7 +62,7 @@ To overcome the small dataset size (552 raw recordings), we implemented a **Over
 3.  **Uncertainty-Aware Dashboard**: The system doesn't just say "Pathological"; it says "Pathological (High Confidence)" or "Pathological (Low Confidence)", emulating a second opinion rather than a blind oracle.
 
 
-4.  **Edge-Ready Deployment**: We successfully quantized the model to **141 KB**, enabling real-time inference on a **$50 (5000 Rs.) Smartphone**, ensuring accessibility in low-resource settings.
+4.  **Edge-Ready Deployment**: We successfully quantized the model to **141 KB**, enabling real-time inference on a **$50 (or 5000 Rs.) Smartphone**, ensuring accessibility in low-resource settings.
 
 ---
 
