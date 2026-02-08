@@ -267,8 +267,8 @@ def build_attention_fusion_resnet(
     
     x2 = layers.Dense(64, activation='relu', name='tab_dense1')(input_tabular)
     x2 = layers.Dropout(dropout_rate, name='tab_drop1')(x2)
-    x2 = layers.Dense(256, activation='relu', name='tab_dense2')(x2)
-    clinical_features = x2  # (batch, 256) - Used for gating
+    x2 = layers.Dense(128, activation='relu', name='tab_dense2')(x2)
+    clinical_features = x2  # (batch, 128) - Used for gating
     
     # =========================================================================
     # Branch 3: CSP Features (FHR-UC Spatial Patterns)
@@ -277,8 +277,8 @@ def build_attention_fusion_resnet(
     
     x3 = layers.Dense(64, activation='relu', name='csp_dense1')(input_csp)
     x3 = layers.Dropout(dropout_rate, name='csp_drop1')(x3)
-    x3 = layers.Dense(256, activation='relu', name='csp_dense2')(x3)
-    csp_features = x3  # (batch, 256)
+    x3 = layers.Dense(128, activation='relu', name='csp_dense2')(x3)
+    csp_features = x3  # (batch, 128)
     
     # =========================================================================
     # NOVEL: Cross-Modal Attention Fusion
@@ -286,7 +286,7 @@ def build_attention_fusion_resnet(
     if use_cross_modal_attention:
         # FHR attends to CSP patterns, gated by clinical context
         cross_modal_attn = CrossModalAttention(
-            embed_dim=256, 
+            embed_dim=128, 
             num_heads=4, 
             dropout=dropout_rate,
             name='cross_modal_attention'
