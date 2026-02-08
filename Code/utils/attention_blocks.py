@@ -175,29 +175,27 @@ class TemporalAttentionBlock(layers.Layer):
         self.key_dim = key_dim
         self.dropout_rate = dropout_rate
         self.use_positional = use_positional
-        
-    def build(self, input_shape):
-        # Positional encoding
+
+        # Instantiate layers that don't depend on input shape in __init__
         if self.use_positional:
             self.pos_encoding = PositionalEncoding()
             
-        # Multi-Head Attention
         self.mha = layers.MultiHeadAttention(
             num_heads=self.num_heads,
             key_dim=self.key_dim,
             dropout=self.dropout_rate
         )
         
-        # Layer Normalization (pre-norm style)
         self.layer_norm1 = layers.LayerNormalization(epsilon=1e-6)
         self.layer_norm2 = layers.LayerNormalization(epsilon=1e-6)
+        self.dropout_ffn = layers.Dropout(self.dropout_rate)
         
-        # Feed-forward network
-        self.ffn = tf.keras.Sequential([
-            layers.Dense(input_shape[-1] * 4, activation='gelu'),
-            layers.Dropout(self.dropout_rate),
-            layers.Dense(input_shape[-1])
-        ])
+    def build(self, input_shape):
+        d_model = input_shape[-1]
+        
+        # Feed-forward network layers (must be in build as they depend on d_model)
+        self.ffn_dense1 = layers.Dense(d_model * 4, activation='gelu')
+        self.ffn_dense2 = layers.Dense(d_model)
         
         super(TemporalAttentionBlock, self).build(input_shape)
         
@@ -213,8 +211,13 @@ class TemporalAttentionBlock(layers.Layer):
         
         # Pre-norm + FFN + Residual
         x_norm = self.layer_norm2(x)
-        ffn_output = self.ffn(x_norm, training=training)
-        x = x + ffn_output
+        
+        # FFN Forward Pass
+        x_ffn = self.ffn_dense1(x_norm)
+        x_ffn = self.dropout_ffn(x_ffn, training=training)
+        x_ffn = self.ffn_dense2(x_ffn)
+        
+        x = x + x_ffn
         
         return x
     
