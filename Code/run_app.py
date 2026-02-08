@@ -4,27 +4,53 @@ import subprocess
 import time
 from dotenv import load_dotenv
 import sys
+import signal
 
 # Load environment variables
 load_dotenv()
 
-def kill_ngrok_process():
-    """Kills any existing ngrok.exe processes to avoid ERR_NGROK_334."""
+def kill_process_on_port(port):
+    """Kills the process listening on the specified port."""
     try:
         if os.name == 'nt':
-            subprocess.run(["taskkill", "/IM", "ngrok.exe", "/F"], 
-                         stdout=subprocess.DEVNULL, 
-                         stderr=subprocess.DEVNULL)
+            # Windows: Find PID using netstat
+            cmd = f"netstat -ano | findstr :{port}"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            if result.stdout:
+                lines = result.stdout.strip().split('\n')
+                for line in lines:
+                    parts = line.split()
+                    if len(parts) >= 5:
+                        pid = parts[-1]
+                        if pid != '0':
+                            print(f"   -> Killing process {pid} on port {port}...")
+                            subprocess.run(f"taskkill /PID {pid} /F", shell=True, 
+                                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         else:
-            subprocess.run(["pkill", "ngrok"], 
-                         stdout=subprocess.DEVNULL, 
-                         stderr=subprocess.DEVNULL)
-    except Exception:
-        pass
+            # Linux/Mac: Find PID using lsof or fuser
+            # Try lsof first
+            cmd = f"lsof -t -i:{port}"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            if result.stdout:
+                pid = result.stdout.strip()
+                print(f"   -> Killing process {pid} on port {port}...")
+                subprocess.run(f"kill -9 {pid}", shell=True)
+    except Exception as e:
+        print(f"Error cleaning up port {port}: {e}")
 
 def main():
     # 0. Clean up previous sessions
-    kill_ngrok_process()
+    kill_process_on_port(8501)
+    
+    # Also kill explicit ngrok processes
+    try:
+        if os.name == 'nt':
+            subprocess.run(["taskkill", "/IM", "ngrok.exe", "/F"], 
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            subprocess.run(["pkill", "ngrok"], 
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except: pass
 
     # 1. Get Auth Token
     auth_token = os.getenv("NGROK_AUTH_TOKEN")
@@ -81,18 +107,45 @@ def main():
         print(f"   LOCAL ADDRESS:     http://localhost:8501")
         print("="*60 + "\n")
 
+    # --- Signal Handling for Graceful Shutdown ---
+    
+    def cleanup(signum=None, frame=None):
+        print("\n🛑 Stopping NeuroFetal AI Dashboard...")
+        
+        # 1. Kill Streamlit
+        if process:
+            try:
+                print("   -> Terminating Streamlit process...")
+                process.terminate()
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+            except Exception:
+                pass
+
+        # 2. Kill Ngrok
+        try:
+            print("   -> Closing Ngrok tunnels...")
+            ngrok.kill()
+            # Force kill system process just in case
+            kill_process_on_port(8501)
+        except Exception:
+            pass
+            
+        print("✅ Shutdown Complete.")
+        sys.exit(0)
+
+    # Register signals
+    signal.signal(signal.SIGINT, cleanup)
+    signal.signal(signal.SIGTERM, cleanup)
+
     print("Press Ctrl+C to stop the server.")
     
-    # Keep the script running
+    # Wait for process
     try:
         process.wait()
     except KeyboardInterrupt:
-        print("\nShutting down...")
-        process.terminate()
-        try:
-            ngrok.kill()
-        except: pass
-        print("Done.")
-
+        cleanup()
+    
 if __name__ == "__main__":
     main()

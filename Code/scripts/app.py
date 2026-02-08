@@ -16,7 +16,8 @@ from utils.components import (
     render_diagnosis, 
     render_signal_chart, 
     render_xai,
-    render_mismatch_error
+    render_mismatch_error,
+    render_uncertainty_analysis
 )
 
 # Import Custom Layers for Model Loading
@@ -278,7 +279,21 @@ def main():
                 Upload patient <b>PhysioNet recordings (.dat/.hea)</b> from the sidebar to initialize the clinical support system.
             </p>
         </div>
+        </div>
         """, unsafe_allow_html=True)
+
+    # --- FOOTER / MODEL METRICS ---
+    st.divider()
+    
+    # Use native Streamlit icon parameter (available in v1.40+)
+    # :material/analytics: renders a Material Symbol
+    
+    with st.expander("Model Validation & Uncertainty Metrics (Static Report)", icon=":material/analytics:"):
+        st.caption("Model Reliability Analysis")
+        # Path to reports - Robust logic
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        report_dir = os.path.join(current_dir, "..", "..", "Reports", "uncertainty_analysis", "fold_1")
+        render_uncertainty_analysis(report_dir)
 
 if __name__ == "__main__":
     main()

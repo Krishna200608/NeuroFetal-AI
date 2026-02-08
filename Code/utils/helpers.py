@@ -80,6 +80,23 @@ def inject_custom_css(theme="Light"):
             font-weight: 600 !important;
         }}
         
+        /* Fix for Expander/Accordion Header Visibility */
+        [data-testid="stExpander"] summary, 
+        [data-testid="stExpander"] summary span,
+        [data-testid="stExpander"] summary div,
+        [data-testid="stExpander"] summary p {{
+            color: {text_color} !important;
+            font-weight: 600;
+        }}
+        [data-testid="stExpander"] summary svg,
+        [data-testid="stExpander"] summary svg path {{
+            fill: {text_color} !important;
+        }}
+        [data-testid="stExpander"] summary:hover svg,
+        [data-testid="stExpander"] summary:hover svg path {{
+            fill: {text_color} !important;
+        }}
+        
         /* Icon alignment fix logic */
         .material-symbols-rounded {{
             vertical-align: middle;

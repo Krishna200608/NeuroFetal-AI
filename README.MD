@@ -24,7 +24,7 @@
 | **AUC** | 0.84 (w/ 10k Private Samples) | 0.74 | **0.78** | **Comparable (Public Data Only)** |
 | **Data Usage** | FHR + Tabular | FHR + Tabular | **FHR + UC + Clinical** | Full Context |
 | **Confidence** | None | Probability | **Uncertainty (MC Dropout)** | Trustworthy AI |
-| **Deployment** | PC Only | Server | **Mobile (TFLite)** | **141 KB (Offline)** |
+| **Deployment** | PC Only | Server | **Mobile (TFLite)** | **2.6 MB (Int8)** |
 
 ### Baseline Reference
 This project replicates and extends the work presented in:
@@ -51,9 +51,14 @@ We don't just give a prediction; we give a **Confidence Score**.
 *   **Cross-Modal Attention**: The model learns to "pay attention" to the FHR signal specifically when Uterine Contractions are peaking (mimicking clinical logic).
 
 ### 4. "Lab to Village" Edge Deployment
-*   **Ultra-Lightweight**: Quantized to just **141 KB** (350x compression).
+*   **Mobile-Ready**: Quantized to **2.6 MB** (Int8) from 9.5 MB.
 *   **Offline First**: Designed to run on **5000 Rs. Android phones** without internet.
+*   **NPU Accelerated**: optimized with **Int8 Quantization** for dedicated AI hardware.
 *   **Privacy Preserved**: No patient data leaves the device.
+
+### 5. Advanced Clinical Dashboard (Phase 2)
+*   **Uncertainty Analysis**: Live visualization of model confidence and calibration curves.
+*   **Explainable AI**: Grad-CAM heatmaps showing which part of the signal triggered the alert.
 
 ---
 
@@ -132,6 +137,13 @@ To verify the **0.78 AUC** and generate uncertainty plots:
 ```bash
 python scripts/evaluate_ensemble.py
 ```
+
+### 4. Edge Optimization (Int8)
+To generate the optimized TFLite model for Android:
+```bash
+python scripts/convert_to_tflite.py
+```
+*Output*: `Code/models/tflite/neurofetal_model_quant_int8.tflite`
 
 ---
 

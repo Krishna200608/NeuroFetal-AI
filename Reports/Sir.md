@@ -34,8 +34,8 @@ We are not just replicating old papers. We have introduced **three specific nove
     *   **Simple Explaination:** Usually, CSP is used to find which part of the brain lights up. We adapted it to find which "frequency bands" of the heart rate light up during distress. This has rarely been applied to Fetal ECG before.
 
 2.  **Uncertainty Quantification (The "Safety Valve")**
-    *   **Innovation:** Our model doesn’t just say "Pathological". It gives a "Confidence Score".
-    *   **Why:** If the AI is only 51% sure, a doctor needs to know. Standard black-box models effectively lie by hiding this uncertainty. We expose it.
+    *   **Innovation:** Our model doesn’t just say "Pathological". It gives a "Confidence Score" and a reliability curve.
+    *   **Why:** If the AI is only 51% sure, a doctor needs to know. Standard black-box models effectively lie by hiding this uncertainty. We expose it via **Monte Carlo Dropout** and **Calibration Plots**. (Completed in Phase 2/Week 3).
 
 3.  **Rank-Normalized Ensembling**
     *   **Innovation:** Medical data varies wildly between patients. We invented a method to "rank" predictions rather than just averaging probabilities, which stabilizes the model against outlier patients.

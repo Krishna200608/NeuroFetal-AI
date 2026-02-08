@@ -318,3 +318,32 @@ Please ensure both files share the same record ID (e.g., <b>1001.dat</b> and <b>
 </div>
 </div>
 """, unsafe_allow_html=True)
+
+def render_uncertainty_analysis(report_dir):
+    st.subheader("Model Validation & Uncertainty Analysis (Static)")
+    st.markdown("Metrics from the latest model evaluation run (Fold 1).")
+    
+    col1, col2 = st.columns(2)
+    
+    # Check robust paths
+    cal_path = os.path.join(report_dir, "calibration_curve.png")
+    hist_path = os.path.join(report_dir, "uncertainty_histogram.png")
+    
+    with col1:
+        if os.path.exists(cal_path):
+            st.image(cal_path, caption="Calibration Curve (Reliability Diagram)", width="stretch")
+        else:
+            st.warning(f"Calibration plot not found at {cal_path}")
+            
+    with col2:
+        if os.path.exists(hist_path):
+            st.image(hist_path, caption="Uncertainty Distribution Histogram", width="stretch")
+        else:
+            st.warning(f"Uncertainty histogram not found at {hist_path}")
+            
+    st.markdown("""
+    <div style="background-color: #e3f2fd; padding: 10px; border-radius: 8px; border: 1px solid #bbdefb; color: #0d47a1;">
+        <span class="material-symbols-rounded" style="font-size: 18px; vertical-align: text-bottom; margin-right: 5px;">info</span>
+        <b>Interpretation</b>: A well-calibrated model (diagonal line) means predicted probabilities match observed accuracy. The histogram shows how often the model is 'unsure'.
+    </div>
+    """, unsafe_allow_html=True)
