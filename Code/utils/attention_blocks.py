@@ -200,6 +200,15 @@ class TemporalAttentionBlock(layers.Layer):
         
         # Explicitly build layers to ensure variables are created and tracked immediately
         # This fixes "Layer was never built" errors during weight loading
+        if self.use_positional:
+            self.pos_encoding.build(input_shape)
+            
+        self.layer_norm1.build(input_shape)
+        self.layer_norm2.build(input_shape)
+        
+        # MHA build takes input_shape (assuming query/key/value have same shape)
+        self.mha.build(input_shape)
+        
         self.ffn_dense1.build(input_shape)
         
         dense2_input_shape = input_shape[:-1] + (d_model * 4,)

@@ -314,6 +314,13 @@ def train_fold(
                 # Load weights into the specific encoder layer
                 # The layer name 'shared_fhr_encoder' MUST match what's in model.py
                 encoder_layer = model.get_layer('shared_fhr_encoder')
+                
+                # CRITICAL FIX: Run a dummy forward pass to force-build all sub-layers
+                # This ensures lazy layers (LayerNorm, MHA) are built before loading weights
+                print("  Building encoder variables with dummy pass...")
+                dummy_input = tf.zeros((1, 1200, 1))
+                encoder_layer(dummy_input)
+                
                 encoder_layer.load_weights(PRETRAIN_WEIGHTS_PATH)
                 print("✓ Pretrained weights loaded successfully! (Transfer Learning Activated)")
             except ValueError as e:
