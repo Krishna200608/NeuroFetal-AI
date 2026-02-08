@@ -1,0 +1,41 @@
+# NeuroFetal AI Project Context (as of Release v1.0)
+**Commit:** `fd53dcf`
+**Date:** Feb 6, 2026
+
+## 1. Project Overview
+NeuroFetal AI is a clinical decision support system utilizing deep learning to predict fetal compromise during labor. It fuses three data streams to achieve State-of-the-Art (SOTA) performance.
+
+## 2. Current Performance Status
+- **AUC Score:** 0.78 (Public Data)
+- **Baseline Comparison:** Outperforms previous state (0.74) and is comparable to Mendis et al. (0.84 on larger private data).
+
+## 3. Key Architecture Features
+### A. Triple-Modal Fusion
+The model (`AttentionFusionResNet`) integrates:
+1.  **Fetal Heart Rate (FHR):** Processed via Common Spatial Patterns (CSP) and a 6-Block ResNet.
+2.  **Uterine Contractions (UC):** Analyzed for stress response patterns.
+3.  **Clinical Data:** Maternal age, parity, and gestation processed via a Dense network.
+
+### B. Uncertainty Quantification
+- Implements **Monte Carlo Dropout** (20 passes).
+- Provides a **Confidence Score** alongside prediction probability.
+- High variance flags cases for human review.
+
+### C. Edge Deployment
+- **TFLite Model:** Quantized to **141 KB**.
+- **Offline Capability:** Runs on low-end Android devices without internet.
+
+## 4. Repository Structure
+- **`Code/scripts/train.py`**: Main training pipeline with SMOTE, Focal Loss, and Stratified Group K-Fold.
+- **`Code/models/model.py`**: Defines the `build_attention_fusion_resnet` architecture.
+- **`Code/notebooks/Training_Colab.ipynb`**: Primary experiment notebook.
+- **`Datasets/`**: Contains processed `.npy` files (`X_fhr`, `X_tab`, `y`, `X_uc`).
+- **`Reports/final_report.md`**: Detailed analysis and results.
+
+## 5. Next Steps (Pre-Revert State)
+Before the revert, work was about to begin on:
+- **Experiment 2 (SSL):** Self-Supervised Learning (SimCLR).
+- **Experiment 3 (Transformer):** Hybrid CNN-Transformer architecture.
+- **Kaggle Integration:** Offline training notebooks.
+
+*Use this context to resume development from the stable v1.0 state, focusing on these next steps or any deviations requested.*
