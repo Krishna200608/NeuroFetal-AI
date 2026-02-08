@@ -249,41 +249,16 @@ def build_attention_fusion_resnet(
     # =========================================================================
     input_fhr = Input(shape=input_shape_fhr, name='input_fhr')
     
-    # Initial convolution
-    x1 = layers.Conv1D(64, 7, strides=2, padding='same', name='fhr_conv1')(input_fhr)
-    x1 = layers.BatchNormalization(name='fhr_bn1')(x1)
-    x1 = layers.Activation('relu', name='fhr_relu1')(x1)
-    x1 = layers.MaxPooling1D(3, strides=2, padding='same', name='fhr_pool1')(x1)
+    # Use the shared encoder
+    fhr_encoder = build_fhr_encoder(
+        input_shape=input_shape_fhr,
+        use_se_blocks=use_se_blocks,
+        use_attention=use_temporal_attention, # Pass the temporal attention flag
+        use_multi_scale=False,
+        name='shared_fhr_encoder'
+    )
     
-    # =========================================================================
-    # DEEPER ARCHITECTURE: 6 ResBlocks (64→128→256) for improved feature extraction
-    # Stage 1: Low-level features
-    # =========================================================================
-    x1 = residual_block(x1, 64, use_se=use_se_blocks)
-    x1 = residual_block(x1, 64, use_se=use_se_blocks)
-    
-    # =========================================================================
-    # Stage 2: Mid-level features (downsample)
-    # =========================================================================
-    x1 = residual_block(x1, 128, stride=2, use_se=use_se_blocks)
-    x1 = residual_block(x1, 128, use_se=use_se_blocks)
-    
-    # Mid-stage temporal attention (captures medium-range patterns)
-    if use_temporal_attention:
-        x1 = temporal_attention_inline(x1, num_heads=4, key_dim=32)
-    
-    # =========================================================================
-    # Stage 3: High-level features (downsample again)
-    # =========================================================================
-    x1 = residual_block(x1, 256, stride=2, use_se=use_se_blocks)
-    x1 = residual_block(x1, 256, use_se=use_se_blocks)
-    
-    # Final temporal attention (captures long-range dependencies)
-    if use_temporal_attention:
-        x1 = temporal_attention_inline(x1, num_heads=8, key_dim=64)
-    
-    # Global pooling
-    fhr_features = layers.GlobalAveragePooling1D(name='fhr_gap')(x1)  # (batch, 256)
+    fhr_features = fhr_encoder(input_fhr)  # (batch, 128)
     
     # =========================================================================
     # Branch 2: Clinical/Tabular Features
@@ -399,6 +374,70 @@ def build_fusion_resnet(input_shape_ts=(1200, 1), input_shape_tab=(3,)):
 # Enhanced 3-Input Model (New Architecture)
 # ============================================================================
 
+def build_fhr_encoder(
+    input_shape=(1200, 1),
+    use_se_blocks=True,
+    use_attention=True,
+    use_multi_scale=False,
+    name='fhr_encoder'
+):
+    """
+    Builds the FHR Encoder Backbone (ResNet + Attention).
+    
+    This is extracted to be used in:
+    1. The main Classification Model (Supervised)
+    2. The Masked Autoencoder (Self-Supervised Pretraining)
+    
+    Returns:
+        tf.keras.Model: Encoder model mapping (1200,1) -> (128,) vector
+    """
+    inputs = Input(shape=input_shape, name='encoder_input')
+    
+    # Initial convolution
+    x = layers.Conv1D(64, 7, strides=2, padding='same', name='conv1')(inputs)
+    x = layers.BatchNormalization(name='bn1')(x)
+    x = layers.Activation('relu', name='relu1')(x)
+    x = layers.MaxPooling1D(3, strides=2, padding='same', name='pool1')(x)
+    
+    # Multi-scale feature extraction (optional)
+    if use_multi_scale and MultiScaleBlock is not None:
+        x = MultiScaleBlock(filters=64)(x)
+    
+    # Stage 1: Low-level features
+    x = residual_block(x, 64, use_se=use_se_blocks)
+    x = residual_block(x, 64, use_se=use_se_blocks)
+    
+    # Stage 2: Mid-level features (downsample)
+    x = residual_block(x, 128, stride=2, use_se=use_se_blocks)
+    x = residual_block(x, 128, use_se=use_se_blocks)
+    
+    # Mid-stage temporal attention
+    if use_attention:
+        if TemporalAttentionBlock is not None:
+            x = TemporalAttentionBlock(num_heads=4, key_dim=32, name='temp_attn_mid')(x)
+        else:
+            x = temporal_attention_inline(x, num_heads=4, key_dim=32)
+    
+    # Stage 3: High-level features (downsample)
+    x = residual_block(x, 256, stride=2, use_se=use_se_blocks)
+    x = residual_block(x, 256, use_se=use_se_blocks)
+    
+    # Final temporal attention
+    if use_attention:
+        if TemporalAttentionBlock is not None:
+            x = TemporalAttentionBlock(num_heads=8, key_dim=64, name='temp_attn_final')(x)
+        else:
+            x = temporal_attention_inline(x, num_heads=8, key_dim=64)
+    
+    # Global pooling
+    outputs = layers.GlobalAveragePooling1D(name='global_pool')(x)  # (batch, 256)
+    
+    # Bottleneck projection to 128-dim (standardizing latent space)
+    outputs = layers.Dense(128, activation='relu', name='projection')(outputs)
+    
+    return models.Model(inputs=inputs, outputs=outputs, name=name)
+
+
 def build_enhanced_fusion_resnet(
     input_shape_fhr=(1200, 1),
     input_shape_tabular=(16,),
@@ -410,44 +449,6 @@ def build_enhanced_fusion_resnet(
 ):
     """
     Enhanced 3-input Fusion ResNet with attention mechanisms.
-    
-    Architecture Diagram:
-    
-    FHR (1200,1)          Tabular (16,)         CSP (19,)
-         |                     |                    |
-    Conv1D(64) + SE       Dense(32)            Dense(64)
-         |                     |                    |
-    ResBlock(64) + SE     Dense(128)           Dense(128)
-         |                     |                    |
-    ResBlock(128) + SE         |                    |
-         |                     |                    |
-    [MultiHeadAttn]            |                    |
-         |                     |                    |
-    GlobalAvgPool          (128-dim)            (128-dim)
-         |                     |                    |
-      (128-dim)                |                    |
-         |___________×_________|                    |
-                    |                               |
-              (Multiply: 128-dim)                   |
-                    |_____________concat____________|
-                                |
-                         (256-dim fusion)
-                                |
-                          Dense(64) + Dropout
-                                |
-                          Dense(1, sigmoid)
-    
-    Args:
-        input_shape_fhr: Shape of FHR signal (time_steps, 1)
-        input_shape_tabular: Shape of tabular features
-        input_shape_csp: Shape of CSP features
-        use_se_blocks: Enable SE attention in ResBlocks
-        use_attention: Enable temporal self-attention
-        use_multi_scale: Enable multi-scale feature extraction
-        dropout_rate: Dropout rate for regularization
-    
-    Returns:
-        Keras Model with 3 inputs
     """
     
     # =========================================================================
@@ -455,30 +456,16 @@ def build_enhanced_fusion_resnet(
     # =========================================================================
     input_fhr = Input(shape=input_shape_fhr, name='input_fhr')
     
-    # Initial convolution
-    x1 = layers.Conv1D(64, 7, strides=2, padding='same', name='fhr_conv1')(input_fhr)
-    x1 = layers.BatchNormalization(name='fhr_bn1')(x1)
-    x1 = layers.Activation('relu', name='fhr_relu1')(x1)
-    x1 = layers.MaxPooling1D(3, strides=2, padding='same', name='fhr_pool1')(x1)
+    # Use the shared encoder
+    fhr_encoder = build_fhr_encoder(
+        input_shape=input_shape_fhr,
+        use_se_blocks=use_se_blocks,
+        use_attention=use_attention,
+        use_multi_scale=use_multi_scale,
+        name='shared_fhr_encoder'
+    )
     
-    # Multi-scale feature extraction (optional)
-    if use_multi_scale and MultiScaleBlock is not None:
-        x1 = MultiScaleBlock(filters=64)(x1)
-    
-    # Residual blocks with SE attention
-    x1 = residual_block(x1, 64, use_se=use_se_blocks)
-    x1 = residual_block(x1, 128, stride=2, use_se=use_se_blocks)
-    x1 = residual_block(x1, 128, use_se=use_se_blocks)
-    
-    # Temporal self-attention (captures long-range dependencies)
-    if use_attention:
-        if TemporalAttentionBlock is not None:
-            x1 = TemporalAttentionBlock(num_heads=4, key_dim=32)(x1)
-        else:
-            x1 = temporal_attention_inline(x1, num_heads=4, key_dim=32)
-    
-    # Global pooling
-    fhr_features = layers.GlobalAveragePooling1D(name='fhr_gap')(x1)  # (batch, 128)
+    fhr_features = fhr_encoder(input_fhr)  # (batch, 128)
     
     # =========================================================================
     # Branch 2: Tabular Features (Dense Network)

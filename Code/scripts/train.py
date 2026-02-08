@@ -61,6 +61,8 @@ USE_AUGMENTATION = True  # Enable time-series augmentation
 AUGMENT_EXPAND_FACTOR = 2  # 2x data expansion (reverted from 3x for stability)
 USE_LABEL_SMOOTHING = True  # Enable label smoothing regularization
 LABEL_SMOOTHING = 0.1  # Smoothing factor (0.1 = soft labels [0.05, 0.95])
+USE_PRETRAINED = True  # Load SSL pretrained weights
+PRETRAIN_WEIGHTS_PATH = os.path.join(MODEL_DIR, "pretrained_fhr_encoder.weights.h5")
 
 # NOVEL: Cosine Annealing LR Scheduler
 USE_COSINE_ANNEALING = True  # Use cosine annealing instead of ReduceLROnPlateau
@@ -301,6 +303,28 @@ def train_fold(
         )
         train_inputs = [X_fhr_train, X_tab_train]
         val_inputs = [X_fhr_val, X_tab_val]
+
+    # =========================================================================
+    # Load Pretrained Weights (SSL)
+    # =========================================================================
+    if USE_PRETRAINED and use_enhanced:
+        if os.path.exists(PRETRAIN_WEIGHTS_PATH):
+            print(f"Loading pretrained SSL encoder weights from {PRETRAIN_WEIGHTS_PATH}...")
+            try:
+                # Load weights into the specific encoder layer
+                # The layer name 'shared_fhr_encoder' MUST match what's in model.py
+                encoder_layer = model.get_layer('shared_fhr_encoder')
+                encoder_layer.load_weights(PRETRAIN_WEIGHTS_PATH)
+                print("✓ Pretrained weights loaded successfully! (Transfer Learning Activated)")
+            except ValueError as e:
+                print(f"⚠️ Error loading weights: {e}")
+                print("  (Layer names might include prefix if inside another model)")
+                # Fallback: Try to load by index or name without mismatch
+            except Exception as e:
+                print(f"⚠️ Failed to load pretrained weights: {e}")
+        else:
+            print(f"⚠️ Pretrained weights file not found at {PRETRAIN_WEIGHTS_PATH}")
+            print("  Run 'python Code/scripts/pretrain.py' first.")
     
     # Metrics
     metrics = [

@@ -21,13 +21,13 @@ sys.path.insert(0, CODE_DIR)
 try:
     # Try importing as if utils is the root (current behavior)
     from model import CrossModalAttention
-    from attention_blocks import SEBlock, TemporalAttention
+    from attention_blocks import SEBlock, TemporalAttentionBlock as TemporalAttention
 except ImportError as e1:
     print(f"Warning: Direct import failed: {e1}")
     try:
         # Try importing as package
         from utils.model import CrossModalAttention
-        from utils.attention_blocks import SEBlock, TemporalAttention
+        from utils.attention_blocks import SEBlock, TemporalAttentionBlock as TemporalAttention
     except ImportError as e2:
         print(f"Warning: Package import failed: {e2}")
         print("Defining robust dummy classes for loading.")
@@ -92,7 +92,7 @@ def convert_model():
             custom_objects={
                 'CrossModalAttention': CrossModalAttention,
                 'SEBlock': SEBlock,
-                'TemporalAttention': TemporalAttention,
+                'TemporalAttentionBlock': TemporalAttention,
                 'F1Score': None # Ignore metrics if they cause issues
             },
             compile=False # We don't need the optimizer/loss for inference conversion

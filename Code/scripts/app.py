@@ -19,7 +19,11 @@ from utils.components import (
     render_mismatch_error
 )
 
-# --- CONFIGURATION & STYLING ---
+# Import Custom Layers for Model Loading
+from utils.attention_blocks import SEBlock, TemporalAttentionBlock
+from utils.model import CrossModalAttention
+from utils.focal_loss import FocalLoss
+
 # --- CONFIGURATION & STYLING ---
 st.set_page_config(
     page_title="NeuroFetal AI | Clinical Monitor",
@@ -39,8 +43,16 @@ def load_model():
     
     path_to_use = local_path if os.path.exists(local_path) else colab_path
     
+    custom_objects = {
+        'SEBlock': SEBlock,
+        'TemporalAttentionBlock': TemporalAttentionBlock,
+        'CrossModalAttention': CrossModalAttention,
+        'FocalLoss': FocalLoss,
+        'focal_loss_fixed': FocalLoss(gamma=2.5, alpha=0.75)
+    }
+
     try:
-        model = tf.keras.models.load_model(path_to_use)
+        model = tf.keras.models.load_model(path_to_use, custom_objects=custom_objects, compile=False)
         return model, path_to_use
     except Exception as e:
         st.error(f"Critical Error: Model not found at {path_to_use}. Please verify paths.")
