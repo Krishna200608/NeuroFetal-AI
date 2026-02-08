@@ -27,15 +27,10 @@ The model (`AttentionFusionResNet`) integrates:
 
 ## 4. Repository Structure
 - **`Code/scripts/train.py`**: Main training pipeline with SMOTE, Focal Loss, and Stratified Group K-Fold.
-- **`Code/models/model.py`**: Defines the `build_attention_fusion_resnet` architecture.
 - **`Code/notebooks/Training_Colab.ipynb`**: Primary experiment notebook.
 - **`Datasets/`**: Contains processed `.npy` files (`X_fhr`, `X_tab`, `y`, `X_uc`).
 - **`Reports/final_report.md`**: Detailed analysis and results.
 
-## 5. Next Steps (Pre-Revert State)
-Before the revert, work was about to begin on:
-- **Experiment 2 (SSL):** Self-Supervised Learning (SimCLR).
-- **Experiment 3 (Transformer):** Hybrid CNN-Transformer architecture.
-- **Kaggle Integration:** Offline training notebooks.
+## 5. Next Steps
+- We will think about that later (both Gemini and me).
 
-*Use this context to resume development from the stable v1.0 state, focusing on these next steps or any deviations requested.*
