@@ -192,6 +192,7 @@ class TemporalAttentionBlock(layers.Layer):
         self.dropout_ffn = layers.Dropout(self.dropout_rate, name='dropout_ffn')
         
     def build(self, input_shape):
+        input_shape = tuple(input_shape)
         d_model = input_shape[-1]
         
         # Feed-forward network layers (must be in build as they depend on d_model)
