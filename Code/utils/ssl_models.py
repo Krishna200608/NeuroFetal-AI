@@ -103,8 +103,12 @@ class MaskedAutoencoder(models.Model):
         # Handle residual length if any (shouldn't be for 1200/20)
         curr_len = tf.shape(mask)[1]
         pad_len = seq_len - curr_len
-        if pad_len > 0:
-             mask = tf.pad(mask, [[0, 0], [0, pad_len], [0, 0]], constant_values=1.0)
+        
+        mask = tf.cond(
+            pad_len > 0,
+            lambda: tf.pad(mask, [[0, 0], [0, pad_len], [0, 0]], constant_values=1.0),
+            lambda: mask
+        )
              
         # Apply mask
         masked_inputs = inputs * mask
