@@ -207,7 +207,7 @@ class TemporalAttentionBlock(layers.Layer):
         self.layer_norm2.build(input_shape)
         
         # MHA build takes input_shape (assuming query/key/value have same shape)
-        self.mha.build(input_shape)
+        # self.mha.build(input_shape) # Removing this as it requires multiple arguments
         
         self.ffn_dense1.build(input_shape)
         
