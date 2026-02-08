@@ -178,24 +178,32 @@ class TemporalAttentionBlock(layers.Layer):
 
         # Instantiate layers that don't depend on input shape in __init__
         if self.use_positional:
-            self.pos_encoding = PositionalEncoding()
+            self.pos_encoding = PositionalEncoding(name='positional_encoding')
             
         self.mha = layers.MultiHeadAttention(
             num_heads=self.num_heads,
             key_dim=self.key_dim,
-            dropout=self.dropout_rate
+            dropout=self.dropout_rate,
+            name='multi_head_attention'
         )
         
-        self.layer_norm1 = layers.LayerNormalization(epsilon=1e-6)
-        self.layer_norm2 = layers.LayerNormalization(epsilon=1e-6)
-        self.dropout_ffn = layers.Dropout(self.dropout_rate)
+        self.layer_norm1 = layers.LayerNormalization(epsilon=1e-6, name='layer_norm_1')
+        self.layer_norm2 = layers.LayerNormalization(epsilon=1e-6, name='layer_norm_2')
+        self.dropout_ffn = layers.Dropout(self.dropout_rate, name='dropout_ffn')
         
     def build(self, input_shape):
         d_model = input_shape[-1]
         
         # Feed-forward network layers (must be in build as they depend on d_model)
-        self.ffn_dense1 = layers.Dense(d_model * 4, activation='gelu')
-        self.ffn_dense2 = layers.Dense(d_model)
+        self.ffn_dense1 = layers.Dense(d_model * 4, activation='gelu', name='ffn_dense_1')
+        self.ffn_dense2 = layers.Dense(d_model, name='ffn_dense_2')
+        
+        # Explicitly build layers to ensure variables are created and tracked immediately
+        # This fixes "Layer was never built" errors during weight loading
+        self.ffn_dense1.build(input_shape)
+        
+        dense2_input_shape = input_shape[:-1] + (d_model * 4,)
+        self.ffn_dense2.build(dense2_input_shape)
         
         super(TemporalAttentionBlock, self).build(input_shape)
         
