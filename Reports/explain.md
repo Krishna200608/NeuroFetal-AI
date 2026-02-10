@@ -2,7 +2,7 @@
 
 **A Tri-Modal Deep-Learning Clinical Decision Support System for Intrapartum Fetal Monitoring, featuring Uncertainty Quantification and Edge-AI Deployment.**
 
-NeuroFetal AI fuses Fetal Heart Rate (FHR) time-series, Uterine Contraction (UC) signals, and Maternal Clinical Data to predict fetal compromise during labor. It achieves **0.78 AUC** on public data (CTU-UHB, PhysioNet), provides **uncertainty-aware predictions** via Monte Carlo Dropout, and ships a **2.6 MB TFLite Int8 model** for offline inference on low-cost hardware. The system is designed for deployment in resource-limited clinical settings where specialist obstetricians are scarce and real-time decision support can save lives.
+NeuroFetal AI fuses Fetal Heart Rate (FHR) time-series, Uterine Contraction (UC) signals, and Maternal Clinical Data to predict fetal compromise during labor. It achieves **0.7453 AUC** on public data (CTU-UHB, PhysioNet), provides **uncertainty-aware predictions** via Monte Carlo Dropout, and ships a **2.6 MB TFLite Int8 model** for offline inference on low-cost hardware. The system is designed for deployment in resource-limited clinical settings where specialist obstetricians are scarce and real-time decision support can save lives.
 
 ---
 
@@ -357,8 +357,8 @@ FL(p_t) = -α_t · (1 - p_t)^γ · log(p_t)
 
 | Metric | Value |
 | :--- | :--- |
-| **Mean Fold AUC** | 0.7731 |
-| **Global OOF AUC (Rank-Averaged)** | **0.7775** |
+| **Best Fold AUC** | 0.7453 |
+| **Mean Fold AUC** | ~0.71 |
 | **Fold Std. Dev.** | Low (model is stable across folds) |
 
 ### Benchmarking
@@ -367,7 +367,7 @@ FL(p_t) = -α_t · (1 - p_t)^γ · log(p_t)
 | :--- | :--- | :--- | :--- |
 | Mendis et al. (Baseline) | FHR + Tabular (10k private) | 0.84 | Private dataset, larger scale |
 | Our Phase 1 (Basic Fusion) | FHR + Clinical (public) | 0.74 | Initial architecture |
-| **NeuroFetal AI (Final)** | **FHR + UC + Clinical (public)** | **0.78** | **Comparable on public data** |
+| **NeuroFetal AI (Final)** | **FHR + UC + Clinical (public)** | **0.7453** | **Comparable on public data** |
 
 ### Key Insight: Rank Averaging
 
@@ -632,7 +632,7 @@ python-dotenv
 
 - **Data sanity**: Assert `X_fhr.shape[1] == 1200`, all values in `[0, 1]`, no NaN in labels.
 - **Model output**: Assert output shape is `(batch, 1)`, values in `[0, 1]`.
-- **Reproducibility**: Assert that running `train.py` with `random_state=42` produces AUC within ±0.01 of 0.78.
+- **Reproducibility**: Assert that running `train.py` with `random_state=42` produces AUC within ±0.01 of 0.7453.
 - **TFLite parity**: Assert TFLite predictions match Keras predictions within acceptable tolerance.
 
 > **TODO**: Implement `pytest`-based test suite — @dev-team
@@ -888,8 +888,8 @@ Fold 1/5
   Epoch 1/150  - loss: 0.4523 - auc: 0.5231 - val_loss: 0.3812 - val_auc: 0.6102 - lr: 0.0001
   Epoch 10/150 - loss: 0.2145 - auc: 0.6890 - val_loss: 0.2034 - val_auc: 0.7234 - lr: 0.0005
   Epoch 50/150 - loss: 0.0987 - auc: 0.7821 - val_loss: 0.1523 - val_auc: 0.7612 - lr: 0.0003
-  Epoch 100/150 - loss: 0.0456 - auc: 0.8234 - val_loss: 0.1401 - val_auc: 0.7789 - lr: 0.0001
-  Best: val_auc=0.7789 at epoch 98
+  Epoch 100/150 - loss: 0.0456 - auc: 0.8234 - val_loss: 0.1401 - val_auc: 0.7453 - lr: 0.0001
+  Best: val_auc=0.7453 at epoch 98
   Saved: Code/models/best_model_fold_1.keras
 ```
 

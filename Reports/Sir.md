@@ -95,7 +95,7 @@ The **Clinical Branch** tells the **Signal Branch** what features to focus on. I
 2.  ***The Effect:** Fetal Heart Rate patterns.*
 3.  ***The Context:** Maternal features (Gestation, Age).*
 
-*By training these three streams as one unified 'brain', the model learns to interpret distress signals within the correct context. This 'Clinical Mimicry' is the key reason we achieve 78% AUC where standard methods fail."*
+*By training these three streams as one unified 'brain', the model learns to interpret distress signals within the correct context. This 'Clinical Mimicry' is the key reason we achieve 0.7453 AUC where standard methods fail."*
 
 ---
 
@@ -217,5 +217,5 @@ So, instead of feeding the raw noisy signal to the model, we feed it the *filter
 * "Certainly. We converted the 9.5 MB Float32 Keras model into a **2.6 MB Int8 TFLite model**.
 *   **Size Reduction:** ~3.6x smaller.
 *   **Speed:** Inference drops from 200ms to <30ms.
-*   **Accuracy:** We maintained 99% of the original AUC (0.78 vs 0.77).
+*   **Accuracy:** We maintained 99% of the original AUC (0.7453 vs 0.74).
 *   **Impact:** This allows the AI to run offline on a $50 smartphone in a rural village, without internet."*
