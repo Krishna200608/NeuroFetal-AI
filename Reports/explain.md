@@ -114,54 +114,35 @@ NeuroFetal AI is a **tri-modal system** that jointly analyzes FHR, UC, and mater
 
 ### System Block Diagram
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        NeuroFetal AI Pipeline                          │
-│                                                                         │
-│  ┌──────────┐    ┌──────────────────┐    ┌──────────────────────────┐  │
-│  │PhysioNet │───▶│  Data Ingestion  │───▶│   Processed .npy Files   │  │
-│  │CTU-UHB   │    │ (data_ingestion) │    │ X_fhr, X_uc, X_tabular, y│  │
-│  │.dat/.hea │    │  4Hz → 1Hz       │    └────────────┬─────────────┘  │
-│  └──────────┘    │  Gap Interp.     │                 │                 │
-│                  │  MinMax Norm.    │                 ▼                 │
-│                  │  20min Windows   │    ┌──────────────────────────┐  │
-│                  └──────────────────┘    │   Training Pipeline      │  │
-│                                          │   (train.py)             │  │
-│                                          │                          │  │
-│  ┌───────────────────────────────────────┤  5-Fold Stratified CV    │  │
-│  │                                       │  SMOTE + Focal Loss      │  │
-│  │  ┌─────────────────────────────────┐  │  Cosine Annealing LR    │  │
-│  │  │    AttentionFusionResNet        │  │  Label Smoothing (0.1)  │  │
-│  │  │                                 │  └──────────┬───────────────┘  │
-│  │  │  FHR (1200,1) ──▶ ResNet+SE    │             │                  │
-│  │  │       ▼                         │             ▼                  │
-│  │  │  TemporalAttn ──▶ (128-d)      │  ┌──────────────────────────┐ │
-│  │  │                    ╲            │  │  5x best_model_fold_*.keras│ │
-│  │  │  Clinical (16,) ──▶ Dense(128)──┼──▶──▶ CrossModalAttention │ │
-│  │  │                    ╱            │  └──────────┬───────────────┘ │
-│  │  │  CSP (19,) ──────▶ Dense(128)  │             │                  │
-│  │  │                                 │             ▼                  │
-│  │  │  Output: Sigmoid → P(pathol.)  │  ┌──────────────────────────┐ │
-│  │  └─────────────────────────────────┘  │  Evaluation              │ │
-│  │                                       │  - Rank-Averaged OOF AUC │ │
-│  │                                       │  - MC Dropout Uncertainty │ │
-│  │                                       │  - Calibration Curves    │ │
-│  │                                       └──────────┬───────────────┘ │
-│  │                                                  │                  │
-│  │                     ┌────────────────────────────┼──────────────┐  │
-│  │                     ▼                            ▼              │  │
-│  │        ┌────────────────────┐      ┌─────────────────────────┐ │  │
-│  │        │ TFLite Int8 Quant. │      │ Streamlit Dashboard     │ │  │
-│  │        │ (convert_to_tflite)│      │ (app.py + components)   │ │  │
-│  │        │                    │      │                         │ │  │
-│  │        │ 9.5MB → 2.6MB     │      │ - File Upload / Select  │ │  │
-│  │        │ 300 calib. samples │      │ - Live Prediction       │ │  │
-│  │        │ Full Int8 I/O      │      │ - Uncertainty Display   │ │  │
-│  │        └────────────────────┘      │ - Grad-CAM XAI          │ │  │
-│  │                                    │ - Calibration Plots     │ │  │
-│  │                                    └─────────────────────────┘ │  │
-│  └────────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph DATA ["Data Layer"]
+        A["PhysioNet CTU-UHB\n552 .dat/.hea records"] --> B["Data Ingestion\n(data_ingestion.py)"]
+        B -->|"4Hz → 1Hz\nGap Interpolation\nMinMax Normalization\n20-min Windowing"| C["Processed .npy Files\nX_fhr · X_uc · X_tabular · y"]
+    end
+
+    subgraph TRAIN ["Training Pipeline (train.py)"]
+        C --> D["5-Fold Stratified CV"]
+        D --> E["SMOTE + Focal Loss\nCosine Annealing LR\nLabel Smoothing 0.1"]
+        E --> F["AttentionFusionResNet\n3-Branch Architecture"]
+        F --> G["5× best_model_fold_*.keras"]
+    end
+
+    subgraph EVAL ["Evaluation"]
+        G --> H["Rank-Averaged OOF AUC"]
+        G --> I["MC Dropout Uncertainty"]
+        G --> J["Calibration Curves"]
+    end
+
+    subgraph DEPLOY ["Deployment"]
+        G --> K["TFLite Int8 Quantization\n(convert_to_tflite.py)\n9.5 MB → 2.6 MB\n300 Calibration Samples"]
+        G --> L["Streamlit Dashboard\n(app.py + components.py)\nFile Upload · Live Prediction\nUncertainty · Grad-CAM XAI"]
+    end
+
+    style DATA fill:#1a1a2e,stroke:#e94560,color:#eee
+    style TRAIN fill:#16213e,stroke:#0f3460,color:#eee
+    style EVAL fill:#0f3460,stroke:#53354a,color:#eee
+    style DEPLOY fill:#1a1a2e,stroke:#e94560,color:#eee
 ```
 
 ### Component Summary
@@ -255,53 +236,51 @@ NeuroFetal AI is a **tri-modal system** that jointly analyzes FHR, UC, and mater
 
 ### Architecture Diagram
 
-```
-Input Layer 1: FHR Signal (1200, 1)
-    │
-    ▼
-┌─────────────────────────────────────┐
-│  Shared FHR Encoder                 │
-│  ├── Conv1D(64, 7) + BN + ReLU     │
-│  ├── ResBlock(64)  + SE Block       │
-│  ├── ResBlock(64)  + SE Block       │
-│  ├── ResBlock(128) + SE Block       │
-│  ├── ResBlock(128) + SE Block       │
-│  ├── ResBlock(256) + SE Block       │
-│  ├── ResBlock(256) + SE Block       │
-│  ├── Temporal Attention (4 heads)   │
-│  └── GlobalAveragePooling1D → (128) │
-└─────────────────┬───────────────────┘
-                  │
-Input Layer 2:    │     Input Layer 3:
-Clinical (16,)    │     CSP (19,)
-    │             │         │
-    ▼             │         ▼
-Dense(64)→ReLU    │     Dense(64)→ReLU
-Dropout(0.4)      │     Dropout(0.4)
-Dense(128)→ReLU   │     Dense(128)→ReLU
-    │             │         │
-    ▼             ▼         ▼
-┌─────────────────────────────────────┐
-│  CrossModalAttention (128-d, 4h)    │
-│  ├── Q = FHR_features               │
-│  ├── K = CSP_features               │
-│  ├── V = CSP_features               │
-│  ├── Attention = softmax(QK^T/√d)V  │
-│  ├── Clinical Gating                │
-│  │   gate = sigmoid(W·clinical)     │
-│  │   output = gate ⊙ attention      │
-│  └── LayerNorm + Residual → (128)   │
-└─────────────────┬───────────────────┘
-                  │
-                  ▼
-          Dense(64) → ReLU
-          Dropout(0.4)  ← [MC: training=True at inference]
-          Dense(32) → ReLU
-          Dropout(0.4)  ← [MC: training=True at inference]
-          Dense(1) → Sigmoid
-                  │
-                  ▼
-          P(Compromised) ∈ [0, 1]
+```mermaid
+flowchart TD
+    subgraph BRANCH1 ["Branch 1: FHR Signal"]
+        I1["input_fhr\n(batch, 1200, 1)"] --> C1["Conv1D 64, k=7\nBatchNorm + ReLU"]
+        C1 --> R1["ResBlock 64 + SE"]
+        R1 --> R2["ResBlock 64 + SE"]
+        R2 --> R3["ResBlock 128 + SE"]
+        R3 --> R4["ResBlock 128 + SE"]
+        R4 --> R5["ResBlock 256 + SE"]
+        R5 --> R6["ResBlock 256 + SE"]
+        R6 --> TA["Temporal Attention\n4 heads"]
+        TA --> GP["GlobalAvgPool1D\n→ 128-dim"]
+    end
+
+    subgraph BRANCH2 ["Branch 2: Clinical"]
+        I2["input_tabular\n(batch, 16)"] --> D1["Dense 64 + ReLU"]
+        D1 --> DR1["Dropout 0.4"]
+        DR1 --> D2["Dense 128 + ReLU\n→ 128-dim"]
+    end
+
+    subgraph BRANCH3 ["Branch 3: CSP"]
+        I3["input_csp\n(batch, 19)"] --> D3["Dense 64 + ReLU"]
+        D3 --> DR2["Dropout 0.4"]
+        DR2 --> D4["Dense 128 + ReLU\n→ 128-dim"]
+    end
+
+    GP -->|"Q = FHR features"| CMA
+    D4 -->|"K, V = CSP features"| CMA
+    D2 -->|"Gating signal"| CMA
+
+    subgraph FUSION ["Cross-Modal Attention Fusion"]
+        CMA["CrossModalAttention\n128-dim, 4 heads\nAttention = softmax QKᵀ/√d · V\nGate = σ W·clinical\nOutput = Gate ⊙ Attention\nLayerNorm + Residual → 128-dim"]
+    end
+
+    CMA --> HD1["Dense 64 + ReLU"]
+    HD1 --> MC1["Dropout 0.4\n⚡ MC: training=True at inference"]
+    MC1 --> HD2["Dense 32 + ReLU"]
+    HD2 --> MC2["Dropout 0.4\n⚡ MC: training=True at inference"]
+    MC2 --> OUT["Dense 1 + Sigmoid\nP Compromised ∈ 0, 1"]
+
+    style BRANCH1 fill:#1a1a2e,stroke:#e94560,color:#eee
+    style BRANCH2 fill:#16213e,stroke:#0f3460,color:#eee
+    style BRANCH3 fill:#16213e,stroke:#0f3460,color:#eee
+    style FUSION fill:#533549,stroke:#e94560,color:#eee
+    style OUT fill:#0a6e0a,stroke:#0f3460,color:#fff
 ```
 
 ### Input / Output Specification
@@ -440,27 +419,29 @@ Standard probability averaging across folds yielded inconsistent calibration. **
 
 ### Inference Pipeline (Edge)
 
-```
-Raw Signal (20 min window)
-    │
-    ▼
-Preprocessing (on-device)
-  - Resample to 1 Hz
-  - MinMax normalize
-  - CSP feature extraction
-    │
-    ▼
-TFLite Interpreter
-  - Load neurofetal_model_quant_int8.tflite
-  - Set input tensors (Int8)
-  - Invoke()
-  - Read output tensor
-    │
-    ▼
-Post-processing
-  - Dequantize output → probability
-  - Apply confidence threshold
-  - Display alert
+```mermaid
+flowchart TD
+    A["📡 Raw CTG Signal\n20-min window"] --> B["Preprocessing\n(on-device)"]
+    B --> B1["Resample to 1 Hz"]
+    B1 --> B2["MinMax Normalize"]
+    B2 --> B3["CSP Feature Extraction"]
+    B3 --> C["TFLite Interpreter"]
+    C --> C1["Load neurofetal_model_quant_int8.tflite"]
+    C1 --> C2["Set Input Tensors — Int8"]
+    C2 --> C3["Invoke"]
+    C3 --> C4["Read Output Tensor"]
+    C4 --> D["Post-Processing"]
+    D --> D1["Dequantize → Probability"]
+    D1 --> D2["Apply Confidence Threshold"]
+    D2 --> E{"Verdict"}
+    E -->|"P ≥ 0.5"| F["🔴 COMPROMISED"]
+    E -->|"P < 0.5"| G["🟢 NORMAL"]
+
+    style A fill:#1a1a2e,stroke:#e94560,color:#eee
+    style C fill:#16213e,stroke:#0f3460,color:#eee
+    style D fill:#0f3460,stroke:#53354a,color:#eee
+    style F fill:#b91c1c,stroke:#991b1b,color:#fff
+    style G fill:#15803d,stroke:#166534,color:#fff
 ```
 
 ### Fallback Modes
@@ -486,16 +467,27 @@ The Streamlit dashboard (`app.py`) provides:
 
 ### Clinician Flow
 
-```
-1. Clinician uploads CTG recording (or selects from dataset)
-2. System preprocesses signal → display FHR/UC trace
-3. Clinician enters/confirms maternal clinical features
-4. System runs inference → displays:
-   a. Prediction: "COMPROMISED" (0.82 probability)
-   b. Confidence: "HIGH" (uncertainty: 0.04)
-   c. Grad-CAM: highlights late deceleration at minute 12–14
-5. Clinician reviews highlighted signal segment
-6. Decision: Correlate with clinical context → intervene or continue monitoring
+```mermaid
+flowchart TD
+    A["👩‍⚕️ Clinician\nUploads CTG Recording"] --> B["System Preprocesses Signal"]
+    B --> C["Display FHR/UC Trace"]
+    C --> D["Clinician Enters\nClinical Features\nAge · Parity · Gestation"]
+    D --> E["System Runs Inference"]
+    E --> F["Prediction: COMPROMISED\n0.82 probability"]
+    E --> G["Confidence: HIGH\nUncertainty: 0.04"]
+    E --> H["Grad-CAM Heatmap\nLate deceleration at min 12-14"]
+    F & G & H --> I["Clinician Reviews\nHighlighted Signal Segment"]
+    I --> J{"Clinical Decision"}
+    J -->|"Concerning"| K["Intervene\nEmergency C-Section / Operative"]
+    J -->|"Reassuring in context"| L["Continue Monitoring"]
+
+    style A fill:#1a1a2e,stroke:#e94560,color:#eee
+    style E fill:#16213e,stroke:#0f3460,color:#eee
+    style F fill:#b91c1c,stroke:#991b1b,color:#fff
+    style G fill:#0f3460,stroke:#53354a,color:#eee
+    style H fill:#533549,stroke:#e94560,color:#eee
+    style K fill:#b91c1c,stroke:#991b1b,color:#fff
+    style L fill:#15803d,stroke:#166534,color:#fff
 ```
 
 ### UI Design Principles
