@@ -16,10 +16,9 @@ def get_base64_image(image_path):
     return base64.b64encode(data).decode()
 
 def render_header(theme="Light"):
-    # Logo Path (Relative to app.py execution)
-    # User Request: Use Logo-black.png for Dark Mode, Logo.svg for Light Mode
-    logo_file = "Logo-black.png" if theme == "Dark" else "Logo.svg"
-    logo_path = os.path.join("assets", logo_file)
+    # Logo Path (Relative to utils/components.py -> ../assets)
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    logo_path = os.path.join(current_dir, "..", "assets", logo_file)
     logo_b64 = get_base64_image(logo_path)
     
     # Determine MIME type based on extension
