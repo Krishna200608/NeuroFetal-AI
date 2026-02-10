@@ -1,0 +1,19 @@
+# Core ML & Data
+numpy
+pandas
+scipy
+tensorflow
+scikit-learn
+shap
+
+# Signal Processing
+wfdb
+
+# Visualization
+matplotlib
+plotly
+
+# Web App & Deployment
+streamlit
+pyngrok
+python-dotenv
