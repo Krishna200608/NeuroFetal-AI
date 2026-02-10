@@ -47,36 +47,43 @@ We don't just give a prediction; we give a **Confidence Score**.
 *   **High Variance** = "AI is Uncertain" (Flag for human review).
 *   **Low Variance** = "AI is Sure".
 
-### 3. Advanced Signal Processing features
+### 3. Advanced Signal Processing Features
 *   **CSP (Common Spatial Patterns)**: Adapted from Brain-Computer Interfaces (EEG) to extract discriminative variance features from fetal signals.
 *   **Cross-Modal Attention**: The model learns to "pay attention" to the FHR signal specifically when Uterine Contractions are peaking (mimicking clinical logic).
 
 ### 4. "Lab to Village" Edge Deployment
 *   **Mobile-Ready**: Quantized to **2.6 MB** (Int8) from 9.5 MB.
 *   **Offline First**: Designed to run on **5000 Rs. Android phones** without internet.
-*   **NPU Accelerated**: optimized with **Int8 Quantization** for dedicated AI hardware.
+*   **NPU Accelerated**: Optimized with **Int8 Quantization** for dedicated AI hardware.
 *   **Privacy Preserved**: No patient data leaves the device.
 
-### 5. Advanced Clinical Dashboard (Phase 2)
-*   **Uncertainty Analysis**: Live visualization of model confidence and calibration curves.
-*   **Explainable AI**: Grad-CAM heatmaps showing which part of the signal triggered the alert.
+### 5. Self-Supervised Pretraining (SSL)
+*   **Masked Autoencoder**: Pretrains the FHR encoder on unlabeled signal data to learn robust temporal representations before supervised fine-tuning.
+*   **Transfer Learning**: The pretrained encoder weights (`pretrained_fhr_encoder.weights.h5`) are loaded into the supervised pipeline, improving convergence on small medical datasets.
+
+### 6. Advanced Clinical Dashboard (Phase 2)
+*   **Uncertainty Analysis**: Live visualization of model confidence via Calibration Curves and Uncertainty Histograms.
+*   **Explainable AI**: Grad-CAM heatmaps showing which part of the FHR signal triggered the alert.
+*   **Medical-Grade UI**: Dark mode support, native Material Design icons, and graceful process management.
 
 ---
 
 ## System Architecture
 
-The pipeline follows a rigorous **Medical MLOps** workflow:
+The pipeline follows a rigorous **Medical ML** workflow:
 
 ```mermaid
 graph LR
-    A[PhysioNet Data] --> B(Preprocessing & CSP Extraction);
+    A[PhysioNet CTU-UHB Data] --> B(Preprocessing & CSP Extraction);
     B --> C{Tri-Modal Network};
     C -->|Branch 1: FHR/UC| D[Deep ResNet + CSP];
     C -->|Branch 2: Clinical| E[Dense Tabular Network];
     D & E --> F[Cross-Modal Attention Fusion];
-    F --> G[Probability + Uncertainty];
+    F --> G[Probability + MC Dropout Uncertainty];
     G --> H[Streamlit Clinical Dashboard];
-    H --> I[Grad-CAM Analysis];
+    H --> I[Grad-CAM XAI Analysis];
+    G --> J[TFLite Int8 Quantization];
+    J --> K[Edge Device / Mobile];
 ```
 
 ---
@@ -86,7 +93,8 @@ graph LR
 *   **Core**: Python 3.13, NumPy, Pandas, Scipy
 *   **Deep Learning**: TensorFlow/Keras (Functional API), **MC Dropout**
 *   **Advanced ML**: `imbalanced-learn` (SMOTE), `scikit-learn` (Rank Averaging)
-*   **Deployment**: Streamlit, Docker, **TFLite (2.6 MB Edge Model)**
+*   **Signal Processing**: `wfdb`, `mne` (CSP), Custom UC Cleaning Pipeline
+*   **Deployment**: Streamlit, pyngrok, **TFLite (2.6 MB Edge Model)**
 
 ---
 
@@ -95,22 +103,50 @@ graph LR
 ```
 NeuroFetal-AI/
 ├── Code/
-│   ├── scripts/             
-│   │   ├── app.py           # Streamlit Dashboard Logic
-│   │   ├── train.py         # Advanced Training Pipeline (SMOTE + Focal Loss)
-│   │   ├── evaluate_ensemble.py # Rank Averaging Evaluation
-│   │   ├── evaluate_uncertainty.py # MC Dropout Analysis
-│   │   ├── model.py         # Fusion ResNet Architecture
-│   │   └── csp_features.py  # Common Spatial Patterns Logic
-│   ├── notebooks/           
-│   │   └── Training_Colab.ipynb 
-│   ├── utils/               # Helper Functions & Attention Blocks
-│   └── run_app.py           # Application Launcher
+│   ├── scripts/
+│   │   ├── app.py                  # Streamlit Dashboard (Live Inference + XAI)
+│   │   ├── train.py                # Training Pipeline (SMOTE + Focal Loss + K-Fold)
+│   │   ├── pretrain.py             # SSL Masked Autoencoder Pretraining
+│   │   ├── data_ingestion.py       # Raw Signal → Processed .npy Arrays
+│   │   ├── evaluate_ensemble.py    # Rank-Averaged OOF Evaluation
+│   │   ├── evaluate_uncertainty.py # MC Dropout Calibration & Histograms
+│   │   ├── convert_to_tflite.py    # Keras → TFLite Int8 Quantization
+│   │   ├── run_ablation.py         # Ablation Study Runner
+│   │   └── xai.py                  # Grad-CAM Implementation
+│   ├── utils/
+│   │   ├── model.py                # AttentionFusionResNet Architecture
+│   │   ├── attention_blocks.py     # Cross-Modal & Temporal Attention Layers
+│   │   ├── csp_features.py         # Common Spatial Patterns Extraction
+│   │   ├── ssl_models.py           # Masked Autoencoder (SSL)
+│   │   ├── focal_loss.py           # Focal Loss for Class Imbalance
+│   │   ├── augmentation.py         # Signal Augmentation Strategies
+│   │   ├── uc_cleaning.py          # Uterine Contraction Signal Cleaning
+│   │   ├── components.py           # Dashboard UI Components
+│   │   └── helpers.py              # CSS Injection & Utility Functions
+│   ├── models/
+│   │   ├── best_model_fold_*.keras # 5-Fold Cross-Validated Checkpoints
+│   │   ├── pretrained_fhr_encoder.weights.h5  # SSL Pretrained Weights
+│   │   └── tflite/
+│   │       └── neurofetal_model_quant_int8.tflite  # Edge-Ready Model (2.6 MB)
+│   ├── notebooks/
+│   │   └── Training_Colab.ipynb    # Google Colab Training Notebook
+│   ├── assets/                     # Logo & Branding Assets
+│   └── run_app.py                  # Application Launcher (ngrok + Streamlit)
 ├── Datasets/
-│   └── ctu_uhb_data/        # Raw Medical Data (.dat/.hea)
+│   └── ctu_uhb_data/               # CTU-UHB PhysioNet Dataset (.dat/.hea)
+├── Paper/                          # Reference Paper & Literature
 ├── Reports/
-│   └── final_report.md      # Detailed Research Report
-└── README.md                # Project Documentation
+│   ├── final_report.md             # Comprehensive Research Report
+│   ├── Sir.md                      # Architecture Justification & Defense Q&A
+│   ├── Week_1_Report.md            # Phase 1 Progress
+│   ├── Week_2_Report.md            # SSL & Fusion Progress
+│   ├── Week_3_report.md            # Phase 2: Uncertainty & Edge Optimization
+│   ├── uncertainty_analysis/       # Calibration Curves & Histograms
+│   └── training_logs/              # TensorBoard-Compatible Logs
+├── Project_Context_v2.0.md         # Project Snapshot for AI Assistants
+├── requirements.txt                # Python Dependencies
+├── LICENSE                         # MIT License
+└── README.md
 ```
 
 ---
@@ -120,29 +156,28 @@ NeuroFetal-AI/
 ### 1. Installation
 Clone the repository and install dependencies:
 ```bash
-git clone https://github.com/your-repo/neurofetal-ai.git
-cd neurofetal-ai/Code
-python -m venv .venv
-# Activate venv (Windows: .\.venv\Scripts\Activate.ps1)
+git clone https://github.com/Krishna200608/NeuroFetal-AI.git
+cd NeuroFetal-AI
 pip install -r requirements.txt
 ```
 
 ### 2. Run Clinical Dashboard
 Launch the web interface locally:
 ```bash
+cd Code
 python run_app.py
 ```
 
 ### 3. Run Evaluation
 To verify the **0.78 AUC** and generate uncertainty plots:
 ```bash
-python scripts/evaluate_ensemble.py
+python Code/scripts/evaluate_ensemble.py
 ```
 
 ### 4. Edge Optimization (Int8)
 To generate the optimized TFLite model for Android:
 ```bash
-python scripts/convert_to_tflite.py
+python Code/scripts/convert_to_tflite.py
 ```
 *Output*: `Code/models/tflite/neurofetal_model_quant_int8.tflite`
 
