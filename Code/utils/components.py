@@ -101,29 +101,39 @@ def render_kpi_cards(prob, signal_dur_min):
         </div>
         """, unsafe_allow_html=True)
 
-def render_diagnosis(prob):
+def render_diagnosis(prob, theme="Light"):
+    is_dark = theme == "Dark"
     if prob > 0.5:
+        # Dark mode: bright text on dark-red gradient. Light mode: dark-red text on light-red gradient.
+        h2_color = "#fca5a5" if is_dark else "#991b1b"
+        p_color = "#fecaca" if is_dark else "#7f1d1d"
+        h1_color = "#f87171" if is_dark else "#b91c1c"
+        cta_color = "#fca5a5" if is_dark else "#ef4444"
         html = f"""
         <div class="diagnosis-container diag-danger">
-            <h2 style="color: #991b1b; margin-top:0;">
+            <h2 style="color: {h2_color}; margin-top:0;">
                 <span class="material-symbols-rounded" style="vertical-align:bottom; font-size: 28px;">warning</span> 
                 PATHOLOGICAL TRACE
             </h2>
-            <p style="color: #7f1d1d; font-size: 1.1rem;">High probability of Fetal Compromise detected.</p>
-            <h1 style="font-size: 3.5rem; margin: 10px 0; color: #b91c1c;">{prob:.1%}</h1>
-            <p style="color: #ef4444; font-weight: 600;">IMMEDIATE CLINICAL REVIEW REQUIRED</p>
+            <p style="color: {p_color}; font-size: 1.1rem;">High probability of Fetal Compromise detected.</p>
+            <h1 style="font-size: 3.5rem; margin: 10px 0; color: {h1_color};">{prob:.1%}</h1>
+            <p style="color: {cta_color}; font-weight: 600;">IMMEDIATE CLINICAL REVIEW REQUIRED</p>
         </div>
         """
     else:
+        h2_color = "#86efac" if is_dark else "#166534"
+        p_color = "#bbf7d0" if is_dark else "#14532d"
+        h1_color = "#4ade80" if is_dark else "#15803d"
+        cta_color = "#86efac" if is_dark else "#22c55e"
         html = f"""
         <div class="diagnosis-container diag-safe">
-            <h2 style="color: #166534; margin-top:0;">
+            <h2 style="color: {h2_color}; margin-top:0;">
                 <span class="material-symbols-rounded" style="vertical-align:bottom; font-size: 28px;">check_circle</span> 
                 PHYSIOLOGICAL TRACE
             </h2>
-            <p style="color: #14532d; font-size: 1.1rem;">Fetal well-being likely reassured.</p>
-            <h1 style="font-size: 3.5rem; margin: 10px 0; color: #15803d;">{prob:.1%}</h1>
-            <p style="color: #22c55e; font-weight: 600;">CONTINUE ROUTINE MONITORING</p>
+            <p style="color: {p_color}; font-size: 1.1rem;">Fetal well-being likely reassured.</p>
+            <h1 style="font-size: 3.5rem; margin: 10px 0; color: {h1_color};">{prob:.1%}</h1>
+            <p style="color: {cta_color}; font-weight: 600;">CONTINUE ROUTINE MONITORING</p>
         </div>
         """
     st.markdown(html, unsafe_allow_html=True)

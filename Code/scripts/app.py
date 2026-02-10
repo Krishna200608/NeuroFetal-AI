@@ -72,7 +72,7 @@ def render_sidebar():
     st.sidebar.title("NeuroFetal AI")
     
     # Theme Toggle
-    dark_mode = st.sidebar.toggle("Dark Mode", value=False)
+    dark_mode = st.sidebar.toggle("Dark Mode", value=True)
     theme = "Dark" if dark_mode else "Light"
     
     st.sidebar.markdown("---")
@@ -240,7 +240,7 @@ def main():
                     c_diag, c_chart = st.columns([1, 2])
                     
                     with c_diag:
-                        render_diagnosis(prob)
+                        render_diagnosis(prob, theme)
                         st.markdown("### Clinical Summary")
                         st.dataframe({
                             "Metric": ["Patient Age", "Gestation", "Parity", "Risk Window"],
