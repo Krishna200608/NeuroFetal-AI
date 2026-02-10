@@ -11,7 +11,7 @@ venv/
 .env
 
 # Datasets (Large files - processed only)
-Datasets/processed/*.npy
+# Datasets/processed/*.npy
 
 # IDE
 .vscode/
