@@ -1,23 +1,37 @@
 <p align="center">
-  <img src="Code/assets/Github_logo.png" width="120" alt="NeuroFetal AI Logo" style="background-color: black; padding: 10px; border-radius: 10px;">
+  <img src="Code/assets/Github_logo.png" width="140" alt="NeuroFetal AI Logo" style="background-color: black; padding: 10px; border-radius: 10px;">
 </p>
 
-# NeuroFetal AI: Advanced Intrapartum Monitoring System
+<h1 align="center">NeuroFetal AI</h1>
+<p align="center"><b>Advanced Intrapartum Fetal Monitoring · Clinical Decision Support · Edge AI</b></p>
 
-[![Python](https://img.shields.io/badge/Python-3.13-blue)](https://www.python.org/)
-[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.14-orange)](https://www.tensorflow.org/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-App-FF4B4B)](https://streamlit.io/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Phase%202%20Complete-success)]()
-[![Edge AI](https://img.shields.io/badge/Edge%20AI-TFLite%20Int8-blueviolet)]()
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.13-blue" alt="Python"></a>
+  <a href="https://www.tensorflow.org/"><img src="https://img.shields.io/badge/TensorFlow-2.14-orange" alt="TensorFlow"></a>
+  <a href="https://streamlit.io/"><img src="https://img.shields.io/badge/Streamlit-App-FF4B4B" alt="Streamlit"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"></a>
+  <img src="https://img.shields.io/badge/Status-Phase%202%20Complete-success" alt="Status">
+  <img src="https://img.shields.io/badge/Edge%20AI-TFLite%20Int8-blueviolet" alt="Edge AI">
+  <img src="https://img.shields.io/badge/AUC-0.78-brightgreen" alt="AUC">
+  <img src="https://img.shields.io/badge/Model%20Size-2.6%20MB-informational" alt="Model Size">
+</p>
 
-> **A Next-Generation Clinical Decision Support System (CDSS) fusing FHR, Uterine Contractions, and Maternal Data to predict fetal compromise with 78% AUC.**
+<p align="center">
+  <img src="https://img.shields.io/badge/▸_Tri--Modal_CTG_Fusion-2C3E50?style=flat-square" alt="Tri-Modal CTG Fusion">
+  <img src="https://img.shields.io/badge/▸_MC_Dropout_Uncertainty-2C3E50?style=flat-square" alt="MC Dropout Uncertainty">
+  <img src="https://img.shields.io/badge/▸_2.6_MB_Edge_Model-2C3E50?style=flat-square" alt="2.6 MB Edge Model">
+  <img src="https://img.shields.io/badge/▸_Grad--CAM_XAI-2C3E50?style=flat-square" alt="Grad-CAM XAI">
+</p>
 
 ---
 
-## Project Overview & Achievements
+## The Problem
 
-**NeuroFetal AI** captures the nuanced decision-making process of obstetricians by fusing **Cardiotocography (CTG)** time-series signals with **Maternal Clinical Features** (Age, Parity, Gestation).
+**Every year, ~2.6 million babies are stillborn globally** — most in low-resource settings where obstetricians are scarce and CTG monitors sit unused. Current AI approaches analyze only one signal (FHR) and give binary answers with no confidence measure, making them unreliable in high-stakes clinical environments.
+
+## Our Solution
+
+**NeuroFetal AI** is a **Clinical Decision Support System** that fuses three data streams — **Fetal Heart Rate (FHR)**, **Uterine Contractions (UC)**, and **Maternal Clinical Data** — to predict fetal compromise. It provides **uncertainty-aware predictions** with explainable AI, packaged in a **2.6 MB edge model** that runs offline on low-cost hardware.
 
 ### Final Performance (Feb 2026)
 | Metric | Baseline (Mendis et al.) | Previous State | **NeuroFetal AI (Final)** | Impact |
@@ -135,14 +149,7 @@ NeuroFetal-AI/
 ├── Datasets/
 │   └── ctu_uhb_data/               # CTU-UHB PhysioNet Dataset (.dat/.hea)
 ├── Paper/                          # Reference Paper & Literature
-├── Reports/
-│   ├── final_report.md             # Comprehensive Research Report
-│   ├── Sir.md                      # Architecture Justification & Defense Q&A
-│   ├── Week_1_Report.md            # Phase 1 Progress
-│   ├── Week_2_Report.md            # SSL & Fusion Progress
-│   ├── Week_3_report.md            # Phase 2: Uncertainty & Edge Optimization
-│   ├── uncertainty_analysis/       # Calibration Curves & Histograms
-│   └── training_logs/              # TensorBoard-Compatible Logs
+├── Reports/                        # Weekly Reports, Final Report & Analysis Plots
 ├── Project_Context_v2.0.md         # Project Snapshot for AI Assistants
 ├── requirements.txt                # Python Dependencies
 ├── LICENSE                         # MIT License
@@ -154,10 +161,20 @@ NeuroFetal-AI/
 ## Quick Start
 
 ### 1. Installation
-Clone the repository and install dependencies:
+Clone the repository and set up the environment:
 ```bash
 git clone https://github.com/Krishna200608/NeuroFetal-AI.git
 cd NeuroFetal-AI
+
+# Create and activate virtual environment
+python -m venv .venv
+
+# Windows (PowerShell)
+.\.venv\Scripts\Activate.ps1
+
+# macOS / Linux
+# source .venv/bin/activate
+
 pip install -r requirements.txt
 ```
 
@@ -188,6 +205,9 @@ python Code/scripts/convert_to_tflite.py
 **Project Developed at:**  
 **Indian Institute of Information Technology, Allahabad**  
 *B.Tech 6th Semester Project*
+
+**Project Supervised by:**  
+**[Dr. Nikhilanand Arya](https://scholar.google.com/citations?user=hBf6EmgAAAAJ&hl=en)** - *Assistant Professor, IIIT Allahabad*
 
 **Team Members:**
 *   **Krishna Sikheriya** (IIT2023139) - *Lead Developer & AI Architect*
