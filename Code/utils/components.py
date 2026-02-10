@@ -17,6 +17,8 @@ def get_base64_image(image_path):
 
 def render_header(theme="Light"):
     # Logo Path (Relative to utils/components.py -> ../assets)
+    # User Request: Use Logo-black.png for Dark Mode, Logo.svg for Light Mode
+    logo_file = "Logo-black.png" if theme == "Dark" else "Logo.svg"
     current_dir = os.path.dirname(os.path.abspath(__file__))
     logo_path = os.path.join(current_dir, "..", "assets", logo_file)
     logo_b64 = get_base64_image(logo_path)
