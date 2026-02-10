@@ -21,3 +21,6 @@ Paper/Dataset\ Papers/
 
 # Models (if large and not tracked)
 # Code/models/*.h5
+
+# User Requested Ignores
+Reports/Ignore folder/
