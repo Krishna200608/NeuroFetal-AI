@@ -117,15 +117,15 @@ NeuroFetal AI is a **tri-modal system** that jointly analyzes FHR, UC, and mater
 ```mermaid
 flowchart TD
     subgraph DATA ["Data Layer"]
-        A["PhysioNet CTU-UHB\n552 .dat/.hea records"] --> B["Data Ingestion\n(data_ingestion.py)"]
-        B -->|"4Hz → 1Hz\nGap Interpolation\nMinMax Normalization\n20-min Windowing"| C["Processed .npy Files\nX_fhr · X_uc · X_tabular · y"]
+        A["PhysioNet CTU-UHB — 552 records"] -->|"data_ingestion.py"| B["Data Ingestion"]
+        B -->|"4Hz to 1Hz, Gap Interpolation, MinMax Norm, 20-min Windows"| C["Processed .npy Files"]
     end
 
-    subgraph TRAIN ["Training Pipeline (train.py)"]
+    subgraph TRAIN ["Training Pipeline"]
         C --> D["5-Fold Stratified CV"]
-        D --> E["SMOTE + Focal Loss\nCosine Annealing LR\nLabel Smoothing 0.1"]
-        E --> F["AttentionFusionResNet\n3-Branch Architecture"]
-        F --> G["5× best_model_fold_*.keras"]
+        D --> E["SMOTE + Focal Loss + Cosine LR"]
+        E --> F["AttentionFusionResNet"]
+        F --> G["5x best_model_fold_*.keras"]
     end
 
     subgraph EVAL ["Evaluation"]
@@ -135,8 +135,8 @@ flowchart TD
     end
 
     subgraph DEPLOY ["Deployment"]
-        G --> K["TFLite Int8 Quantization\n(convert_to_tflite.py)\n9.5 MB → 2.6 MB\n300 Calibration Samples"]
-        G --> L["Streamlit Dashboard\n(app.py + components.py)\nFile Upload · Live Prediction\nUncertainty · Grad-CAM XAI"]
+        G -->|"9.5 MB to 2.6 MB"| K["TFLite Int8 Quantization"]
+        G --> L["Streamlit Dashboard"]
     end
 
     style DATA fill:#1a1a2e,stroke:#e94560,color:#eee
@@ -239,27 +239,27 @@ flowchart TD
 ```mermaid
 flowchart TD
     subgraph BRANCH1 ["Branch 1: FHR Signal"]
-        I1["input_fhr\n(batch, 1200, 1)"] --> C1["Conv1D 64, k=7\nBatchNorm + ReLU"]
+        I1["input_fhr (batch, 1200, 1)"] --> C1["Conv1D 64, k=7 + BN + ReLU"]
         C1 --> R1["ResBlock 64 + SE"]
         R1 --> R2["ResBlock 64 + SE"]
         R2 --> R3["ResBlock 128 + SE"]
         R3 --> R4["ResBlock 128 + SE"]
         R4 --> R5["ResBlock 256 + SE"]
         R5 --> R6["ResBlock 256 + SE"]
-        R6 --> TA["Temporal Attention\n4 heads"]
-        TA --> GP["GlobalAvgPool1D\n→ 128-dim"]
+        R6 --> TA["Temporal Attention, 4 heads"]
+        TA --> GP["GlobalAvgPool1D — 128-dim"]
     end
 
     subgraph BRANCH2 ["Branch 2: Clinical"]
-        I2["input_tabular\n(batch, 16)"] --> D1["Dense 64 + ReLU"]
+        I2["input_tabular (batch, 16)"] --> D1["Dense 64 + ReLU"]
         D1 --> DR1["Dropout 0.4"]
-        DR1 --> D2["Dense 128 + ReLU\n→ 128-dim"]
+        DR1 --> D2["Dense 128 + ReLU — 128-dim"]
     end
 
     subgraph BRANCH3 ["Branch 3: CSP"]
-        I3["input_csp\n(batch, 19)"] --> D3["Dense 64 + ReLU"]
+        I3["input_csp (batch, 19)"] --> D3["Dense 64 + ReLU"]
         D3 --> DR2["Dropout 0.4"]
-        DR2 --> D4["Dense 128 + ReLU\n→ 128-dim"]
+        DR2 --> D4["Dense 128 + ReLU — 128-dim"]
     end
 
     GP -->|"Q = FHR features"| CMA
@@ -267,20 +267,21 @@ flowchart TD
     D2 -->|"Gating signal"| CMA
 
     subgraph FUSION ["Cross-Modal Attention Fusion"]
-        CMA["CrossModalAttention\n128-dim, 4 heads\nAttention = softmax QKᵀ/√d · V\nGate = σ W·clinical\nOutput = Gate ⊙ Attention\nLayerNorm + Residual → 128-dim"]
+        CMA["CrossModalAttention — 128-dim, 4 heads"]
     end
 
     CMA --> HD1["Dense 64 + ReLU"]
-    HD1 --> MC1["Dropout 0.4\n⚡ MC: training=True at inference"]
+    HD1 --> MC1["Dropout 0.4 — MC Inference"]
     MC1 --> HD2["Dense 32 + ReLU"]
-    HD2 --> MC2["Dropout 0.4\n⚡ MC: training=True at inference"]
-    MC2 --> OUT["Dense 1 + Sigmoid\nP Compromised ∈ 0, 1"]
+    HD2 --> MC2["Dropout 0.4 — MC Inference"]
+    MC2 --> OUT["Dense 1 + Sigmoid"]
+    OUT --> PRED["P(Compromised)"]
 
     style BRANCH1 fill:#1a1a2e,stroke:#e94560,color:#eee
     style BRANCH2 fill:#16213e,stroke:#0f3460,color:#eee
     style BRANCH3 fill:#16213e,stroke:#0f3460,color:#eee
     style FUSION fill:#533549,stroke:#e94560,color:#eee
-    style OUT fill:#0a6e0a,stroke:#0f3460,color:#fff
+    style PRED fill:#0a6e0a,stroke:#0f3460,color:#fff
 ```
 
 ### Input / Output Specification
@@ -421,7 +422,7 @@ Standard probability averaging across folds yielded inconsistent calibration. **
 
 ```mermaid
 flowchart TD
-    A["📡 Raw CTG Signal\n20-min window"] --> B["Preprocessing\n(on-device)"]
+    A["Raw CTG Signal — 20-min window"] --> B["Preprocessing on-device"]
     B --> B1["Resample to 1 Hz"]
     B1 --> B2["MinMax Normalize"]
     B2 --> B3["CSP Feature Extraction"]
@@ -431,11 +432,11 @@ flowchart TD
     C2 --> C3["Invoke"]
     C3 --> C4["Read Output Tensor"]
     C4 --> D["Post-Processing"]
-    D --> D1["Dequantize → Probability"]
+    D --> D1["Dequantize to Probability"]
     D1 --> D2["Apply Confidence Threshold"]
     D2 --> E{"Verdict"}
-    E -->|"P ≥ 0.5"| F["🔴 COMPROMISED"]
-    E -->|"P < 0.5"| G["🟢 NORMAL"]
+    E -->|"P >= 0.5"| F["COMPROMISED"]
+    E -->|"P < 0.5"| G["NORMAL"]
 
     style A fill:#1a1a2e,stroke:#e94560,color:#eee
     style C fill:#16213e,stroke:#0f3460,color:#eee
@@ -469,17 +470,17 @@ The Streamlit dashboard (`app.py`) provides:
 
 ```mermaid
 flowchart TD
-    A["👩‍⚕️ Clinician\nUploads CTG Recording"] --> B["System Preprocesses Signal"]
+    A["Clinician Uploads CTG Recording"] --> B["System Preprocesses Signal"]
     B --> C["Display FHR/UC Trace"]
-    C --> D["Clinician Enters\nClinical Features\nAge · Parity · Gestation"]
+    C --> D["Clinician Enters Clinical Features"]
     D --> E["System Runs Inference"]
-    E --> F["Prediction: COMPROMISED\n0.82 probability"]
-    E --> G["Confidence: HIGH\nUncertainty: 0.04"]
-    E --> H["Grad-CAM Heatmap\nLate deceleration at min 12-14"]
-    F & G & H --> I["Clinician Reviews\nHighlighted Signal Segment"]
+    E --> F["Prediction: COMPROMISED, P=0.82"]
+    E --> G["Confidence: HIGH, Uncertainty=0.04"]
+    E --> H["Grad-CAM: Late deceleration at min 12-14"]
+    F & G & H --> I["Clinician Reviews Highlighted Segment"]
     I --> J{"Clinical Decision"}
-    J -->|"Concerning"| K["Intervene\nEmergency C-Section / Operative"]
-    J -->|"Reassuring in context"| L["Continue Monitoring"]
+    J -->|"Concerning"| K["Intervene — Emergency C-Section"]
+    J -->|"Reassuring"| L["Continue Monitoring"]
 
     style A fill:#1a1a2e,stroke:#e94560,color:#eee
     style E fill:#16213e,stroke:#0f3460,color:#eee
