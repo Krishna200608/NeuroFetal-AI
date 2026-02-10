@@ -66,13 +66,6 @@ To overcome the small dataset size (552 raw recordings), we implemented a **Over
 
 ---
 
-## 5. Conclusion
-The **NeuroFetal AI** project has met and exceeded all technical requirements. It stands as a robust, interpretable, and high-performance solution for intrapartum fetal monitoring. The code is modular, the evaluation is rigorous (Stratified 5-Fold Cross-Validation), and the documentation is comprehensive.
-
-**Final Verdict**: Project goals successfully achieved with distinction.
-
-
-
 ## 5. Phase 2: Uncertainty & Edge Optimization (Completed Feb 8)
 
 ### A. Uncertainty Quantification

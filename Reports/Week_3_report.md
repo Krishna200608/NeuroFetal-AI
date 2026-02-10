@@ -35,8 +35,9 @@ We successfully converted the heavy Fusion-ResNet model into a lightweight forma
 ## 3. Technical Specifications
 - **Model**: `neurofetal_model_quant_int8.tflite`
 - **Input Shapes**: 
-    - Signal: `[1, 2400, 1]` (Float32/Int8)
-    - Tabular: `[1, 4]` (Float32/Int8)
+    - Signal (FHR): `(1, 1200, 1)` (Float32/Int8)
+    - Tabular (Clinical): `(1, 16)` (Float32/Int8)
+    - CSP Features: `(1, 19)` (Float32/Int8)
 - **Inference Engine**: TensorFlow Lite (v2.16+)
 
 ## 4. Conclusion & Future Directions

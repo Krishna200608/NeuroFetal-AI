@@ -109,7 +109,7 @@ Deep Learning models (like ResNets) are heavy and slow. You can't put a Research
 ### Our Solution: TFLite Quantization
 We implemented an automated "Compression Pipeline" that converts our trained Keras model into **TensorFlow Lite (TFLite)** format.
 
-1.  **Size Reduction:** We shrunk the model from **~50MB** to **~141 KB** (>350x smaller).
+1.  **Size Reduction:** We shrunk the model from **~9.5 MB** (Float32) to **~2.6 MB** (Int8) — a **~3.6x compression**.
 2.  **Optimized Instructions:** We used **Quantization** (converting 32-bit floats to 8-bit integers) without losing accuracy.
 3.  **Result:** The model can now run on a **5000 Rs. Android Smartphone** or a Raspberry Pi.
 
@@ -214,8 +214,8 @@ So, instead of feeding the raw noisy signal to the model, we feed it the *filter
 
 **Q: "You said you optimized for Edge devices. Show me proof."**
 
-* "Certainly. We converted the 50MB Keras model into a **2.6 MB Int8 TFLite model**.
-*   **Size Reduction:** 20x smaller.
+* "Certainly. We converted the 9.5 MB Float32 Keras model into a **2.6 MB Int8 TFLite model**.
+*   **Size Reduction:** ~3.6x smaller.
 *   **Speed:** Inference drops from 200ms to <30ms.
 *   **Accuracy:** We maintained 99% of the original AUC (0.78 vs 0.77).
 *   **Impact:** This allows the AI to run offline on a $50 smartphone in a rural village, without internet."*
