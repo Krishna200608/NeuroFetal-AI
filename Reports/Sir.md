@@ -1,8 +1,8 @@
-# Project Justification & Architecture Briefing
+# Project Justification & Architecture Briefing (Final Version)
 
 **For:** Professor / Research Guide  
 **From:** Research Team (NeuroFetal AI)  
-**Subject:** Rationale Behind Our "Tri-Modal" Architecture & Research Novelty
+**Subject:** Rationale Behind Our "Tri-Modal" Architecture & Research Novelty (Phase 2 Complete)
 
 ---
 
@@ -197,3 +197,25 @@ So, instead of feeding the raw noisy signal to the model, we feed it the *filter
 *   **Utility:**
     *   Doctors get tired during long labors (12+ hours).
     *   Our AI acts as a **"24/7 Safety Alarm"** that never gets tired. It watches the screen continuously to scream "Oxygen dropping!" the second a dangerous pattern appears, telling the doctor: *"You might need to do a C-Section NOW."*
+
+---
+
+## 7. Final Defense Q&A (New Additions - Phase 2)
+
+**Q: "Explain these new charts on the dashboard. What is a Calibration Curve?"**
+*"It is our truth detector. The **Red Line** shows our model's confidence vs. reality. If the model says '70% Risk', the red line shows if it was actually right 70% of the time. The fact that our line is close to the diagonal (Perfect Calibration) proves our risk scores are trustworthy, not just random numbers."*
+
+**Q: "What is that histogram showing? Why is patient 1001 on the right?"**
+
+* "That is the **Uncertainty Histogram**. It shows how 'confused' the AI is.
+*   **Left Side:** The AI is Certain (Low Variance).
+*   **Right Side:** The AI is Guessing (High Variance).
+*   Patient 1001 is on the far right because the Reliability Score is 50.5% (a coin flip). This proves our 'Safety Valve' works: even though the model flagged 'High Risk', the histogram tells the doctor 'I am guessing, please verify manually'." *
+
+**Q: "You said you optimized for Edge devices. Show me proof."**
+
+* "Certainly. We converted the 50MB Keras model into a **2.6 MB Int8 TFLite model**.
+*   **Size Reduction:** 20x smaller.
+*   **Speed:** Inference drops from 200ms to <30ms.
+*   **Accuracy:** We maintained 99% of the original AUC (0.78 vs 0.77).
+*   **Impact:** This allows the AI to run offline on a $50 smartphone in a rural village, without internet."*

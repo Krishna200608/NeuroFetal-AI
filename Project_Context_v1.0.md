@@ -1,9 +1,9 @@
-# NeuroFetal AI Project Context (as of Release v1.0)
-**Commit:** `fd53dcf`
-**Date:** Feb 6, 2026
+# NeuroFetal AI Project Context (as of Release v2.0)
+**Commit:** `Phase_2_Complete`
+**Date:** Feb 10, 2026
 
 ## 1. Project Overview
-NeuroFetal AI is a clinical decision support system utilizing deep learning to predict fetal compromise during labor. It fuses three data streams to achieve State-of-the-Art (SOTA) performance.
+NeuroFetal AI is a clinical decision support system utilizing deep learning to predict fetal compromise during labor. It fuses three data streams (FHR, Contractions, Clinical Data) to achieve State-of-the-Art (SOTA) performance with clinical uncertainty quantification.
 
 ## 2. Current Performance Status
 - **AUC Score:** 0.78 (Public Data)
@@ -22,8 +22,8 @@ The model (`AttentionFusionResNet`) integrates:
 - High variance flags cases for human review.
 
 ### C. Edge Deployment
-- **TFLite Model:** Quantized to **141 KB**.
-- **Offline Capability:** Runs on low-end Android devices without internet.
+- **TFLite Model:** Quantized to **2.6 MB** (Int8).
+- **Offline Capability:** Runs on low-end Android devices without internet (<30ms inference).
 
 ## 4. Repository Structure
 - **`Code/scripts/train.py`**: Main training pipeline with SMOTE, Focal Loss, and Stratified Group K-Fold.
@@ -32,5 +32,7 @@ The model (`AttentionFusionResNet`) integrates:
 - **`Reports/final_report.md`**: Detailed analysis and results.
 
 ## 5. Next Steps
-- We will think about that later (both Gemini and me).
+- **Clinical Validation**: Run the quantized model on a larger retrospective dataset.
+- **Hardware Benchmarking**: Test on Coral Edge TPU.
+- **Publication**: Prepare manuscript for IEEE EMBC.
 

@@ -8,7 +8,8 @@
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.14-orange)](https://www.tensorflow.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-App-FF4B4B)](https://streamlit.io/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-SOTA%20Performance-success)]()
+[![Status](https://img.shields.io/badge/Status-Phase%202%20Complete-success)]()
+[![Edge AI](https://img.shields.io/badge/Edge%20AI-TFLite%20Int8-blueviolet)]()
 
 > **A Next-Generation Clinical Decision Support System (CDSS) fusing FHR, Uterine Contractions, and Maternal Data to predict fetal compromise with 78% AUC.**
 
@@ -85,7 +86,7 @@ graph LR
 *   **Core**: Python 3.13, NumPy, Pandas, Scipy
 *   **Deep Learning**: TensorFlow/Keras (Functional API), **MC Dropout**
 *   **Advanced ML**: `imbalanced-learn` (SMOTE), `scikit-learn` (Rank Averaging)
-*   **Deployment**: Streamlit, Docker, **TFLite (141 KB Edge Model)**
+*   **Deployment**: Streamlit, Docker, **TFLite (2.6 MB Edge Model)**
 
 ---
 

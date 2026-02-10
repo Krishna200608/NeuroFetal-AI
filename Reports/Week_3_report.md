@@ -39,7 +39,10 @@ We successfully converted the heavy Fusion-ResNet model into a lightweight forma
     - Tabular: `[1, 4]` (Float32/Int8)
 - **Inference Engine**: TensorFlow Lite (v2.16+)
 
-## 4. Next Steps
-- **Clinical Validation**: Run the quantized model on a larger retrospective dataset to verify clinical sensitivity/specificity metrics.
-- **Hardware Testing**: Deploy the `.tflite` model to a physical edge device for latency benchmarking.
-- **Final Report**: Synthesize all findings into the final project dissertation.
+## 4. Conclusion & Future Directions
+The successful integration of Uncertainty Quantification and Edge Optimization marks the completion of the Phase 2 objectives. The system is now a fully functional, end-to-end prototype ready for pilot testing.
+
+### Future Research (Post-Submission)
+- **Clinical Validation**: Run the quantized model on a larger retrospective dataset (e.g. Oxford/Cambridge datasets) to verify clinical sensitivity/specificity metrics.
+- **Hardware Testing**: Deploy the `.tflite` model to a specific Edge TPU (Coral USB Accelerator) to measure precise inference latency <10ms.
+- **Publication**: Synthesize findings into a conference paper for IEEE EMBC / MICCAI.
