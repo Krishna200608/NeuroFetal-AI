@@ -55,9 +55,9 @@ def se_block_inline(x, ratio=16):
     return layers.Multiply()([x, se])
 
 
-def residual_block(x, filters, kernel_size=3, stride=1, use_se=True):
+def residual_block(x, filters, kernel_size=3, stride=1, use_se=True, stochastic_depth_rate=0.0):
     """
-    Residual block with optional SE attention.
+    Residual block with optional SE attention and stochastic depth.
     
     Args:
         x: Input tensor
@@ -65,6 +65,7 @@ def residual_block(x, filters, kernel_size=3, stride=1, use_se=True):
         kernel_size: Convolution kernel size
         stride: Stride for downsampling
         use_se: Whether to apply SE block
+        stochastic_depth_rate: Probability of dropping the residual path (0 = disabled)
     """
     shortcut = x
     
@@ -88,7 +89,11 @@ def residual_block(x, filters, kernel_size=3, stride=1, use_se=True):
     if x.shape[-1] != shortcut.shape[-1] or stride != 1:
         shortcut = layers.Conv1D(filters, 1, strides=stride, padding='same')(shortcut)
         shortcut = layers.BatchNormalization()(shortcut)
-        
+    
+    # SOTA: Stochastic Depth — randomly drop residual path during training
+    if stochastic_depth_rate > 0:
+        x = layers.Dropout(stochastic_depth_rate, noise_shape=(tf.shape(x)[0], 1, 1))(x)
+    
     x = layers.Add()([x, shortcut])
     x = layers.Activation('relu')(x)
     return x
@@ -210,8 +215,9 @@ def build_attention_fusion_resnet(
     use_se_blocks=True,
     use_temporal_attention=True,
     use_cross_modal_attention=True,
-    dropout_rate=0.4,
-    mc_dropout=False  # Enable for uncertainty quantification
+    dropout_rate=0.3,  # SOTA: Reduced from 0.4 — less over-regularization with augmentation
+    mc_dropout=False,  # Enable for uncertainty quantification
+    use_aux_head=False  # SOTA: Auxiliary pH regression head for multi-task learning
 ):
     """
     Novel Attention Fusion ResNet with Cross-Modal Attention.
@@ -319,11 +325,20 @@ def build_attention_fusion_resnet(
     output = layers.Dense(1, activation='sigmoid', name='output')(x)
     
     # =========================================================================
+    # SOTA: Auxiliary pH Regression Head (Multi-Task Learning)
+    # =========================================================================
+    outputs = [output]
+    if use_aux_head:
+        aux_out = layers.Dense(32, activation='relu', name='aux_dense')(fusion)
+        aux_out = layers.Dense(1, activation='linear', name='aux_ph_output')(aux_out)
+        outputs.append(aux_out)
+    
+    # =========================================================================
     # Build Model
     # =========================================================================
     model = models.Model(
         inputs=[input_fhr, input_tabular, input_csp],
-        outputs=output,
+        outputs=outputs if use_aux_head else output,
         name='AttentionFusionResNet'
     )
     
@@ -405,13 +420,13 @@ def build_fhr_encoder(
     if use_multi_scale and MultiScaleBlock is not None:
         x = MultiScaleBlock(filters=64)(x)
     
-    # Stage 1: Low-level features
-    x = residual_block(x, 64, use_se=use_se_blocks)
-    x = residual_block(x, 64, use_se=use_se_blocks)
+    # Stage 1: Low-level features (SOTA: stochastic depth for regularization)
+    x = residual_block(x, 64, use_se=use_se_blocks, stochastic_depth_rate=0.05)
+    x = residual_block(x, 64, use_se=use_se_blocks, stochastic_depth_rate=0.05)
     
     # Stage 2: Mid-level features (downsample)
-    x = residual_block(x, 128, stride=2, use_se=use_se_blocks)
-    x = residual_block(x, 128, use_se=use_se_blocks)
+    x = residual_block(x, 128, stride=2, use_se=use_se_blocks, stochastic_depth_rate=0.1)
+    x = residual_block(x, 128, use_se=use_se_blocks, stochastic_depth_rate=0.1)
     
     # Mid-stage temporal attention
     if use_attention:
@@ -420,9 +435,9 @@ def build_fhr_encoder(
         else:
             x = temporal_attention_inline(x, num_heads=4, key_dim=32)
     
-    # Stage 3: High-level features (downsample)
-    x = residual_block(x, 256, stride=2, use_se=use_se_blocks)
-    x = residual_block(x, 256, use_se=use_se_blocks)
+    # Stage 3: High-level features (SOTA: reduced from 256→192 to avoid overfit on small data)
+    x = residual_block(x, 192, stride=2, use_se=use_se_blocks, stochastic_depth_rate=0.15)
+    x = residual_block(x, 192, use_se=use_se_blocks, stochastic_depth_rate=0.15)
     
     # Final temporal attention
     if use_attention:
@@ -432,7 +447,7 @@ def build_fhr_encoder(
             x = temporal_attention_inline(x, num_heads=8, key_dim=64)
     
     # Global pooling
-    outputs = layers.GlobalAveragePooling1D(name='global_pool')(x)  # (batch, 256)
+    outputs = layers.GlobalAveragePooling1D(name='global_pool')(x)  # (batch, 192)
     
     # Bottleneck projection to 128-dim (standardizing latent space)
     outputs = layers.Dense(128, activation='relu', name='projection')(outputs)
@@ -447,7 +462,7 @@ def build_enhanced_fusion_resnet(
     use_se_blocks=True,
     use_attention=True,
     use_multi_scale=False,
-    dropout_rate=0.4  # Increased from 0.3 for better regularization
+    dropout_rate=0.3  # SOTA: Reduced from 0.4 — augmentation handles regularization
 ):
     """
     Enhanced 3-input Fusion ResNet with attention mechanisms.
@@ -554,7 +569,7 @@ def build_model_for_ablation(config):
             use_se_blocks=config.get('use_se', True),
             use_attention=config.get('use_attention', True),
             use_multi_scale=config.get('use_multi_scale', False),
-            dropout_rate=config.get('dropout_rate', 0.4)  # Increased default
+            dropout_rate=config.get('dropout_rate', 0.3)  # SOTA: Reduced default
         )
 
 

@@ -39,14 +39,14 @@ LOG_DIR = os.path.join(BASE_DIR, "Reports", "training_logs")
 
 # Training hyperparameters
 BATCH_SIZE = 32
-EPOCHS = 150  # Increased from 75 for deep convergence
+EPOCHS = 200  # SOTA: Extended for cosine annealing convergence
 LEARNING_RATE = 0.0005  # Lower initial LR for stability
 N_FOLDS = 5
 
-# Focal Loss parameters (Aggressive for extreme class imbalance)
+# Focal Loss parameters (SOTA: Recalibrated — less aggressive to avoid underfitting)
 USE_FOCAL_LOSS = True
-FOCAL_LOSS_ALPHA = 0.75  # Increased focus on minority class
-FOCAL_LOSS_GAMMA = 2.5   # Harder mining
+FOCAL_LOSS_ALPHA = 0.65  # SOTA: Reduced from 0.75 to let model learn easy examples too
+FOCAL_LOSS_GAMMA = 2.0   # SOTA: Reduced from 2.5 — less hard mining
 FOCAL_LOSS_POS_WEIGHT = 5.0
 
 # Model configuration
@@ -59,7 +59,7 @@ MC_DROPOUT = False  # Keep False during training; enable only for inference unce
 
 # NOVEL: Data Augmentation Configuration
 USE_AUGMENTATION = True  # Enable time-series augmentation
-AUGMENT_EXPAND_FACTOR = 2  # 2x data expansion (reverted from 3x for stability)
+AUGMENT_EXPAND_FACTOR = 4  # SOTA: 4x expansion (with SpecAugment+CutMix for variety)
 USE_LABEL_SMOOTHING = True  # Enable label smoothing regularization
 LABEL_SMOOTHING = 0.1  # Smoothing factor (0.1 = soft labels [0.05, 0.95])
 USE_PRETRAINED = True  # Load SSL pretrained weights
@@ -290,7 +290,12 @@ def train_fold(
             time_warp_sigma=0.2,
             jitter_sigma=0.03,
             scale_sigma=0.1,
-            mixup_alpha=0.2
+            mixup_alpha=0.2,
+            use_spec_augment=True,   # SOTA: SpecAugment for signal robustness
+            use_cutmix=True,         # SOTA: CutMix for segment-level diversity
+            spec_augment_max_mask=0.15,
+            spec_augment_n_masks=2,
+            cutmix_alpha=1.0
         )
         
         # Augment FHR signal
@@ -407,7 +412,7 @@ def train_fold(
     
     # Optimizer
     if hasattr(tf.keras.optimizers, 'AdamW'):
-        optimizer = tf.keras.optimizers.AdamW(learning_rate=LEARNING_RATE, weight_decay=1e-4)
+        optimizer = tf.keras.optimizers.AdamW(learning_rate=LEARNING_RATE, weight_decay=5e-4)  # SOTA: Increased weight decay
     else:
         optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
     
@@ -448,7 +453,7 @@ def train_fold(
         callbacks = [
             ModelCheckpoint(checkpoint_path, monitor='val_auc', verbose=1, 
                            save_best_only=True, mode='max'),
-            EarlyStopping(monitor='val_auc', patience=30, mode='max',  # Increased patience to 30
+            EarlyStopping(monitor='val_auc', patience=40, mode='max',  # SOTA: patience=40 for 200 epochs
                          verbose=1, restore_best_weights=True),
             lr_scheduler
         ]
