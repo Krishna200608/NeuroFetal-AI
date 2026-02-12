@@ -79,6 +79,10 @@ except ImportError:
 
 import argparse
 
+def ensure_dir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
 def parse_args():
     parser = argparse.ArgumentParser(description="NeuroFetal AI Training Script")
     
