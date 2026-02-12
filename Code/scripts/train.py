@@ -77,6 +77,46 @@ except ImportError:
     print("WARNING: imblearn not found. SMOTE disabled.")
     USE_SMOTE = False
 
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="NeuroFetal AI Training Script")
+    
+    # Hyperparameters
+    parser.add_argument('--epochs', type=int, default=EPOCHS, help='Number of training epochs')
+    parser.add_argument('--batch_size', type=int, default=BATCH_SIZE, help='Batch size for training')
+    parser.add_argument('--learning_rate', type=float, default=LEARNING_RATE, help='Initial learning rate')
+    
+    # Fold control
+    parser.add_argument('--fold', type=int, default=None, help='Specific fold to run (1-5). If None, runs all folds.')
+    
+    # Paths
+    parser.add_argument('--data_dir', type=str, default=PROCESSED_DATA_DIR, help='Directory containing processed data')
+    parser.add_argument('--model_dir', type=str, default=MODEL_DIR, help='Directory to save models')
+    parser.add_argument('--log_dir', type=str, default=LOG_DIR, help='Directory to save logs')
+    
+    # Flags
+    parser.add_argument('--use_smote', type=bool, default=USE_SMOTE, help='Whether to use SMOTE')
+    
+    args = parser.parse_args()
+    return args
+
+# Parse arguments immediately to update globals
+args = parse_args()
+
+# Update Globals
+EPOCHS = args.epochs
+BATCH_SIZE = args.batch_size
+LEARNING_RATE = args.learning_rate
+PROCESSED_DATA_DIR = args.data_dir
+MODEL_DIR = args.model_dir
+LOG_DIR = args.log_dir
+USE_SMOTE = args.use_smote
+
+# Ensure directories exist
+ensure_dir(MODEL_DIR)
+ensure_dir(LOG_DIR)
+
 
 def ensure_dir(directory):
     if not os.path.exists(directory):
@@ -476,6 +516,14 @@ def main():
     fold_num = 1
     
     for train_idx, val_idx in skf.split(X_fhr, y):
+        # Check if we should run this fold
+        if args.fold is not None and fold_num != args.fold:
+            fold_num += 1
+            continue
+            
+        print(f"\n{'='*40}")
+        print(f"Running Fold {fold_num}/{N_FOLDS}")
+        print(f"{'='*40}")
         # Split data
         X_fhr_train, X_fhr_val = X_fhr[train_idx], X_fhr[val_idx]
         X_tab_train, X_tab_val = X_tabular[train_idx], X_tabular[val_idx]
