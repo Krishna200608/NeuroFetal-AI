@@ -20,7 +20,7 @@ from ssl_models import MaskedAutoencoder
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PROCESSED_DATA_DIR = os.path.join(BASE_DIR, "Datasets", "processed")
 MODEL_DIR = os.path.join(BASE_DIR, "Code", "models")
-PRETRAIN_WEIGHTS_PATH = os.path.join(MODEL_DIR, "pretrained_fhr_encoder.weights.h5")
+PRETRAIN_WEIGHTS_PATH = os.path.join(MODEL_DIR, "pretrained_fhr_encoder.weights.keras")
 
 BATCH_SIZE = 64
 EPOCHS = 50  # Pretraining usually requires many epochs, but dataset is small.

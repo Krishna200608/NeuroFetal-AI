@@ -62,7 +62,7 @@ AUGMENT_EXPAND_FACTOR = 2  # 2x data expansion (reverted from 3x for stability)
 USE_LABEL_SMOOTHING = True  # Enable label smoothing regularization
 LABEL_SMOOTHING = 0.1  # Smoothing factor (0.1 = soft labels [0.05, 0.95])
 USE_PRETRAINED = True  # Load SSL pretrained weights
-PRETRAIN_WEIGHTS_PATH = os.path.join(MODEL_DIR, "pretrained_fhr_encoder.weights.h5")
+PRETRAIN_WEIGHTS_PATH = os.path.join(MODEL_DIR, "pretrained_fhr_encoder.weights.keras")
 
 # NOVEL: Cosine Annealing LR Scheduler
 USE_COSINE_ANNEALING = True  # Use cosine annealing instead of ReduceLROnPlateau
