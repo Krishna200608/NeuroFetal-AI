@@ -284,20 +284,35 @@ def main():
     
     md_content = f"""# Final Test Metrics (Full Dataset)
 
-**Date**: {timestamp}
-**Model**: Fold 1 (AttentionFusionResNet)
-**Total Samples**: {len(y_true)} (20-min windows)
+**Date:** {timestamp}
 
-## Summary
-- **Accuracy**: {acc:.2%}
-- **AUC-ROC**: {auc:.4f}
+**Model:** *Fold 1 — AttentionFusionResNet*
+
+**Total Samples:** **{len(y_true)} (20-min windows)**
+
+---
+
+## Overall Performance
+
+| Metric       | Score      |
+| ------------ | ---------- |
+| **Accuracy** | **{acc:.2%}** |
+| **AUC-ROC**  | **{auc:.4f}** |
+
+---
 
 ## Classification Report
+
 ```text
 {report}
 ```
 
+---
+
 ## Confusion Matrix
+
+### Matrix Form
+
 ```text
           Predicted
           0     1
@@ -305,10 +320,26 @@ Actual 0  {cm[0,0]}   {cm[0,1]}
        1  {cm[1,0]}   {cm[1,1]}
 ```
 
-## Details
-- **FHR Input**: {X_fhr.shape}
-- **Tabular Input**: {X_tab.shape}
-- **CSP Features**: {csp_shape_str}
+### Tabular Form
+
+| Actual \\ Predicted  | 0    | 1  |
+| ------------------- | ---- | -- |
+| **0 (Normal)**      | {cm[0,0]} | {cm[0,1]} |
+| **1 (Compromised)** | {cm[1,0]} | {cm[1,1]} |
+
+---
+
+## Input Details
+
+| Feature Type      | Shape           |
+| ----------------- | --------------- |
+| **FHR Input**     | {X_fhr.shape} |
+| **Tabular Input** | {X_tab.shape} |
+| **CSP Features**  | {csp_shape_str} |
+
+---
+
+*End of report*
 """
     
     with open(out_file, "w") as f:
