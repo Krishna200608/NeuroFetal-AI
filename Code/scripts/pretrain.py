@@ -69,10 +69,10 @@ def main():
         verbose=1
     )
     
-    # 4. Save Encoder Weights
-    print(f"Saving encoder weights to {PRETRAIN_WEIGHTS_PATH}...")
-    # We save ONLY the encoder weights, not the full MAE
-    mae.encoder.save_weights(PRETRAIN_WEIGHTS_PATH)
+    # 4. Save Encoder Model
+    print(f"Saving encoder model to {PRETRAIN_WEIGHTS_PATH}...")
+    # Save the full encoder model to support .keras format
+    mae.encoder.save(PRETRAIN_WEIGHTS_PATH)
     print("✓ Pretraining complete!")
 
 if __name__ == "__main__":

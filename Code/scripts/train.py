@@ -351,18 +351,23 @@ def train_fold(
         if os.path.exists(PRETRAIN_WEIGHTS_PATH):
             print(f"Loading pretrained SSL encoder weights from {PRETRAIN_WEIGHTS_PATH}...")
             try:
-                # Load weights into the specific encoder layer
+                # Load the full pretrained encoder model
+                print("  Loading pretrained encoder model...")
+                pretrained_encoder = tf.keras.models.load_model(PRETRAIN_WEIGHTS_PATH, compile=False)
+
+                # Get the specific encoder layer in the target model
                 # The layer name 'shared_fhr_encoder' MUST match what's in model.py
                 encoder_layer = model.get_layer('shared_fhr_encoder')
                 
                 # CRITICAL FIX: Run a dummy forward pass to force-build all sub-layers
                 # This ensures lazy layers (LayerNorm, MHA) are built before loading weights
-                print("  Building encoder variables with dummy pass...")
+                print("  Building target encoder variables with dummy pass...")
                 dummy_input = tf.zeros((1, 1200, 1))
                 encoder_layer(dummy_input)
                 
-                encoder_layer.load_weights(PRETRAIN_WEIGHTS_PATH)
-                print("✓ Pretrained weights loaded successfully! (Transfer Learning Activated)")
+                # Transfer weights from loaded model to target layer
+                encoder_layer.set_weights(pretrained_encoder.get_weights())
+                print("✓ Pretrained weights transferred successfully! (Transfer Learning Activated)")
             except ValueError as e:
                 print(f"⚠️ Error loading weights: {e}")
                 print("  (Layer names might include prefix if inside another model)")
