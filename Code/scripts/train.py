@@ -21,7 +21,8 @@ from datetime import datetime
 # Local imports (from utils folder)
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'utils'))
-from model import build_fusion_resnet, build_enhanced_fusion_resnet, build_attention_fusion_resnet
+from model import build_fusion_resnet, build_enhanced_fusion_resnet, build_attention_fusion_resnet, CrossModalAttention
+from attention_blocks import SEBlock, TemporalAttentionBlock, MultiScaleBlock, ChannelAttention, SpatialAttention, CBAMBlock, PositionalEncoding
 from focal_loss import get_focal_loss
 from csp_features import MultimodalFeatureExtractor
 from augmentation import TimeSeriesAugmentor, apply_label_smoothing
@@ -357,7 +358,23 @@ def train_fold(
             try:
                 # Load the full pretrained encoder model
                 print("  Loading pretrained encoder model...")
-                pretrained_encoder = tf.keras.models.load_model(PRETRAIN_WEIGHTS_PATH, compile=False)
+                # Define custom objects for deserialization
+                custom_objects = {
+                    'SEBlock': SEBlock,
+                    'TemporalAttentionBlock': TemporalAttentionBlock,
+                    'MultiScaleBlock': MultiScaleBlock,
+                    'PositionalEncoding': PositionalEncoding,
+                    'ChannelAttention': ChannelAttention,
+                    'SpatialAttention': SpatialAttention,
+                    'CBAMBlock': CBAMBlock,
+                    'CrossModalAttention': CrossModalAttention
+                }
+
+                pretrained_encoder = tf.keras.models.load_model(
+                    PRETRAIN_WEIGHTS_PATH, 
+                    custom_objects=custom_objects,
+                    compile=False
+                )
 
                 # Get the specific encoder layer in the target model
                 # The layer name 'shared_fhr_encoder' MUST match what's in model.py

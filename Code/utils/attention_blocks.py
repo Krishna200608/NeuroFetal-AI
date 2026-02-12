@@ -14,6 +14,7 @@ to improve performance in medical signal classification tasks.
 
 import tensorflow as tf
 from tensorflow.keras import layers
+from tensorflow.keras.utils import register_keras_serializable
 import numpy as np
 
 
@@ -21,6 +22,7 @@ import numpy as np
 # Squeeze-and-Excitation (SE) Block
 # ============================================================================
 
+@register_keras_serializable()
 class SEBlock(layers.Layer):
     """
     Squeeze-and-Excitation Block for 1D signals.
@@ -95,6 +97,7 @@ def se_block(x, reduction_ratio=16, name=None):
 # Multi-Head Self-Attention
 # ============================================================================
 
+@register_keras_serializable()
 class PositionalEncoding(layers.Layer):
     """
     Sinusoidal positional encoding for 1D sequences.
@@ -153,6 +156,7 @@ class PositionalEncoding(layers.Layer):
         return config
 
 
+@register_keras_serializable()
 class TemporalAttentionBlock(layers.Layer):
     """
     Temporal Self-Attention Block for 1D signals.
@@ -282,6 +286,7 @@ def temporal_attention(x, num_heads=4, key_dim=32, dropout_rate=0.1,
 # Convolutional Block Attention Module (CBAM) - Optional Advanced Block
 # ============================================================================
 
+@register_keras_serializable()
 class ChannelAttention(layers.Layer):
     """Channel attention module from CBAM."""
     
@@ -319,6 +324,7 @@ class ChannelAttention(layers.Layer):
         return x * attention
 
 
+@register_keras_serializable()
 class SpatialAttention(layers.Layer):
     """Spatial (temporal) attention module from CBAM."""
     
@@ -343,6 +349,7 @@ class SpatialAttention(layers.Layer):
         return x * attention
 
 
+@register_keras_serializable()
 class CBAMBlock(layers.Layer):
     """
     Convolutional Block Attention Module for 1D signals.
@@ -366,6 +373,7 @@ class CBAMBlock(layers.Layer):
 # Multi-Scale Feature Extraction Block
 # ============================================================================
 
+@register_keras_serializable()
 class MultiScaleBlock(layers.Layer):
     """
     Multi-scale temporal feature extraction block.

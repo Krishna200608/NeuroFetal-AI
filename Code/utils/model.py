@@ -26,6 +26,7 @@ Reference:
 
 import tensorflow as tf
 from tensorflow.keras import layers, models, Input
+from tensorflow.keras.utils import register_keras_serializable
 
 # Import attention blocks
 try:
@@ -111,6 +112,7 @@ def temporal_attention_inline(x, num_heads=4, key_dim=32):
 # NOVEL: Cross-Modal Attention Layer (Publication Contribution)
 # ============================================================================
 
+@register_keras_serializable()
 class CrossModalAttention(layers.Layer):
     """
     Cross-Modal Attention for FHR-CSP Interaction with Clinical Gating.
