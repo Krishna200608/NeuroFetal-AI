@@ -17,3 +17,6 @@ plotly
 streamlit
 pyngrok
 python-dotenv
+
+xgboost 
+lightgbm

@@ -382,24 +382,49 @@ def train_fold(
                 )
 
                 # Get the specific encoder layer in the target model
-                # The layer name 'shared_fhr_encoder' MUST match what's in model.py
                 encoder_layer = model.get_layer('shared_fhr_encoder')
                 
-                # CRITICAL FIX: Run a dummy forward pass to force-build all sub-layers
-                # This ensures lazy layers (LayerNorm, MHA) are built before loading weights
+                # Force-build all sub-layers with a dummy forward pass
                 print("  Building target encoder variables with dummy pass...")
                 dummy_input = tf.zeros((1, 1200, 1))
                 encoder_layer(dummy_input)
                 
-                # Transfer weights from loaded model to target layer
-                encoder_layer.set_weights(pretrained_encoder.get_weights())
-                print("✓ Pretrained weights transferred successfully! (Transfer Learning Activated)")
-            except ValueError as e:
-                print(f"⚠️ Error loading weights: {e}")
-                print("  (Layer names might include prefix if inside another model)")
-                # Fallback: Try to load by index or name without mismatch
+                # SOTA FIX: Layer-name-based partial weight transfer
+                # Handles architecture mismatches (e.g., 256→192 dim, added SpatialDropout1D)
+                transferred = 0
+                skipped = 0
+                target_layers = {l.name: l for l in encoder_layer.layers if l.weights}
+                
+                for src_layer in pretrained_encoder.layers:
+                    if not src_layer.weights:
+                        continue
+                    
+                    # Try to find matching layer by name in target encoder
+                    tgt_layer = target_layers.get(src_layer.name)
+                    if tgt_layer is None:
+                        skipped += 1
+                        continue
+                    
+                    # Check if shapes match before transferring
+                    src_weights = src_layer.get_weights()
+                    tgt_weights = tgt_layer.get_weights()
+                    
+                    if len(src_weights) == len(tgt_weights) and all(
+                        sw.shape == tw.shape for sw, tw in zip(src_weights, tgt_weights)
+                    ):
+                        tgt_layer.set_weights(src_weights)
+                        transferred += 1
+                    else:
+                        skipped += 1
+                
+                print(f"✓ Partial weight transfer: {transferred} layers transferred, {skipped} skipped (shape mismatch)")
+                if transferred > 0:
+                    print("  Transfer Learning Activated (compatible layers loaded)")
+                else:
+                    print("  No compatible layers found — training from scratch")
             except Exception as e:
                 print(f"⚠️ Failed to load pretrained weights: {e}")
+                print("  Training will proceed from scratch.")
         else:
             print(f"⚠️ Pretrained weights file not found at {PRETRAIN_WEIGHTS_PATH}")
             print("  Run 'python Code/scripts/pretrain.py' first.")
