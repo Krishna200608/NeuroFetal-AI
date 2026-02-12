@@ -91,8 +91,10 @@ def residual_block(x, filters, kernel_size=3, stride=1, use_se=True, stochastic_
         shortcut = layers.BatchNormalization()(shortcut)
     
     # SOTA: Stochastic Depth — randomly drop residual path during training
+    # Uses SpatialDropout1D which drops entire timestep channels uniformly
+    # This is equivalent to noise_shape=(batch, 1, 1) but Keras 3 compatible
     if stochastic_depth_rate > 0:
-        x = layers.Dropout(stochastic_depth_rate, noise_shape=(tf.shape(x)[0], 1, 1))(x)
+        x = layers.SpatialDropout1D(stochastic_depth_rate)(x)
     
     x = layers.Add()([x, shortcut])
     x = layers.Activation('relu')(x)
