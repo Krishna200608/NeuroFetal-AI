@@ -1,0 +1,25 @@
+{
+  "config": {
+    "use_enhanced_model": true,
+    "use_se_blocks": true,
+    "use_attention": true,
+    "use_focal_loss": true,
+    "focal_loss_alpha": 0.75,
+    "focal_loss_gamma": 2.5,
+    "epochs": 150,
+    "batch_size": 64,
+    "learning_rate": 0.0005
+  },
+  "results": [
+    {
+      "loss": 0.21946316957473755,
+      "auc": 0.7161621451377869,
+      "sens_at_spec_85": 0.3499999940395355,
+      "fold": 1
+    }
+  ],
+  "summary": {
+    "mean_auc": 0.7161621451377869,
+    "std_auc": 0.0
+  }
+}
