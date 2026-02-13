@@ -26,6 +26,20 @@ from utils.attention_blocks import SEBlock, TemporalAttentionBlock
 from utils.model import CrossModalAttention
 from utils.focal_loss import FocalLoss
 
+# Import SOTA feature extraction from data_ingestion
+try:
+    from data_ingestion import process_signal, process_uc_signal, parse_header, normalize_fhr, extract_window_features
+    print("✓ Data ingestion modules loaded.")
+except ImportError:
+    try:
+        from scripts.data_ingestion import process_signal, process_uc_signal, parse_header, normalize_fhr, extract_window_features
+        print("✓ Data ingestion modules loaded (scripts path).")
+    except ImportError as e:
+        print(f"⚠️ Error loading data_ingestion: {e}")
+
+
+
+
 # --- CONFIGURATION & STYLING ---
 st.set_page_config(
     page_title="NeuroFetal AI | Clinical Monitor",
@@ -37,26 +51,48 @@ st.set_page_config(
 # --- Constants ---
 WINDOW_SIZE = 1200  # 20 mins * 60 sec @ 1Hz
 STRIDE = 600        # 10 mins overlap
-N_TABULAR_FEATURES = 16
+N_TABULAR_FEATURES = 18 # Changed from 16 to match SOTA model
 N_CSP_FEATURES = 19
 
 # --- REAL-TIME FEATURE EXTRACTION ---
 
-def compute_baseline_rt(fhr, fs=1):
-    """Estimate FHR baseline using a wide moving median (~10 min windows)."""
-    window = int(10 * 60 * fs)
-    if window < 1:
-        window = 1
-    half_w = window // 2
-    n = len(fhr)
-    baseline = np.zeros(n)
-    for i in range(n):
-        start = max(0, i - half_w)
-        end = min(n, i + half_w + 1)
-        segment = fhr[start:end]
-        valid = segment[segment > 0]
-        baseline[i] = np.median(valid) if len(valid) > 0 else 0
-    return baseline
+def extract_18_tabular_rt(fhr_raw, uc_raw, header):
+    """
+    Extract 18 tabular features for Real-Time inference.
+    Matches data_ingestion.py robust logic.
+    """
+    # Use defaults if header missing
+    age = header.get('Age', 30)
+    parity = header.get('Parity', 0)
+    gestation = header.get('Gestation', 39)
+    gravidity = header.get('Gravidity', 1)
+    weight = header.get('Weight', 70)
+    
+    # Robust extraction
+    sig_features = extract_window_features(fhr_raw, uc_raw, fs=1)
+    
+    # Assemble 18-feature vector
+    return np.array([
+        float(age if age is not None else 30),
+        float(parity if parity is not None else 0),
+        float(gestation if gestation is not None else 39),
+        float(gravidity if gravidity is not None else 1),
+        float(weight if weight is not None else 70),
+        sig_features['fhr_baseline'],
+        sig_features['fhr_stv'],
+        sig_features['fhr_ltv'],
+        sig_features['fhr_accel_count'],
+        sig_features['fhr_decel_count'],
+        sig_features['fhr_decel_area'],
+        sig_features['fhr_range'],
+        sig_features['fhr_iqr'],
+        sig_features['fhr_entropy'],
+        sig_features['uc_freq'],
+        sig_features['uc_intensity_mean'],
+        sig_features['fhr_uc_lag'],
+        sig_features['signal_loss_pct'],
+    ], dtype=np.float32)
+
 
 
 def extract_realtime_tabular(fhr_window_raw, uc_window_raw, age, parity, gestation):
@@ -419,41 +455,51 @@ def main():
                         if uc_raw is not None:
                             uc_raw = np.concatenate([np.zeros(WINDOW_SIZE - len(uc_raw)), uc_raw])
                     
-                    # Normalize FHR for model input (exclude zeros)
-                    valid_mask = signal > 0
-                    if np.sum(valid_mask) > 0:
-                        _min = np.min(signal[valid_mask])
-                        _max = np.max(signal[valid_mask])
-                        signal_norm = np.zeros_like(signal)
-                        signal_norm[valid_mask] = (signal[valid_mask] - _min) / (_max - _min + 1e-8)
-                    else:
-                        signal_norm = np.zeros_like(signal)
-                    
-                    # Normalize UC if available
-                    uc_norm = None
-                    if uc_raw is not None:
-                        uc_valid = uc_raw > 0
-                        if np.sum(uc_valid) > 0:
-                            uc_min = np.min(uc_raw[uc_valid])
-                            uc_max = np.max(uc_raw[uc_valid])
-                            uc_norm = np.zeros_like(uc_raw)
-                            uc_norm[uc_valid] = (uc_raw[uc_valid] - uc_min) / (uc_max - uc_min + 1e-8)
-                        else:
-                            uc_norm = np.zeros_like(uc_raw)
-                    
                     # --- GENERATE SLIDING WINDOWS ---
+                    # We utilize the RAW signals and normalize PER WINDOW to match training logic
+                    # signal_raw, uc_raw are the full length signals
+                    
                     windows_fhr = []
                     windows_tabular = []
                     windows_csp = []
                     window_indices = []
+                    timestamps = [] # Define timestamps list here
                     
-                    num_windows = max(1, (len(signal_norm) - WINDOW_SIZE) // STRIDE + 1)
+                    num_windows = max(1, (len(signal) - WINDOW_SIZE) // STRIDE + 1)
                     
                     for i in range(int(num_windows)):
                         start = i * STRIDE
                         end = start + WINDOW_SIZE
-                        if end > len(signal_norm):
+                        if end > len(signal):
                             break
+                        
+                        # Slice RAW windows
+                        fhr_window_raw = signal_raw[start:end]
+                        uc_window_raw = uc_raw[start:end] if uc_raw is not None else np.zeros(WINDOW_SIZE)
+                        
+                        if len(fhr_window_raw) == WINDOW_SIZE:
+                            # 1. Normalize FHR per window (0-1) - CRITICAL for Model
+                            fhr_window_norm = normalize_fhr(fhr_window_raw)
+                            
+                            # 2. Extract CSP features (uses raw or norm? usually raw for stats, but let's check extract_realtime_csp)
+                            # extract_realtime_csp uses raw values for stats (mean, std).
+                            csp_features = extract_realtime_csp(fhr_window_raw, uc_window_raw)
+                            
+                            # 3. Extract 18 Tabular Features (Demographics + Signal)
+                            # Passing UN-normalized (BPM) signals as required by extract_window_features
+                            tab_features = extract_18_tabular_rt(fhr_window_raw, uc_window_raw, parsed_header)
+                            
+                            windows_fhr.append(fhr_window_norm)
+                            # UC is not used in the model input directly? 
+                            # Model inputs: [X_fhr, X_tabular, X_csp]
+                            # So we don't need to store normalized UC window unless for display?
+                            # app.py structure accumulates data then predicts.
+                            
+                            windows_tabular.append(tab_features)
+                            windows_csp.append(csp_features)
+                            
+                            timestamps.append(i * (STRIDE / 3600.0)) # Hours
+                            window_indices.append((start, end))
                         
                         # FHR window (normalized for model)
                         w_fhr = signal_norm[start:end]
@@ -485,6 +531,24 @@ def main():
                         # Handle NaNs
                         X_tabular_batch = np.nan_to_num(X_tabular_batch, nan=0.0)
                         X_csp_batch = np.nan_to_num(X_csp_batch, nan=0.0)
+                        
+                        # Load Tabular Standardization Stats (Critical for NN)
+                        try:
+                            # Determine path relative to app.py
+                            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                            processed_dir = os.path.join(base_dir, "Datasets", "processed")
+                            tab_means_path = os.path.join(processed_dir, "tabular_means.npy")
+                            tab_stds_path = os.path.join(processed_dir, "tabular_stds.npy")
+                            
+                            if os.path.exists(tab_means_path):
+                                tab_means = np.load(tab_means_path)
+                                tab_stds = np.load(tab_stds_path)
+                                # Apply Z-score
+                                X_tabular_batch = (X_tabular_batch - tab_means) / (tab_stds + 1e-8)
+                            else:
+                                st.warning("⚠️ Tabular normalization stats not found! Predictions may be inaccurate.")
+                        except Exception as e:
+                            st.warning(f"Feature normalization error: {e}")
                         
                         predictions = model.predict(
                             [X_signal_batch, X_tabular_batch, X_csp_batch], verbose=0
