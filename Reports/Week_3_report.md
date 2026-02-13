@@ -1,6 +1,7 @@
 # Week 3 Progress Report: Uncertainty Quantification & Edge Optimization
 
 **Date:** February 8, 2026
+
 **Author:** Krishna (NeuroFetal AI Team)
 
 ## 1. Executive Summary

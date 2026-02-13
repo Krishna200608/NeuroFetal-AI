@@ -584,7 +584,7 @@ The launcher starts Streamlit and optionally creates an ngrok tunnel for remote 
 python Code/scripts/convert_to_tflite.py
 ```
 
-**Output**: `Code/models/tflite/neurofetal_model_quant_int8.tflite` (2.6 MB)
+**Output**: `Code/models/tflite/neurofetal_model_quant_int8.tflite` (1.9 MB)
 
 ### Environment Variables
 
@@ -722,7 +722,7 @@ python-dotenv
 
 - Model checkpoints are stored in `Code/models/`.
 - Each fold has a separate checkpoint file.
-- Git tracks the `.keras` files via LFS or standard commits (files are ~2.6 MB each).
+- Git tracks the `.keras` files via LFS or standard commits (files are ~27 MB each).
 
 ### Data Drift Detection
 
