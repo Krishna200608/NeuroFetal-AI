@@ -165,7 +165,7 @@ NeuroFetal-AI/
 │   └── ctu_uhb_data/               # CTU-UHB PhysioNet Dataset (.dat/.hea)
 ├── Paper/                          # Reference Paper & Literature
 ├── Reports/                        # Weekly Reports, Final Report & Analysis Plots
-├── Project_Context_v2.0.md         # Project Snapshot for AI Assistants
+├── Project_Context_v3.0.md         # Project Snapshot for AI Assistants
 ├── requirements.txt                # Python Dependencies
 ├── LICENSE                         # MIT License
 └── README.md

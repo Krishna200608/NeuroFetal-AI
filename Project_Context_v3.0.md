@@ -1,5 +1,5 @@
-# NeuroFetal AI Project Context (as of Release v6.0 — SOTA)
-**Commit:** `Phase_6_SOTA`
+# NeuroFetal AI Project Context (as of Release v3.0)
+**Commit:** `v3.0`
 **Date:** Feb 13, 2026
 
 ## 1. Project Overview

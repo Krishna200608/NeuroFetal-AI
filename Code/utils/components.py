@@ -41,7 +41,7 @@ def render_header(theme="Light"):
         {icon_container}
         <div>
             <h1 class="app-title">NeuroFetal AI</h1>
-            <p class="app-subtitle">Clinical Decision Support System v2.0</p>
+            <p class="app-subtitle">Clinical Decision Support System v3.0</p>
         </div>
     </div>
     <div style="display: flex; gap: 10px;">
