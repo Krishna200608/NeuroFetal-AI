@@ -2,13 +2,13 @@ import numpy as np
 from scipy.signal import find_peaks, correlate
 from scipy.stats import skew, kurtosis
 try:
-    from scripts.data_ingestion import extract_window_features, compute_baseline_rt
+    from scripts.data_ingestion import extract_window_features, compute_baseline
 except ImportError:
     # Fallback if running from a different context where scripts is not a package
     import sys
     import os
     sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
-    from data_ingestion import extract_window_features, compute_baseline_rt
+    from data_ingestion import extract_window_features, compute_baseline
 
 # Constants
 N_CSP_FEATURES = 19
@@ -59,13 +59,14 @@ def extract_realtime_tabular(fhr_window_raw, uc_window_raw, age, parity, gestati
        fhr_decel_count, fhr_decel_area, fhr_range, fhr_iqr, fhr_entropy,
        uc_freq, uc_intensity_mean, fhr_uc_lag, age, parity, gestation]
     """
+    
     valid = fhr_window_raw[fhr_window_raw > 0]
     
     # Signal loss
     signal_loss = np.mean(fhr_window_raw == 0)
     
-    # Baseline
-    baseline = compute_baseline_rt(fhr_window_raw)
+    # Baseline (using shared logic from data_ingestion)
+    baseline = compute_baseline(fhr_window_raw)
     valid_bl = baseline[baseline > 0]
     fhr_baseline = float(np.mean(valid_bl)) if len(valid_bl) > 0 else 0.0
     
