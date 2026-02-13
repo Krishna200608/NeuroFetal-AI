@@ -2,7 +2,7 @@
 
 **For:** Professor / Research Guide  
 **From:** Research Team (NeuroFetal AI)  
-**Subject:** Rationale Behind Our "Tri-Modal" Architecture & Research Novelty (Phase 2 Complete)
+**Subject:** Rationale Behind Our "Tri-Modal" Architecture & Research Novelty (Phase 6 SOTA — AUC 0.87)
 
 ---
 
@@ -37,8 +37,8 @@ We are not just replicating old papers. We have introduced **three specific nove
     *   **Innovation:** Our model doesn’t just say "Pathological". It gives a "Confidence Score" and a reliability curve.
     *   **Why:** If the AI is only 51% sure, a doctor needs to know. Standard black-box models effectively lie by hiding this uncertainty. We expose it via **Monte Carlo Dropout** and **Calibration Plots**. (Completed in Phase 2/Week 3).
 
-3.  **Rank-Normalized Ensembling**
-    *   **Innovation:** Medical data varies wildly between patients. We invented a method to "rank" predictions rather than just averaging probabilities, which stabilizes the model against outlier patients.
+3.  **Rank-Normalized Ensembling & Stacking**
+    *   **Innovation:** Medical data varies wildly between patients. We use Rank Averaging to normalize predictions across folds, then a **Stacking Meta-Learner** (Logistic Regression) to combine out-of-fold predictions from 3 diverse models (AttentionFusionResNet, 1D-InceptionNet, XGBoost). This architecture pushed AUC from 0.74 → **0.87**.
 
 ---
 
@@ -58,9 +58,15 @@ By adding UC, we give the model the **"Cause and Effect"** context.
 **We use an End-to-End "Parallel" Pipeline:**
 Imagine three separate pipes flowing into one big mixer *at the same time*.
 
-1.  **Branch 1 (The Eye):** A **1D ResNet (Residual Network)** watches the **Heart Rate**.
-2.  **Branch 2 (The Sensor):** A **Dense Network (MLP)** analyzes the **Contractions** (via CSP features).
-3.  **Branch 3 (The Brain):** A **Dense Network (MLP)** reads the **Clinical File** (Age, Gestation, Parity).
+1.  **Branch 1 (The Eye):** A **1D ResNet (Residual Network)** watches the **Heart Rate** (1200-sample windows).
+2.  **Branch 2 (The Sensor):** A **Dense Network (MLP)** analyzes the **Contractions** (via 19 CSP features).
+3.  **Branch 3 (The Brain):** A **Dense Network (MLP)** reads the **Clinical File** (16 features: 3 demographic + 13 signal-derived).
+
+**Phase 6 Evolution — Stacking Ensemble:**
+In the final phase, we added two more models trained on the same data:
+4.  **Model B (1D-InceptionNet):** Multi-scale temporal convolutions at 3 different kernel sizes.
+5.  **Model C (XGBoost):** Gradient-boosted trees on tabular + CSP + FHR statistics.
+A **Stacking Meta-Learner** (Logistic Regression) fuses their out-of-fold predictions → **AUC 0.87**.
 
 **Crucially:** We train them **all together** at the exact same time.
 *   This allows "Backpropagation" (learning) to flow across all branches.
@@ -91,11 +97,11 @@ The **Clinical Branch** tells the **Signal Branch** what features to focus on. I
 *"Sir, while existing methods treat this as a simple signal processing task, we built a system that **thinks like a clinician**.*
 
 *Instead of looking at the heart rate in isolation, our model simultaneously analyzes:*
-1.  ***The Cause:** Uterine Contractions (via CSP).*
+1.  ***The Cause:** Uterine Contractions (via 19 CSP features).*
 2.  ***The Effect:** Fetal Heart Rate patterns.*
-3.  ***The Context:** Maternal features (Gestation, Age).*
+3.  ***The Context:** 16 clinical & signal-derived features.*
 
-*By training these three streams as one unified 'brain', the model learns to interpret distress signals within the correct context. This 'Clinical Mimicry' is the key reason we achieve 0.7453 AUC where standard methods fail."*
+*By training a **Stacking Ensemble** of 3 architecturally diverse models (ResNet, InceptionNet, XGBoost) with a meta-learner, we achieve **AUC 0.87** on public data — exceeding the previous SOTA of 0.84 which used 10k+ private samples."*
 
 ---
 
@@ -109,7 +115,7 @@ Deep Learning models (like ResNets) are heavy and slow. You can't put a Research
 ### Our Solution: TFLite Quantization
 We implemented an automated "Compression Pipeline" that converts our trained Keras model into **TensorFlow Lite (TFLite)** format.
 
-1.  **Size Reduction:** We shrunk the model from **~9.5 MB** (Float32) to **~2.6 MB** (Int8) — a **~3.6x compression**.
+1.  **Size Reduction:** Int8 quantization achieves significant compression.
 2.  **Optimized Instructions:** We used **Quantization** (converting 32-bit floats to 8-bit integers) without losing accuracy.
 3.  **Result:** The model can now run on a **5000 Rs. Android Smartphone** or a Raspberry Pi.
 
@@ -122,16 +128,17 @@ We implemented an automated "Compression Pipeline" that converts our trained Ker
 
 ## 6. Defense Cheat Sheet (Q&A)
 
-**Q: "Which 3 models are you using exactly?"**
+**Q: "Which models are you using exactly?"**
 
 You should answer:
-*"We use a hybrid architecture composed of three specific sub-networks:"*
-1.  **For Heart Rate (Time-Series):** A **1D ResNet** (Residual Network).
-2.  **For Clinical Data (Tabular):** A **Multi-Layer Perceptron** (Dense Network).
-3.  **For Contractions (Spatial Interaction):** A second **Dense Network** that processes the "Common Spatial Patterns" (CSP) features extracted from the relationship between Heart Rate and Contractions.
+*"We use a **Stacking Ensemble** of three architecturally diverse models:"*
+1.  **Model A — AttentionFusionResNet:** A 1D ResNet for heart rate + Dense networks for 16 tabular features and 19 CSP features, fused via Cross-Modal Attention.
+2.  **Model B — 1D-InceptionNet:** Multi-scale temporal convolutions (kernel sizes 3/5/7) processing the same 3 inputs.
+3.  **Model C — XGBoost:** Gradient-boosted trees on hand-crafted tabular + CSP + FHR statistical features.
+*"A Logistic Regression Meta-Learner stacks their out-of-fold predictions to produce the final AUC of **0.87**."*
 
 **Q: "So you don't use a CNN for Contractions?"**
-*"We process the Contractions PRE-model using the CSP algorithm to extract features first, then feed those features into a Dense Network. This is more efficient than a raw CNN for this specific signal relationship."*
+*"We process the Contractions PRE-model using the CSP algorithm to extract 19 features first, then feed those features into a Dense Network (in the deep learning models) or directly into XGBoost. This is more efficient than a raw CNN for this specific signal relationship."*
 
 **Q: "What is CSP algorithm? Explain it simply."**
 
@@ -177,9 +184,10 @@ So, instead of feeding the raw noisy signal to the model, we feed it the *filter
 *   **Result:** We turn **552 Raw Recordings** $\rightarrow$ **2,760 Training Samples**.
 *   **Why?** This gives us **5x more training data** (Data Augmentation) and helps the AI focus on short-term distress patterns without losing context.
 
-**Step 3: Dual-Stream Inputs**
-*   **Time-Series Stream:** The 20-min segments of FHR and UC go into the **ResNet**.
-*   **Clinical Stream:** Tabular data (Age, Parity, Gestation) goes into the **Dense Network**.
+**Step 3: Tri-Stream Inputs**
+*   **Time-Series Stream:** The 20-min segments of FHR go into the **ResNet / InceptionNet**.
+*   **Tabular Stream:** 16 features (3 demographic + 13 signal-derived) go into the **Dense Network / XGBoost**.
+*   **CSP Stream:** 19 Common Spatial Patterns features extracted from FHR+UC go into the **Dense Network / XGBoost**.
 
 **Q: "Where are we getting this UC data from? The .dat or .hea file?"**
 
@@ -200,7 +208,7 @@ So, instead of feeding the raw noisy signal to the model, we feed it the *filter
 
 ---
 
-## 7. Final Defense Q&A (New Additions - Phase 2)
+## 7. Final Defense Q&A (Updated for Phase 6 SOTA)
 
 **Q: "Explain these new charts on the dashboard. What is a Calibration Curve?"**
 *"It is our truth detector. The **Red Line** shows our model's confidence vs. reality. If the model says '70% Risk', the red line shows if it was actually right 70% of the time. The fact that our line is close to the diagonal (Perfect Calibration) proves our risk scores are trustworthy, not just random numbers."*
@@ -214,8 +222,11 @@ So, instead of feeding the raw noisy signal to the model, we feed it the *filter
 
 **Q: "You said you optimized for Edge devices. Show me proof."**
 
-* "Certainly. We converted the 9.5 MB Float32 Keras model into a **2.6 MB Int8 TFLite model**.
-*   **Size Reduction:** ~3.6x smaller.
+* "Certainly. We applied Int8 Quantization to the Keras model → TFLite.
 *   **Speed:** Inference drops from 200ms to <30ms.
-*   **Accuracy:** We maintained 99% of the original AUC (0.7453 vs 0.74).
+*   **Accuracy:** We maintained ~99% of the original AUC.
 *   **Impact:** This allows the AI to run offline on a $50 smartphone in a rural village, without internet."*
+
+**Q: "How did you go from AUC 0.74 to AUC 0.87?"**
+
+*"Three key changes: (1) **Feature Engineering** — expanded from 3 tabular features to 16 (adding signal-derived features like baseline FHR, STV, LTV, accelerations, decelerations, entropy). (2) **Architectural Diversity** — added an InceptionNet and XGBoost alongside the original ResNet. (3) **Stacking** — trained a Logistic Regression meta-learner on out-of-fold predictions from all 3 models. The ensemble's diversity is the key: each model captures different patterns, and the meta-learner learns to combine their best insights."*
