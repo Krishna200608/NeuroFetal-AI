@@ -487,7 +487,8 @@ def main():
                             
                             # 3. Extract 18 Tabular Features (Demographics + Signal)
                             # Passing UN-normalized (BPM) signals as required by extract_window_features
-                            tab_features = extract_18_tabular_rt(fhr_window_raw, uc_window_raw, parsed_header)
+                            current_header = {'Age': age, 'Parity': parity, 'Gestation': gestation, 'Gravidity': 1, 'Weight': 70}
+                            tab_features = extract_18_tabular_rt(fhr_window_raw, uc_window_raw, current_header)
                             
                             windows_fhr.append(fhr_window_norm)
                             # UC is not used in the model input directly? 
@@ -501,26 +502,7 @@ def main():
                             timestamps.append(i * (STRIDE / 3600.0)) # Hours
                             window_indices.append((start, end))
                         
-                        # FHR window (normalized for model)
-                        w_fhr = signal_norm[start:end]
-                        windows_fhr.append(w_fhr)
-                        window_indices.append((start, end))
-                        
-                        if is_enhanced_model:
-                            # Extract raw-signal features for tabular input
-                            w_raw = signal_raw[start:end] if start < len(signal_raw) else np.zeros(WINDOW_SIZE)
-                            w_uc_raw = uc_raw[start:end] if uc_raw is not None and start < len(uc_raw) else None
-                            
-                            tab_feat = extract_realtime_tabular(w_raw, w_uc_raw, age, parity, gestation)
-                            windows_tabular.append(tab_feat)
-                            
-                            # CSP features from normalized signals
-                            w_uc_norm = uc_norm[start:end] if uc_norm is not None and start < len(uc_norm) else None
-                            csp_feat = extract_realtime_csp(w_fhr, w_uc_norm)
-                            windows_csp.append(csp_feat)
-                        else:
-                            # Legacy model: 3 tabular features
-                            windows_tabular.append(np.array([parity, gestation, age], dtype=np.float32))
+
                     
                     # --- BATCH PREDICTION ---
                     X_signal_batch = np.array(windows_fhr).reshape(-1, WINDOW_SIZE, 1)
@@ -536,7 +518,8 @@ def main():
                         try:
                             # Determine path relative to app.py
                             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                            processed_dir = os.path.join(base_dir, "Datasets", "processed")
+                            # Correct path to Datasets (Code/../Datasets)
+                            processed_dir = os.path.join(base_dir, "..", "Datasets", "processed")
                             tab_means_path = os.path.join(processed_dir, "tabular_means.npy")
                             tab_stds_path = os.path.join(processed_dir, "tabular_stds.npy")
                             
@@ -570,7 +553,11 @@ def main():
                     risk_window_start = window_indices[max_idx][0]
                     risk_window_end = window_indices[max_idx][1]
                     
+                    
                     # --- RENDER DASHBOARD ---
+                    # Create normalized signal for visualization (0-1 range)
+                    signal_norm = normalize_fhr(signal)
+
                     render_kpi_cards(prob, len(signal)/60)
                     
                     st.divider()

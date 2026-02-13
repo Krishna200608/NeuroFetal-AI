@@ -194,43 +194,77 @@ def render_xai(model, signal, tabular, inputs_dict, theme="Light", csp_input=Non
         st.markdown("**Gradient-weighted Class Activation Mapping (Grad-CAM)** highlights temporal regions of the FHR signal that most strongly influenced the prediction.")
         
         try:
-            # Grad-CAM Logic
-            last_conv_layer = [layer for layer in model.layers if 'conv' in layer.name][-1]
+            # XAI Logic: Grad-CAM (Legacy) or Saliency Map (Enhanced/Nested)
+            heatmap_resized = None
             
-            # Handle multi-output models (main + auxiliary pH head)
-            model_outputs = model.output
-            if isinstance(model_outputs, list):
-                model_outputs = model_outputs[0]
+            # Check for accessible conv layers (Legacy Model)
+            conv_layers = [layer for layer in model.layers if 'conv' in layer.name]
             
-            grad_model = tf.keras.models.Model(
-                model.inputs, [last_conv_layer.output, model_outputs]
-            )
-            
-            # Build input list based on model architecture (2 or 3 inputs)
-            if csp_input is not None and len(model.inputs) >= 3:
-                model_inputs = [signal, tabular, csp_input]
-            else:
-                model_inputs = [signal, tabular]
-            
-            with tf.GradientTape() as tape:
-                conv_outputs, predictions = grad_model(model_inputs)
-                
-                # Robustness for Keras versions returning lists
-                if isinstance(conv_outputs, list):
-                    conv_outputs = conv_outputs[0]
-                if isinstance(predictions, list):
-                    predictions = predictions[0]
+            if conv_layers:
+                try:
+                    last_conv_layer = conv_layers[-1]
                     
-                loss = predictions[:, 0]
+                    # Handle multi-output models
+                    model_outputs = model.output
+                    if isinstance(model_outputs, list):
+                        model_outputs = model_outputs[0]
+                    
+                    grad_model = tf.keras.models.Model(
+                        model.inputs, [last_conv_layer.output, model_outputs]
+                    )
+                    
+                    # Build input list
+                    if csp_input is not None and len(model.inputs) >= 3:
+                        model_inputs = [signal, tabular, csp_input]
+                    else:
+                        model_inputs = [signal, tabular]
+                    
+                    with tf.GradientTape() as tape:
+                        conv_outputs, predictions = grad_model(model_inputs)
+                        if isinstance(conv_outputs, list): conv_outputs = conv_outputs[0]
+                        if isinstance(predictions, list): predictions = predictions[0]
+                        loss = predictions[:, 0]
+                    
+                    grads = tape.gradient(loss, conv_outputs)
+                    pooled_grads = tf.reduce_mean(grads, axis=(0, 1))
+                    heatmap = conv_outputs[0] @ pooled_grads[..., tf.newaxis]
+                    heatmap = tf.squeeze(heatmap)
+                    heatmap = tf.maximum(heatmap, 0) / (tf.math.reduce_max(heatmap) + 1e-8)
+                    
+                    # Resize to signal length
+                    heatmap_resized = tf.image.resize(heatmap.numpy().reshape(1, -1, 1), (1, signal.shape[1]))[0, :, 0].numpy()
+                except Exception as e:
+                    # Fallback to Saliency if Grad-CAM fails (e.g. graph disconnect)
+                    heatmap_resized = None
             
-            grads = tape.gradient(loss, conv_outputs)
-            pooled_grads = tf.reduce_mean(grads, axis=(0, 1))
-            heatmap = conv_outputs[0] @ pooled_grads[..., tf.newaxis]
-            heatmap = tf.squeeze(heatmap)
-            heatmap = tf.maximum(heatmap, 0) / (tf.math.reduce_max(heatmap) + 1e-8)
-            
-            # Resize heatmap
-            heatmap_resized = tf.image.resize(heatmap.numpy().reshape(1, -1, 1), (1, signal.shape[1]))[0, :, 0].numpy()
+            # Fallback: Input Saliency Map (Works for Nested/Enhanced Models)
+            if heatmap_resized is None:
+                with tf.GradientTape() as tape:
+                    signal_tensor = tf.cast(signal, tf.float32)
+                    tape.watch(signal_tensor)
+                    
+                    # Ensure all inputs are tensors to avoid mixed type errors
+                    tabular_tensor = tf.cast(tabular, tf.float32)
+                    
+                    if csp_input is not None and len(model.inputs) >= 3:
+                        csp_tensor = tf.cast(csp_input, tf.float32)
+                        model_inputs = [signal_tensor, tabular_tensor, csp_tensor]
+                    else:
+                        model_inputs = [signal_tensor, tabular_tensor]
+                    
+                    predictions = model(model_inputs)
+                    if isinstance(predictions, list): predictions = predictions[0]
+                    loss = predictions[:, 0]
+                
+                # Gradient w.r.t Input Signal
+                grads = tape.gradient(loss, signal_tensor)
+                grads = tf.abs(grads)
+                heatmap = tf.reduce_max(grads, axis=-1)
+                heatmap = tf.squeeze(heatmap)
+                
+                # Normalize
+                heatmap_resized = tf.maximum(heatmap, 0) / (tf.math.reduce_max(heatmap) + 1e-8)
+                heatmap_resized = heatmap_resized.numpy()
             
             # Plotly Heatmap Overlay
             time_min = np.arange(len(signal[0,:,0])) / 60
