@@ -13,14 +13,14 @@
   <img src="https://img.shields.io/badge/Status-Phase%206%20SOTA-success" alt="Status">
   <img src="https://img.shields.io/badge/Edge%20AI-TFLite%20Int8-blueviolet" alt="Edge AI">
   <img src="https://img.shields.io/badge/AUC-0.87-brightgreen" alt="AUC">
-  <img src="https://img.shields.io/badge/Model%20Size-2.6%20MB-informational" alt="Model Size">
+  <img src="https://img.shields.io/badge/Model%20Size-1.9%20MB-informational" alt="Model Size">
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/▸_Tri--Modal_CTG_Fusion-2C3E50?style=flat-square" alt="Tri-Modal CTG Fusion">
   <img src="https://img.shields.io/badge/▸_Stacking_Ensemble-2C3E50?style=flat-square" alt="Stacking Ensemble">
   <img src="https://img.shields.io/badge/▸_MC_Dropout_Uncertainty-2C3E50?style=flat-square" alt="MC Dropout Uncertainty">
-  <img src="https://img.shields.io/badge/▸_2.6_MB_Edge_Model-2C3E50?style=flat-square" alt="2.6 MB Edge Model">
+  <img src="https://img.shields.io/badge/▸_1.9_MB_Edge_Model-2C3E50?style=flat-square" alt="1.9 MB Edge Model">
   <img src="https://img.shields.io/badge/▸_Grad--CAM_XAI-2C3E50?style=flat-square" alt="Grad-CAM XAI">
 </p>
 
@@ -32,7 +32,7 @@
 
 ## Our Solution
 
-**NeuroFetal AI** is a **Clinical Decision Support System** that fuses three data streams — **Fetal Heart Rate (FHR)**, **Uterine Contractions (UC)**, and **Maternal Clinical Data** — to predict fetal compromise. It provides **uncertainty-aware predictions** with explainable AI, packaged in a **2.6 MB edge model** that runs offline on low-cost hardware.
+**NeuroFetal AI** is a **Clinical Decision Support System** that fuses three data streams — **Fetal Heart Rate (FHR)**, **Uterine Contractions (UC)**, and **Maternal Clinical Data** — to predict fetal compromise. It provides **uncertainty-aware predictions** with explainable AI, packaged in a **1.9 MB edge model** that runs offline on low-cost hardware.
 
 ### Final Performance (Feb 2026)
 | Metric | Baseline (Mendis et al.) | Previous State | **NeuroFetal AI (Final)** | Impact |
@@ -41,7 +41,7 @@
 | **Architecture** | Single ResNet | Single ResNet | **3-Model Stacking Ensemble** | +9% AUC |
 | **Features** | FHR + 3 Clinical | FHR + 3 Clinical | **FHR + UC + 16 Tabular + 19 CSP** | Full Context |
 | **Confidence** | None | Probability | **Uncertainty (MC Dropout)** | Trustworthy AI |
-| **Deployment** | PC Only | Server | **Mobile (TFLite)** | **2.6 MB (Int8)** |
+| **Deployment** | PC Only | Server | **Mobile (TFLite)** | **1.9 MB (Int8)** |
 
 ### Baseline Reference
 This project replicates and extends the work presented in:
@@ -76,7 +76,7 @@ We don't just give a prediction; we give a **Confidence Score**.
 *   **Signal-Derived Tabular Features**: 13 features extracted per window — baseline, STV, LTV, accelerations, decelerations, entropy, UC frequency, FHR-UC lag.
 
 ### 5. "Lab to Village" Edge Deployment
-*   **Mobile-Ready**: Quantized to **2.6 MB** (Int8) from 9.5 MB.
+*   **Mobile-Ready**: Quantized to **1.9 MB** (Int8) from 9.5 MB.
 *   **Offline First**: Designed to run on **5000 Rs. Android phones** without internet.
 *   **NPU Accelerated**: Optimized with **Int8 Quantization** for dedicated AI hardware.
 *   **Privacy Preserved**: No patient data leaves the device.
@@ -120,7 +120,7 @@ graph LR
 *   **Deep Learning**: TensorFlow/Keras (Functional API), **MC Dropout**
 *   **Ensemble**: XGBoost/LightGBM, Scikit-learn (Logistic Regression Meta-Learner)
 *   **Signal Processing**: `wfdb`, `mne` (CSP), Custom UC Cleaning Pipeline
-*   **Deployment**: Streamlit, pyngrok, **TFLite (2.6 MB Edge Model)**
+*   **Deployment**: Streamlit, pyngrok, **TFLite (1.9 MB Edge Model)**
 
 ---
 
@@ -156,7 +156,7 @@ NeuroFetal-AI/
 │   │   ├── stacking_meta_learner.pkl   # Stacking Ensemble Meta-Learner
 │   │   ├── pretrained_fhr_encoder.weights.h5  # SSL Pretrained Weights
 │   │   └── tflite/
-│   │       └── neurofetal_model_quant_int8.tflite  # Edge-Ready Model (2.6 MB)
+│   │       └── neurofetal_model_quant_int8.tflite  # Edge-Ready Model (1.9 MB)
 │   ├── notebooks/
 │   │   └── Training_Colab.ipynb    # Google Colab Training Notebook
 │   ├── assets/                     # Logo & Branding Assets
