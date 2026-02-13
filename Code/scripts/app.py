@@ -25,6 +25,17 @@ from utils.components import (
 from utils.model_loader import load_model
 from utils.feature_extractor import extract_18_tabular_rt, extract_realtime_csp
 
+# Import SOTA feature extraction from data_ingestion
+try:
+    from data_ingestion import process_signal, process_uc_signal, parse_header, normalize_fhr, extract_window_features
+except ImportError:
+    try:
+        from scripts.data_ingestion import process_signal, process_uc_signal, parse_header, normalize_fhr, extract_window_features
+    except ImportError as e:
+        # Fallback if running from a different context where scripts is not a package
+        sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+        from data_ingestion import process_signal, process_uc_signal, parse_header, normalize_fhr, extract_window_features
+
 
 
 
@@ -147,10 +158,10 @@ def main():
 
             try:
                 # --- PROCESSING PHASE (Inside Status) ---
-                with st.status("🚀 Initiating Neural Analysis Sequence...", expanded=True) as status:
+                with st.status("Initiating Neural Analysis Sequence...", expanded=True) as status:
                     
                     # 1. File Processing
-                    st.write("🔹 Parsing PhysioNet data files...")
+                    st.write(":material/file_open: Parsing PhysioNet data files...")
                     import tempfile
                     
                     signal = None
@@ -176,7 +187,7 @@ def main():
                         uc_raw = uc_signal.copy() if uc_signal is not None else None
 
                     # 2. Windowing
-                    st.write("🔹 Segmenting signal into 20-minute clinical windows...")
+                    st.write(":material/content_cut: Segmenting signal into 20-minute clinical windows...")
                     if len(signal) < WINDOW_SIZE:
                         pad = np.zeros(WINDOW_SIZE - len(signal))
                         signal = np.concatenate([pad, signal])
@@ -212,14 +223,14 @@ def main():
                             timestamps.append(i * (STRIDE / 3600.0))
                             window_indices.append((start, end))
                     
-                    st.write(f"🔹 Extracted {len(windows_fhr)} windows. Computing {N_CSP_FEATURES}x Spatial Filters per window...")
+                    st.write(f":material/grid_view: Extracted {len(windows_fhr)} windows. Computing {N_CSP_FEATURES}x Spatial Filters per window...")
 
                     # 3. Batching & Prediction
                     X_signal_batch = np.array(windows_fhr).reshape(-1, WINDOW_SIZE, 1)
                     X_tabular_batch = np.array(windows_tabular)
                     
                     if is_enhanced_model:
-                        st.write("🔹 Running Enhanced Ensemble Inference (ResNet + Inception + XGBoost)...")
+                        st.write(":material/psychology: Running Enhanced Ensemble Inference (ResNet + Inception + XGBoost)...")
                         X_csp_batch = np.array(windows_csp)
                         X_tabular_batch = np.nan_to_num(X_tabular_batch, nan=0.0)
                         X_csp_batch = np.nan_to_num(X_csp_batch, nan=0.0)
@@ -232,16 +243,16 @@ def main():
                             tab_stds = np.load(os.path.join(processed_dir, "tabular_stds.npy"))
                             X_tabular_batch = (X_tabular_batch - tab_means) / (tab_stds + 1e-8)
                         except Exception:
-                            st.warning("⚠️ Using un-normalized features (Stats missing).")
+                            st.warning("Using un-normalized features (Stats missing).", icon=":material/warning:")
                         
                         predictions = model.predict([X_signal_batch, X_tabular_batch, X_csp_batch], verbose=0)
                     else:
-                        st.write("🔹 Running Legacy Inference Model...")
+                        st.write(":material/memory: Running Legacy Inference Model...")
                         predictions = model.predict([X_signal_batch, X_tabular_batch], verbose=0)
                     
                     if isinstance(predictions, list): predictions = predictions[0]
 
-                    st.write("✅ Diagnostics Complete. Finalizing visualization...")
+                    st.write(":material/check_circle: Diagnostics Complete. Finalizing visualization...")
                     status.update(label="Analysis Complete", state="complete", expanded=False)
 
                     

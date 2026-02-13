@@ -74,8 +74,16 @@ def main():
     env["PYTHONPATH"] = current_dir + os.pathsep + env.get("PYTHONPATH", "")
     
     # Run streamlit
+    python_exec = sys.executable
+    venv_python = os.path.join(current_dir, ".venv", "Scripts", "python.exe")
+    if os.path.exists(venv_python):
+         print(f"Using local virtual environment: {venv_python}")
+         python_exec = venv_python
+    else:
+         print(f"Using system python: {python_exec}")
+
     process = subprocess.Popen(
-        [sys.executable, "-m", "streamlit", "run", app_path, "--server.port", "8501", "--server.headless", "true"],
+        [python_exec, "-m", "streamlit", "run", app_path, "--server.port", "8501", "--server.headless", "true"],
         env=env,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE
@@ -110,7 +118,7 @@ def main():
     # --- Signal Handling for Graceful Shutdown ---
     
     def cleanup(signum=None, frame=None):
-        print("\n🛑 Stopping NeuroFetal AI Dashboard...")
+        print("\n[STOP] Stopping NeuroFetal AI Dashboard...")
         
         # 1. Kill Streamlit
         if process:
@@ -132,7 +140,7 @@ def main():
         except Exception:
             pass
             
-        print("✅ Shutdown Complete.")
+        print("[DONE] Shutdown Complete.")
         sys.exit(0)
 
     # Register signals
