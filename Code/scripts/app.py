@@ -29,13 +29,13 @@ from utils.focal_loss import FocalLoss
 # Import SOTA feature extraction from data_ingestion
 try:
     from data_ingestion import process_signal, process_uc_signal, parse_header, normalize_fhr, extract_window_features
-    print("✓ Data ingestion modules loaded.")
+    print("[OK] Data ingestion modules loaded.")
 except ImportError:
     try:
         from scripts.data_ingestion import process_signal, process_uc_signal, parse_header, normalize_fhr, extract_window_features
-        print("✓ Data ingestion modules loaded (scripts path).")
+        print("[OK] Data ingestion modules loaded (scripts path).")
     except ImportError as e:
-        print(f"⚠️ Error loading data_ingestion: {e}")
+        print(f"[WARNING] Error loading data_ingestion: {e}")
 
 
 
