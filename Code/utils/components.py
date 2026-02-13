@@ -184,7 +184,7 @@ def render_signal_chart(signal, fs=1, theme="Light"):
     
     st.plotly_chart(fig, width='stretch')
 
-def render_xai(model, signal, tabular, inputs_dict, theme="Light"):
+def render_xai(model, signal, tabular, inputs_dict, theme="Light", csp_input=None):
     st.subheader("Explainable AI (XAI) Analysis")
     st.markdown("This section visualizes the specific features triggering the model's decision.")
     
@@ -196,12 +196,24 @@ def render_xai(model, signal, tabular, inputs_dict, theme="Light"):
         try:
             # Grad-CAM Logic
             last_conv_layer = [layer for layer in model.layers if 'conv' in layer.name][-1]
+            
+            # Handle multi-output models (main + auxiliary pH head)
+            model_outputs = model.output
+            if isinstance(model_outputs, list):
+                model_outputs = model_outputs[0]
+            
             grad_model = tf.keras.models.Model(
-                model.inputs, [last_conv_layer.output, model.output] # Fixed input structure
+                model.inputs, [last_conv_layer.output, model_outputs]
             )
             
+            # Build input list based on model architecture (2 or 3 inputs)
+            if csp_input is not None and len(model.inputs) >= 3:
+                model_inputs = [signal, tabular, csp_input]
+            else:
+                model_inputs = [signal, tabular]
+            
             with tf.GradientTape() as tape:
-                conv_outputs, predictions = grad_model([signal, tabular])
+                conv_outputs, predictions = grad_model(model_inputs)
                 
                 # Robustness for Keras versions returning lists
                 if isinstance(conv_outputs, list):
@@ -234,7 +246,7 @@ def render_xai(model, signal, tabular, inputs_dict, theme="Light"):
             fig_cam = make_subplots(specs=[[{"secondary_y": True}]])
             
             # Signal
-            fig_cam.add_trace(iso_fhr := go.Scatter(
+            fig_cam.add_trace(go.Scatter(
                 x=time_min, y=signal[0,:,0], mode='lines', name='FHR Signal',
                 line=dict(color=signal_color, width=1.5)
             ), secondary_y=False)
@@ -268,7 +280,7 @@ def render_xai(model, signal, tabular, inputs_dict, theme="Light"):
             fig_cam.update_yaxes(title_text="FHR Amplitude", secondary_y=False)
             fig_cam.update_yaxes(title_text="Attention Intensity", secondary_y=True, showgrid=False)
             
-            st.plotly_chart(fig_cam, width='stretch')
+            st.plotly_chart(fig_cam, use_container_width=True)
             
             
         except Exception as e:

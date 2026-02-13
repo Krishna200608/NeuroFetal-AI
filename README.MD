@@ -10,14 +10,15 @@
   <a href="https://www.tensorflow.org/"><img src="https://img.shields.io/badge/TensorFlow-2.14-orange" alt="TensorFlow"></a>
   <a href="https://streamlit.io/"><img src="https://img.shields.io/badge/Streamlit-App-FF4B4B" alt="Streamlit"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"></a>
-  <img src="https://img.shields.io/badge/Status-Phase%202%20Complete-success" alt="Status">
+  <img src="https://img.shields.io/badge/Status-Phase%206%20SOTA-success" alt="Status">
   <img src="https://img.shields.io/badge/Edge%20AI-TFLite%20Int8-blueviolet" alt="Edge AI">
-  <img src="https://img.shields.io/badge/AUC-0.78-brightgreen" alt="AUC">
+  <img src="https://img.shields.io/badge/AUC-0.87-brightgreen" alt="AUC">
   <img src="https://img.shields.io/badge/Model%20Size-2.6%20MB-informational" alt="Model Size">
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/▸_Tri--Modal_CTG_Fusion-2C3E50?style=flat-square" alt="Tri-Modal CTG Fusion">
+  <img src="https://img.shields.io/badge/▸_Stacking_Ensemble-2C3E50?style=flat-square" alt="Stacking Ensemble">
   <img src="https://img.shields.io/badge/▸_MC_Dropout_Uncertainty-2C3E50?style=flat-square" alt="MC Dropout Uncertainty">
   <img src="https://img.shields.io/badge/▸_2.6_MB_Edge_Model-2C3E50?style=flat-square" alt="2.6 MB Edge Model">
   <img src="https://img.shields.io/badge/▸_Grad--CAM_XAI-2C3E50?style=flat-square" alt="Grad-CAM XAI">
@@ -36,8 +37,9 @@
 ### Final Performance (Feb 2026)
 | Metric | Baseline (Mendis et al.) | Previous State | **NeuroFetal AI (Final)** | Impact |
 | :--- | :--- | :--- | :--- | :--- |
-| **AUC** | 0.84 (w/ 10k Private Samples) | 0.74 | **0.78** | **Comparable (Public Data Only)** |
-| **Data Usage** | FHR + Tabular | FHR + Tabular | **FHR + UC + Clinical** | Full Context |
+| **AUC** | 0.84 (w/ 10k Private Samples) | 0.74 | **0.87 (Stacking Ensemble)** | **Exceeds Baseline (Public Data Only)** |
+| **Architecture** | Single ResNet | Single ResNet | **3-Model Stacking Ensemble** | +9% AUC |
+| **Features** | FHR + 3 Clinical | FHR + 3 Clinical | **FHR + UC + 16 Tabular + 19 CSP** | Full Context |
 | **Confidence** | None | Probability | **Uncertainty (MC Dropout)** | Trustworthy AI |
 | **Deployment** | PC Only | Server | **Mobile (TFLite)** | **2.6 MB (Int8)** |
 
@@ -51,31 +53,40 @@ This project replicates and extends the work presented in:
 
 ### 1. Tri-Modal Deep Fusion
 Unlike traditional models that only look at heart rate, our **"AttentionFusionResNet"** processes three data streams simultaneously:
-*   **Fetal Heart Rate (FHR)**: Analyzed via **Common Spatial Patterns (CSP)** and a **6-Block ResNet**.
-*   **Uterine Contractions (UC)**: Processed to detect stress response patterns.
-*   **Clinical Data**: Age, Parity, and Gestation processed via a Dense network.
+*   **Fetal Heart Rate (FHR)**: Analyzed via a **6-Block ResNet** with SE Blocks and Temporal Attention.
+*   **Uterine Contractions (UC)**: Processed to detect stress response patterns via cross-correlation features.
+*   **Clinical Data**: 16 features (3 demographic + 13 signal-derived) processed via a Dense network.
 
-### 2. Clinical Uncertainty Quantification
+### 2. Diverse Stacking Ensemble
+Three architecturally distinct models combined via a learned meta-learner:
+*   **Model A — AttentionFusionResNet**: Deep model with Cross-Modal Attention and SE Blocks.
+*   **Model B — 1D-InceptionNet**: Multi-scale temporal patterns (kernel sizes 5, 15, 40).
+*   **Model C — XGBoost**: Gradient-boosted trees on tabular + CSP + hand-crafted FHR features.
+*   **Meta-Learner**: Logistic Regression trained on out-of-fold predictions from all 3 models.
+
+### 3. Clinical Uncertainty Quantification
 We don't just give a prediction; we give a **Confidence Score**.
 *   Using **Monte Carlo Dropout**, the system runs 20 inference passes per patient.
 *   **High Variance** = "AI is Uncertain" (Flag for human review).
 *   **Low Variance** = "AI is Sure".
 
-### 3. Advanced Signal Processing Features
-*   **CSP (Common Spatial Patterns)**: Adapted from Brain-Computer Interfaces (EEG) to extract discriminative variance features from fetal signals.
+### 4. Advanced Signal Processing Features
+*   **CSP (Common Spatial Patterns)**: Adapted from Brain-Computer Interfaces (EEG) to extract 19 discriminative variance features from fetal signals.
 *   **Cross-Modal Attention**: The model learns to "pay attention" to the FHR signal specifically when Uterine Contractions are peaking (mimicking clinical logic).
+*   **Signal-Derived Tabular Features**: 13 features extracted per window — baseline, STV, LTV, accelerations, decelerations, entropy, UC frequency, FHR-UC lag.
 
-### 4. "Lab to Village" Edge Deployment
+### 5. "Lab to Village" Edge Deployment
 *   **Mobile-Ready**: Quantized to **2.6 MB** (Int8) from 9.5 MB.
 *   **Offline First**: Designed to run on **5000 Rs. Android phones** without internet.
 *   **NPU Accelerated**: Optimized with **Int8 Quantization** for dedicated AI hardware.
 *   **Privacy Preserved**: No patient data leaves the device.
 
-### 5. Self-Supervised Pretraining (SSL)
+### 6. Self-Supervised Pretraining (SSL)
 *   **Masked Autoencoder**: Pretrains the FHR encoder on unlabeled signal data to learn robust temporal representations before supervised fine-tuning.
 *   **Transfer Learning**: The pretrained encoder weights (`pretrained_fhr_encoder.weights.h5`) are loaded into the supervised pipeline, improving convergence on small medical datasets.
 
-### 6. Advanced Clinical Dashboard (Phase 2)
+### 7. Advanced Clinical Dashboard (v4.0)
+*   **Real-Time Feature Extraction**: Computes 16 tabular + 19 CSP features on-the-fly from uploaded signals.
 *   **Uncertainty Analysis**: Live visualization of model confidence via Calibration Curves and Uncertainty Histograms.
 *   **Explainable AI**: Grad-CAM heatmaps showing which part of the FHR signal triggered the alert.
 *   **Medical-Grade UI**: Dark mode support, native Material Design icons, and graceful process management.
@@ -88,16 +99,17 @@ The pipeline follows a rigorous **Medical ML** workflow:
 
 ```mermaid
 graph LR
-    A[PhysioNet CTU-UHB Data] --> B(Preprocessing & CSP Extraction);
-    B --> C{Tri-Modal Network};
-    C -->|Branch 1: FHR/UC| D[Deep ResNet + CSP];
-    C -->|Branch 2: Clinical| E[Dense Tabular Network];
-    D & E --> F[Cross-Modal Attention Fusion];
-    F --> G[Probability + MC Dropout Uncertainty];
-    G --> H[Streamlit Clinical Dashboard];
-    H --> I[Grad-CAM XAI Analysis];
-    G --> J[TFLite Int8 Quantization];
-    J --> K[Edge Device / Mobile];
+    A[PhysioNet CTU-UHB Data] --> B(Preprocessing & Feature Extraction);
+    B --> C{Diverse Ensemble};
+    C -->|Model A| D[AttentionFusionResNet<br>FHR + Tab + CSP];
+    C -->|Model B| E[1D-InceptionNet<br>FHR + Tab + CSP];
+    C -->|Model C| F[XGBoost<br>Tab + CSP + FHR Stats];
+    D & E & F --> G[Stacking Meta-Learner];
+    G --> H[Probability + MC Dropout Uncertainty];
+    H --> I[Streamlit Clinical Dashboard];
+    I --> J[Grad-CAM XAI Analysis];
+    H --> K[TFLite Int8 Quantization];
+    K --> L[Edge Device / Mobile];
 ```
 
 ---
@@ -106,7 +118,7 @@ graph LR
 
 *   **Core**: Python 3.13, NumPy, Pandas, Scipy
 *   **Deep Learning**: TensorFlow/Keras (Functional API), **MC Dropout**
-*   **Advanced ML**: `imbalanced-learn` (SMOTE), `scikit-learn` (Rank Averaging)
+*   **Ensemble**: XGBoost/LightGBM, Scikit-learn (Logistic Regression Meta-Learner)
 *   **Signal Processing**: `wfdb`, `mne` (CSP), Custom UC Cleaning Pipeline
 *   **Deployment**: Streamlit, pyngrok, **TFLite (2.6 MB Edge Model)**
 
@@ -118,11 +130,12 @@ graph LR
 NeuroFetal-AI/
 ├── Code/
 │   ├── scripts/
-│   │   ├── app.py                  # Streamlit Dashboard (Live Inference + XAI)
-│   │   ├── train.py                # Training Pipeline (SMOTE + Focal Loss + K-Fold)
+│   │   ├── app.py                  # Streamlit Dashboard (3-Input Ensemble Inference + XAI)
+│   │   ├── train.py                # Training Pipeline (Focal Loss + K-Fold)
+│   │   ├── train_diverse_ensemble.py # Diverse Ensemble Training (Phase 5)
 │   │   ├── pretrain.py             # SSL Masked Autoencoder Pretraining
-│   │   ├── data_ingestion.py       # Raw Signal → Processed .npy Arrays
-│   │   ├── evaluate_ensemble.py    # Rank-Averaged OOF Evaluation
+│   │   ├── data_ingestion.py       # Raw Signal → Processed .npy Arrays (16 Features)
+│   │   ├── evaluate_ensemble.py    # Stacking Ensemble Evaluation + TTA
 │   │   ├── evaluate_uncertainty.py # MC Dropout Calibration & Histograms
 │   │   ├── convert_to_tflite.py    # Keras → TFLite Int8 Quantization
 │   │   ├── run_ablation.py         # Ablation Study Runner
@@ -130,15 +143,17 @@ NeuroFetal-AI/
 │   ├── utils/
 │   │   ├── model.py                # AttentionFusionResNet Architecture
 │   │   ├── attention_blocks.py     # Cross-Modal & Temporal Attention Layers
-│   │   ├── csp_features.py         # Common Spatial Patterns Extraction
+│   │   ├── csp_features.py         # Common Spatial Patterns Extraction (19 Features)
 │   │   ├── ssl_models.py           # Masked Autoencoder (SSL)
 │   │   ├── focal_loss.py           # Focal Loss for Class Imbalance
-│   │   ├── augmentation.py         # Signal Augmentation Strategies
+│   │   ├── augmentation.py         # Signal Augmentation (SpecAugment, CutMix)
 │   │   ├── uc_cleaning.py          # Uterine Contraction Signal Cleaning
-│   │   ├── components.py           # Dashboard UI Components
+│   │   ├── components.py           # Dashboard UI Components (3-Input Grad-CAM)
 │   │   └── helpers.py              # CSS Injection & Utility Functions
 │   ├── models/
-│   │   ├── best_model_fold_*.keras # 5-Fold Cross-Validated Checkpoints
+│   │   ├── enhanced_model_fold_*.keras  # 5-Fold Enhanced 3-Input Models (27 MB each)
+│   │   ├── best_model_fold_*.keras     # Legacy 2-Input Models (2.6 MB each)
+│   │   ├── stacking_meta_learner.pkl   # Stacking Ensemble Meta-Learner
 │   │   ├── pretrained_fhr_encoder.weights.h5  # SSL Pretrained Weights
 │   │   └── tflite/
 │   │       └── neurofetal_model_quant_int8.tflite  # Edge-Ready Model (2.6 MB)
@@ -186,7 +201,7 @@ python run_app.py
 ```
 
 ### 3. Run Evaluation
-To verify the **0.78 AUC** and generate uncertainty plots:
+To verify the **0.87 AUC** and generate uncertainty plots:
 ```bash
 python Code/scripts/evaluate_ensemble.py
 ```
