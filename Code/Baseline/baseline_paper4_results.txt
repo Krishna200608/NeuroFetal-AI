@@ -1,0 +1,3 @@
+Ref: Paper 4 (Petrozziello 2018) - Classical ML Baseline
+Logistic Regression: AUC 0.6764 +/- 0.0166, Acc 0.6473
+Random Forest: AUC 0.8373 +/- 0.0251, Acc 0.8256
