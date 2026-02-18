@@ -1,4 +1,4 @@
-Ref: Paper 3 (Spilka 2016) - CNN Baseline
-Mean AUC: 0.5733
-Std Dev: 0.0057
-Mean Acc: 0.7557
+Ref: Paper 3 (Spilka 2016) - CNN Baseline (Colab Run)
+Mean AUC: 0.5643
+Std Dev: 0.0339
+Mean Acc: 0.5129
