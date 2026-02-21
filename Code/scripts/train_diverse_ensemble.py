@@ -318,6 +318,13 @@ def generate_oof_predictions(X_fhr, X_tabular, X_csp, y, n_folds=5):
         X_tab_train, X_tab_val = X_tabular[train_idx], X_tabular[val_idx]
         y_train, y_val = y[train_idx], y[val_idx]
 
+        # CSP features — slice BEFORE augmentation so we can pad later
+        if X_csp is not None:
+            X_csp_train, X_csp_val = X_csp[train_idx], X_csp[val_idx]
+        else:
+            X_csp_train = np.zeros((len(train_idx), 19))
+            X_csp_val = np.zeros((len(val_idx), 19))
+
         # V4.0: TimeGAN Augmentation (inject synthetic pathological traces)
         if USE_TIMEGAN_AUG:
             from train import apply_timegan_augmentation
@@ -329,20 +336,29 @@ def generate_oof_predictions(X_fhr, X_tabular, X_csp, y, n_folds=5):
                 if X_uc_all.ndim == 2:
                     X_uc_all = np.expand_dims(X_uc_all, axis=-1)
                 X_uc_for_aug = X_uc_all[train_idx]
-            
+
+            n_before = len(y_train)
             print(f"  Applying TimeGAN augmentation...")
-            print(f"    Before: {int(y_train.sum())} positives / {len(y_train)} total")
+            print(f"    Before: {int(y_train.sum())} positives / {n_before} total")
             X_fhr_train, X_tab_train, X_uc_for_aug, y_train = apply_timegan_augmentation(
                 X_fhr_train, X_tab_train, X_uc_for_aug, y_train, random_state=RANDOM_STATE
             )
-            print(f"    After:  {int(y_train.sum())} positives / {len(y_train)} total")
+            n_after = len(y_train)
+            n_synthetic = n_after - n_before
+            print(f"  TimeGAN Augmentation: {int(y_train[:n_before].sum())} → {int(y_train.sum())} positives / {n_after} total")
+            print(f"  Injected {n_synthetic} synthetic traces (from {1410} available)")
+            print(f"    After:  {int(y_train.sum())} positives / {n_after} total")
 
-        # CSP features
-        if X_csp is not None:
-            X_csp_train, X_csp_val = X_csp[train_idx], X_csp[val_idx]
-        else:
-            X_csp_train = np.zeros((len(train_idx), 19))
-            X_csp_val = np.zeros((len(val_idx), 19))
+            # Pad CSP features to match augmented sample count
+            # Resample CSP rows from existing pathological samples for synthetic traces
+            if n_synthetic > 0:
+                patho_mask = y_train[:n_before] == 1
+                X_csp_patho = X_csp_train[patho_mask]
+                rng = np.random.RandomState(RANDOM_STATE)
+                resample_idx = rng.choice(len(X_csp_patho), size=n_synthetic, replace=True)
+                X_csp_synthetic = X_csp_patho[resample_idx]
+                X_csp_train = np.vstack([X_csp_train, X_csp_synthetic])
+                print(f"  CSP features padded: {n_before} → {X_csp_train.shape[0]} rows")
 
         input_shapes = {
             'fhr': (X_fhr_train.shape[1], X_fhr_train.shape[2]),
