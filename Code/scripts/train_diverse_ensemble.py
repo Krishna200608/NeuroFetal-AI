@@ -36,6 +36,8 @@ LOG_DIR = os.path.join(BASE_DIR, "Reports", "training_logs")
 
 N_FOLDS = 5
 RANDOM_STATE = 42
+SYNTHETIC_DATA_DIR = os.path.join(BASE_DIR, "Datasets", "synthetic")
+USE_TIMEGAN_AUG = True  # V4.0: inject TimeGAN synthetic data into training folds
 
 
 def ensure_dir(path):
@@ -315,6 +317,25 @@ def generate_oof_predictions(X_fhr, X_tabular, X_csp, y, n_folds=5):
         X_fhr_train, X_fhr_val = X_fhr[train_idx], X_fhr[val_idx]
         X_tab_train, X_tab_val = X_tabular[train_idx], X_tabular[val_idx]
         y_train, y_val = y[train_idx], y[val_idx]
+
+        # V4.0: TimeGAN Augmentation (inject synthetic pathological traces)
+        if USE_TIMEGAN_AUG:
+            from train import apply_timegan_augmentation
+            X_uc_for_aug = None
+            # Try to load UC for augmentation shape matching
+            uc_path = os.path.join(PROCESSED_DATA_DIR, "X_uc.npy")
+            if os.path.exists(uc_path):
+                X_uc_all = np.load(uc_path)
+                if X_uc_all.ndim == 2:
+                    X_uc_all = np.expand_dims(X_uc_all, axis=-1)
+                X_uc_for_aug = X_uc_all[train_idx]
+            
+            print(f"  Applying TimeGAN augmentation...")
+            print(f"    Before: {int(y_train.sum())} positives / {len(y_train)} total")
+            X_fhr_train, X_tab_train, X_uc_for_aug, y_train = apply_timegan_augmentation(
+                X_fhr_train, X_tab_train, X_uc_for_aug, y_train, random_state=RANDOM_STATE
+            )
+            print(f"    After:  {int(y_train.sum())} positives / {len(y_train)} total")
 
         # CSP features
         if X_csp is not None:
