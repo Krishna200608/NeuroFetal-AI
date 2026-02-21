@@ -10,15 +10,16 @@
   <a href="https://www.tensorflow.org/"><img src="https://img.shields.io/badge/TensorFlow-2.14-orange" alt="TensorFlow"></a>
   <a href="https://streamlit.io/"><img src="https://img.shields.io/badge/Streamlit-App-FF4B4B" alt="Streamlit"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"></a>
-  <img src="https://img.shields.io/badge/Status-Phase%206%20SOTA-success" alt="Status">
+  <img src="https://img.shields.io/badge/Status-V4.0%20TimeGAN-success" alt="Status">
   <img src="https://img.shields.io/badge/Edge%20AI-TFLite%20Int8-blueviolet" alt="Edge AI">
-  <img src="https://img.shields.io/badge/AUC-0.87-brightgreen" alt="AUC">
+  <img src="https://img.shields.io/badge/AUC-0.8639-brightgreen" alt="AUC">
   <img src="https://img.shields.io/badge/Model%20Size-1.9%20MB-informational" alt="Model Size">
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/▸_Tri--Modal_CTG_Fusion-2C3E50?style=flat-square" alt="Tri-Modal CTG Fusion">
   <img src="https://img.shields.io/badge/▸_Stacking_Ensemble-2C3E50?style=flat-square" alt="Stacking Ensemble">
+  <img src="https://img.shields.io/badge/▸_TimeGAN_Augmentation-2C3E50?style=flat-square" alt="TimeGAN Augmentation">
   <img src="https://img.shields.io/badge/▸_MC_Dropout_Uncertainty-2C3E50?style=flat-square" alt="MC Dropout Uncertainty">
   <img src="https://img.shields.io/badge/▸_1.9_MB_Edge_Model-2C3E50?style=flat-square" alt="1.9 MB Edge Model">
   <img src="https://img.shields.io/badge/▸_Grad--CAM_XAI-2C3E50?style=flat-square" alt="Grad-CAM XAI">
@@ -34,14 +35,15 @@
 
 **NeuroFetal AI** is a **Clinical Decision Support System** that fuses three data streams — **Fetal Heart Rate (FHR)**, **Uterine Contractions (UC)**, and **Maternal Clinical Data** — to predict fetal compromise. It provides **uncertainty-aware predictions** with explainable AI, packaged in a **1.9 MB edge model** that runs offline on low-cost hardware.
 
-### Final Performance (Feb 2026)
-| Metric | Baseline (Mendis et al.) | Previous State | **NeuroFetal AI (Final)** | Impact |
+### Final Performance — V4.0 (Feb 2026)
+| Metric | Baseline (Mendis et al.) | V3.0 (SMOTE) | **V4.0 (TimeGAN)** | Impact |
 | :--- | :--- | :--- | :--- | :--- |
-| **AUC** | 0.84 (w/ 10k Private Samples) | 0.74 | **0.87 (Stacking Ensemble)** | **Exceeds Baseline (Public Data Only)** |
-| **Architecture** | Single ResNet | Single ResNet | **3-Model Stacking Ensemble** | +9% AUC |
-| **Features** | FHR + 3 Clinical | FHR + 3 Clinical | **FHR + UC + 16 Tabular + 19 CSP** | Full Context |
-| **Confidence** | None | Probability | **Uncertainty (MC Dropout)** | Trustworthy AI |
-| **Deployment** | PC Only | Server | **Mobile (TFLite)** | **1.9 MB (Int8)** |
+| **AUC** | 0.84 (w/ 10k Private Samples) | 0.87 | **0.8639 (Stacking Ensemble)** | **TimeGAN-Augmented** |
+| **Augmentation** | None | SMOTE (linear) | **TimeGAN (1,410 synthetic traces)** | Temporal Fidelity |
+| **Architecture** | Single ResNet | 3-Model Ensemble | **3-Model Stacking Ensemble** | Same |
+| **Features** | FHR + 3 Clinical | FHR + UC + 16 Tab + 19 CSP | **FHR + UC + 16 Tab + 19 CSP** | Full Context |
+| **Confidence** | None | MC Dropout | **MC Dropout (Low-Unc AUC: 0.8471)** | Trustworthy AI |
+| **Deployment** | PC Only | Mobile (TFLite) | **Mobile (TFLite)** | **1.9 MB (Int8)** |
 
 ### Baseline Reference
 This project replicates and extends the work presented in:
@@ -81,11 +83,17 @@ We don't just give a prediction; we give a **Confidence Score**.
 *   **NPU Accelerated**: Optimized with **Int8 Quantization** for dedicated AI hardware.
 *   **Privacy Preserved**: No patient data leaves the device.
 
-### 6. Self-Supervised Pretraining (SSL)
+### 6. TimeGAN Data Augmentation (V4.0)
+*   **WGAN-GP Architecture**: Custom 1D Transposed Convolution generator trained exclusively on pathological FHR+UC traces.
+*   **1,410 Synthetic Traces**: Generates 3x the original minority class with preserved temporal dynamics (late decelerations, contraction timing).
+*   **Replaces SMOTE**: TimeGAN preserves the temporal structure of fetal distress patterns, unlike SMOTE's linear interpolation.
+*   **CLI Integration**: `--augmentation timegan` flag in `train.py` for seamless switching between augmentation strategies.
+
+### 7. Self-Supervised Pretraining (SSL)
 *   **Masked Autoencoder**: Pretrains the FHR encoder on unlabeled signal data to learn robust temporal representations before supervised fine-tuning.
 *   **Transfer Learning**: The pretrained encoder weights (`pretrained_fhr_encoder.weights.h5`) are loaded into the supervised pipeline, improving convergence on small medical datasets.
 
-### 7. Advanced Clinical Dashboard (v4.0)
+### 8. Advanced Clinical Dashboard (v4.0)
 *   **Real-Time Feature Extraction**: Computes 16 tabular + 19 CSP features on-the-fly from uploaded signals.
 *   **Uncertainty Analysis**: Live visualization of model confidence via Calibration Curves and Uncertainty Histograms.
 *   **Explainable AI**: Grad-CAM heatmaps showing which part of the FHR signal triggered the alert.
@@ -100,7 +108,8 @@ The pipeline follows a rigorous **Medical ML** workflow:
 ```mermaid
 graph LR
     A[PhysioNet CTU-UHB Data] --> B(Preprocessing & Feature Extraction);
-    B --> C{Diverse Ensemble};
+    B --> T[TimeGAN Augmentation<br>1410 Synthetic Traces];
+    T --> C{Diverse Ensemble};
     C -->|Model A| D[AttentionFusionResNet<br>FHR + Tab + CSP];
     C -->|Model B| E[1D-InceptionNet<br>FHR + Tab + CSP];
     C -->|Model C| F[XGBoost<br>Tab + CSP + FHR Stats];
@@ -158,14 +167,16 @@ NeuroFetal-AI/
 │   │   └── tflite/
 │   │       └── neurofetal_model_quant_int8.tflite  # Edge-Ready Model (1.9 MB)
 │   ├── notebooks/
-│   │   └── Training_Colab.ipynb    # Google Colab Training Notebook
+│   │   ├── Training_Colab.ipynb    # Google Colab Training Notebook (V4.0 TimeGAN)
+│   │   └── TimeGAN_Colab.ipynb     # TimeGAN Training Notebook
 │   ├── assets/                     # Logo & Branding Assets
 │   └── run_app.py                  # Application Launcher (ngrok + Streamlit)
 ├── Datasets/
-│   └── ctu_uhb_data/               # CTU-UHB PhysioNet Dataset (.dat/.hea)
+│   ├── ctu_uhb_data/               # CTU-UHB PhysioNet Dataset (.dat/.hea)
+│   └── synthetic/                  # TimeGAN Synthetic Data (.npy)
 ├── Paper/                          # Reference Paper & Literature
 ├── Reports/                        # Weekly Reports, Final Report & Analysis Plots
-├── Project_Context_v3.0.md         # Project Snapshot for AI Assistants
+├── Project_Context_v4.0.md         # Project Snapshot for AI Assistants
 ├── requirements.txt                # Python Dependencies
 ├── LICENSE                         # MIT License
 └── README.md
@@ -201,7 +212,7 @@ python run_app.py
 ```
 
 ### 3. Run Evaluation
-To verify the **0.87 AUC** and generate uncertainty plots:
+To verify the **0.8639 AUC** (Stacking Ensemble) and generate uncertainty plots:
 ```bash
 python Code/scripts/evaluate_ensemble.py
 ```

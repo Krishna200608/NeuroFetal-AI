@@ -1,8 +1,8 @@
 # NeuroFetal AI — Comprehensive Project Documentation
 
-**A Tri-Modal Deep-Learning Clinical Decision Support System for Intrapartum Fetal Monitoring, featuring Stacking Ensemble, Uncertainty Quantification, and Edge-AI Deployment.**
+**A Tri-Modal Deep-Learning Clinical Decision Support System for Intrapartum Fetal Monitoring, featuring Stacking Ensemble, TimeGAN Augmentation, Uncertainty Quantification, and Edge-AI Deployment.**
 
-NeuroFetal AI fuses Fetal Heart Rate (FHR) time-series, Uterine Contraction (UC) signals, and Maternal Clinical Data through a **Stacking Ensemble** of diverse models (AttentionFusionResNet, 1D-InceptionNet, XGBoost) to predict fetal compromise during labor. It achieves **0.87 AUC** on public data (CTU-UHB, PhysioNet) — exceeding the previous SOTA of 0.84 (Mendis et al., which used 10k+ private samples). The system provides **uncertainty-aware predictions** via Monte Carlo Dropout and ships a **TFLite Int8 model** for offline inference on low-cost hardware. Designed for deployment in resource-limited clinical settings where specialist obstetricians are scarce.
+NeuroFetal AI fuses Fetal Heart Rate (FHR) time-series, Uterine Contraction (UC) signals, and Maternal Clinical Data through a **Stacking Ensemble** of diverse models (AttentionFusionResNet, 1D-InceptionNet, XGBoost) to predict fetal compromise during labor. V4.0 replaces SMOTE with **TimeGAN augmentation** (1,410 synthetic pathological traces) and achieves **0.8639 AUC** on public data (CTU-UHB, PhysioNet) — exceeding the 0.84 target (Mendis et al., which used 10k+ private samples). The system provides **uncertainty-aware predictions** via Monte Carlo Dropout (low-uncertainty AUC: 0.8471) and ships a **TFLite Int8 model** for offline inference on low-cost hardware. Designed for deployment in resource-limited clinical settings where specialist obstetricians are scarce.
 
 ---
 
@@ -80,7 +80,7 @@ Obstetricians classify CTG traces using systems such as **FIGO (International Fe
 
 ### How NeuroFetal AI Addresses This
 
-NeuroFetal AI is a **tri-modal system** that jointly analyzes FHR, UC, and maternal clinical features (16 features: 3 demographic + 13 signal-derived). A **Stacking Ensemble** of 3 architecturally diverse models (AttentionFusionResNet, 1D-InceptionNet, XGBoost) with a Logistic Regression meta-learner achieves **AUC 0.87**. It uses Cross-Modal Attention to learn the temporal relationship between FHR and UC signals — mimicking the clinical reasoning process where decelerations are interpreted relative to contraction timing.
+NeuroFetal AI is a **tri-modal system** that jointly analyzes FHR, UC, and maternal clinical features (16 features: 3 demographic + 13 signal-derived). A **Stacking Ensemble** of 3 architecturally diverse models (AttentionFusionResNet, 1D-InceptionNet, XGBoost) with a Logistic Regression meta-learner achieves **AUC 0.8639** (V4.0 with TimeGAN augmentation). It uses Cross-Modal Attention to learn the temporal relationship between FHR and UC signals — mimicking the clinical reasoning process where decelerations are interpreted relative to contraction timing.
 
 ---
 
@@ -102,8 +102,8 @@ NeuroFetal AI is a **tri-modal system** that jointly analyzes FHR, UC, and mater
 
 ### Known Limitations
 
-1. **Dataset size**: CTU-UHB contains 552 recordings. Despite windowing (→ ~2,760 samples) and SMOTE, the effective diversity is limited.
-2. **Class imbalance**: Only ~7.25% of cases are pathological. Focal Loss and SMOTE mitigate but do not fully resolve this.
+1. **Dataset size**: CTU-UHB contains 552 recordings. Despite windowing (→ ~2,760 samples) and TimeGAN augmentation (1,410 synthetic traces), the effective diversity is limited.
+2. **Class imbalance**: Only ~7.25% of cases are pathological. TimeGAN and Focal Loss mitigate but do not fully resolve this.
 3. **pH threshold sensitivity**: The binary label (pH < 7.05) is a clinical convention. Cases near the boundary (pH 7.00–7.10) are inherently ambiguous.
 4. **No prospective validation**: All evaluation is retrospective on the CTU-UHB dataset. Real-world performance may differ.
 5. **UC signal quality**: Tocodynamometer readings are noisy and position-dependent. The model's UC branch performance depends on signal quality.
@@ -123,7 +123,7 @@ flowchart TD
 
     subgraph TRAIN ["Training Pipeline — Stacking Ensemble"]
         C --> D["5-Fold Stratified CV"]
-        D --> E["SMOTE + Focal Loss + Cosine LR"]
+        D --> E["TimeGAN Augmentation (V4.0) + Focal Loss + Cosine LR"]
         E --> F1["Model A: AttentionFusionResNet"]
         E --> F2["Model B: 1D-InceptionNet"]
         E --> F3["Model C: XGBoost"]
@@ -132,7 +132,7 @@ flowchart TD
     end
 
     subgraph EVAL ["Evaluation"]
-        H --> I["Rank-Averaged OOF AUC: 0.87"]
+        H --> I["Rank-Averaged OOF AUC: 0.8639"]
         H --> J["MC Dropout Uncertainty"]
         H --> K["Calibration Curves"]
     end
@@ -159,7 +159,7 @@ flowchart TD
 | **Focal Loss** | `Code/utils/focal_loss.py` | FocalLoss, WeightedFocalLoss for class imbalance |
 | **Augmentation** | `Code/utils/augmentation.py` | Time-series augmentation (jitter, scaling, time warp) |
 | **SSL Pretraining** | `Code/utils/ssl_models.py`, `Code/scripts/pretrain.py` | Masked Autoencoder for self-supervised FHR encoder pretraining |
-| **Training** | `Code/scripts/train.py` | 5-fold CV, SMOTE, cosine annealing, label smoothing |
+| **Training** | `Code/scripts/train.py` | 5-fold CV, TimeGAN/SMOTE augmentation, cosine annealing, label smoothing |
 | **Evaluation** | `Code/scripts/evaluate_ensemble.py` | Rank-averaged OOF AUC computation |
 | **Uncertainty** | `Code/scripts/evaluate_uncertainty.py` | MC Dropout, ECE, calibration curves, uncertainty histograms |
 | **TFLite Conversion** | `Code/scripts/convert_to_tflite.py` | Keras → TFLite (float32 + Int8) with representative dataset |
@@ -227,7 +227,8 @@ flowchart TD
 
 ### Augmentation
 
-- **SMOTE** (Synthetic Minority Over-sampling Technique): Applied to the flattened feature space within each fold's training split.
+- **TimeGAN (V4.0)**: WGAN-GP time-series GAN trained on pathological FHR+UC traces. Generates 1,410 synthetic traces (3x minority class) with preserved temporal dynamics. Replaces SMOTE.
+- **SMOTE (V3.0, legacy)**: Synthetic Minority Over-sampling Technique applied to the flattened feature space.
 - **Time-Series Augmentation** (2x expansion): Jitter, scaling, and time warping applied to FHR signals.
 
 ---
@@ -325,7 +326,7 @@ FL(p_t) = -α_t · (1 - p_t)^γ · log(p_t)
 | **LR Schedule** | Cosine Annealing with 5-epoch Linear Warmup |
 | **Optimizer** | Adam |
 | **Cross-Validation** | Stratified 5-Fold |
-| **SMOTE** | Applied per fold (training split only) |
+| **SMOTE / TimeGAN** | TimeGAN (V4.0) per fold; SMOTE available via `--augmentation smote` |
 | **Label Smoothing** | 0.1 (soft labels: [0.05, 0.95]) |
 | **Augmentation** | 2x expansion (jitter, scaling, time warp) |
 | **Dropout Rate** | 0.4 |
@@ -361,9 +362,10 @@ FL(p_t) = -α_t · (1 - p_t)^γ · log(p_t)
 
 | Metric | Value |
 | :--- | :--- |
-| **Ensemble AUC (Stacking)** | **0.87** |
-| **Best Single-Model AUC** | ~0.80 (AttentionFusionResNet) |
-| **Stacking Lift** | +0.07 AUC over best single model |
+| **Ensemble AUC (Stacking)** | **0.8639** (V4.0 TimeGAN) / **0.87** (V3.0 SMOTE) |
+| **Best Single-Model AUC** | 0.8512 (XGBoost) |
+| **Primary Model AUC** | 0.7910 ± 0.0322 (AttentionFusionResNet, 5-fold) |
+| **Low-Uncertainty AUC** | 0.8471 (well-calibrated confident predictions) |
 | **Fold Std. Dev.** | Low (model is stable across folds) |
 
 ### Benchmarking
@@ -372,11 +374,12 @@ FL(p_t) = -α_t · (1 - p_t)^γ · log(p_t)
 | :--- | :--- | :--- | :--- |
 | Mendis et al. (Baseline) | FHR + Tabular (10k private) | 0.84 | Private dataset, larger scale |
 | Our Phase 1 (Basic Fusion) | FHR + Clinical (public, 3 features) | 0.74 | Initial architecture |
-| **NeuroFetal AI (Phase 6 SOTA)** | **FHR + UC + Clinical (public, 16+19 features)** | **0.87** | **Exceeds baseline on public data only** |
+| **NeuroFetal AI V3.0 (SMOTE)** | **FHR + UC + Clinical (public, 16+19 features)** | **0.87** | SMOTE augmentation |
+| **NeuroFetal AI V4.0 (TimeGAN)** | **FHR + UC + Clinical (public, 16+19 features)** | **0.8639** | **TimeGAN augmentation — Current** |
 
 ### Key Insight: Rank Averaging + Stacking
 
-Standard probability averaging across folds yielded inconsistent calibration. **Rank Averaging** (normalizing prediction ranks per fold before aggregation) eliminated inter-fold calibration bias. Combined with a **Stacking Meta-Learner** over 3 diverse base models, this ensemble strategy achieved AUC 0.87 — a +0.13 improvement over the single-model baseline (0.74).
+Standard probability averaging across folds yielded inconsistent calibration. **Rank Averaging** (normalizing prediction ranks per fold before aggregation) eliminated inter-fold calibration bias. Combined with a **Stacking Meta-Learner** over 3 diverse base models, this ensemble strategy achieved AUC 0.8639 in V4.0 (0.87 in V3.0 with SMOTE).
 
 ### Uncertainty Stratification
 
@@ -914,4 +917,4 @@ Stacking Ensemble (OOF): AUC = 0.87
 
 ---
 
-*Document version: 2.0 | Last updated: February 13, 2026 | Author: NeuroFetal AI Team, IIIT Allahabad*
+*Document version: 3.0 (V4.0 TimeGAN Update) | Last updated: February 21, 2026 | Author: NeuroFetal AI Team, IIIT Allahabad*
