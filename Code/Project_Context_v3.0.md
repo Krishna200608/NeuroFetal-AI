@@ -39,8 +39,13 @@ A **Logistic Regression Meta-Learner** (stacking) combines the base model OOF pr
 - **`Datasets/`**: Contains processed `.npy` files (`X_fhr`, `X_tab`, `y`, `X_uc`, `X_csp`).
 - **`Reports/final_report.md`**: Detailed analysis and results.
 
-## 5. Next Steps
-- **Prospective Clinical Validation**: Run on a larger retrospective dataset from a partner hospital.
-- **Hardware Benchmarking**: Test on Coral Edge TPU and Jetson Nano.
-- **Publication**: Prepare manuscript for IEEE EMBC / Nature Scientific Reports.
-- **Regulatory Pathway**: Identify CE/FDA/CDSCO pathway for clinical deployment.
+## 5. Next Steps & Future Roadmap
+A rigorous, regressive plan has been established to evolve NeuroFetal AI from a prototype to a globally deployed Clinical Decision Support System. 
+
+For the complete multi-year plan (Levels 1 through 5), see: **[`Future_Roadmap_NeuroFetal_AI.md`](Future_Roadmap_NeuroFetal_AI.md)**
+
+Immediate technical priorities (Level 1) include:
+1.  **External Validation:** Test zero-shot generalization on a different dataset to measure domain shift.
+2.  **Advanced Generative Augmentation:** Develop a Time-Series GAN to replace SMOTE for class imbalance.
+3.  **XAI Upgrade:** Implement SHAP or Integrated Gradients for better temporal feature attribution.
+4.  **Streaming Architecture:** Begin transitioning from static window analysis to a continuous 1Hz streaming API.
