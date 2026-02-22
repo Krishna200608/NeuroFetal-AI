@@ -15,6 +15,5 @@ plotly
 
 # Web App & Deployment
 streamlit>=1.35.0
-protobuf<5.0.0
 pyngrok
 python-dotenv
