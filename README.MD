@@ -45,9 +45,12 @@
 | **Confidence** | None | MC Dropout | **MC Dropout (Low-Unc AUC: 0.8471)** | Trustworthy AI |
 | **Deployment** | PC Only | Mobile (TFLite) | **Mobile (TFLite)** | **1.9 MB (Int8)** |
 
-### Baseline Reference
+### Baseline Reference & Data
 This project replicates and extends the work presented in:
-> **"Fusing Tabular Features and Deep Learning for Fetal Heart Rate Analysis: A Clinically Interpretable Model for Fetal Compromise Detection"**
+> **["Fusing Tabular Features and Deep Learning for Fetal Heart Rate Analysis: A Clinically Interpretable Model for Fetal Compromise Detection"](https://ieeexplore.ieee.org/document/11340719/)**
+
+**Dataset Used:**
+*   **[CTU-CHB Intrapartum Cardiotocography Database v1.0.0](https://physionet.org/content/ctu-uhb-ctgdb/1.0.0/)** (via PhysioNet)
 
 ---
 
