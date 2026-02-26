@@ -111,17 +111,28 @@ def inject_custom_css(theme="Light"):
             color: {text_color};
         }}
 
-        /* Header Container */
-        .header-container {{
+        /* Header Card — styled on the Streamlit container */
+        .st-key-header_card {{
             background-color: {header_bg};
-            padding: 1.5rem 2rem;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,{shadow_opacity});
             margin-bottom: 25px;
-            border-left: 6px solid #005eb8; /* NHS Blue - Constant */
+            border-left: 6px solid #005eb8;
+            padding: 0.8rem 1.2rem;
+        }}
+        .st-key-header_card [data-testid="stVerticalBlock"] {{
+            gap: 0 !important;
+        }}
+        .st-key-header_card [data-testid="stHorizontalBlock"] {{
+            align-items: flex-start !important;
+        }}
+
+        /* Header Content — layout only (no card styling) */
+        .header-content {{
             display: flex;
             align-items: center;
             justify-content: space-between;
+            padding: 0.5rem 0.5rem;
         }}
 
         .app-title {{
@@ -211,6 +222,63 @@ def inject_custom_css(theme="Light"):
         /* Remove streamlit branding stuff */
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
-        
+
+        /* ========== Theme Toggle Switch ========== */
+        /* Flow-based — toggle lives in the right column of the header card */
+        .st-key-theme_toggle_btn {{
+            display: flex !important;
+            justify-content: flex-end !important;
+            padding-top: 4px !important;
+        }}
+
+        /* The pill track — matches status-pill aesthetic */
+        .st-key-theme_toggle_btn button {{
+            background: {'#e8f0fe' if theme == 'Dark' else '#e6f4ea'} !important;
+            border: 1px solid {'#d2e3fc' if theme == 'Dark' else '#ceead6'} !important;
+            border-radius: 50px !important;
+            width: 52px !important;
+            height: 28px !important;
+            min-height: unset !important;
+            padding: 0 !important;
+            cursor: pointer !important;
+            position: relative !important;
+            transition: all 0.35s ease !important;
+            box-shadow: none !important;
+        }}
+        .st-key-theme_toggle_btn button:hover {{
+            box-shadow: 0 2px 8px {'rgba(25,103,210,0.2)' if theme == 'Dark' else 'rgba(19,115,51,0.2)'} !important;
+        }}
+        .st-key-theme_toggle_btn button:active {{
+            transform: scale(0.96);
+        }}
+
+        /* Hide the button text */
+        .st-key-theme_toggle_btn button p {{
+            font-size: 0 !important;
+            line-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            color: transparent !important;
+        }}
+
+        /* The circular knob with icon */
+        .st-key-theme_toggle_btn button::before {{
+            content: "{'☽' if theme == 'Dark' else '☀'}";
+            position: absolute;
+            top: 3px;
+            {'right: 3px; left: auto;' if theme == 'Dark' else 'left: 3px;'}
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: {'#1967d2' if theme == 'Dark' else '#137333'};
+            color: white;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }}
+
     </style>
     """, unsafe_allow_html=True)

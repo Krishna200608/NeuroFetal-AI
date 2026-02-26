@@ -35,16 +35,19 @@ def render_header(theme="Light"):
         # Fallback
         icon_container = """<div style="background: #e1f5fe; padding: 10px; border-radius: 12px; color: #0288d1;"><span class="material-symbols-rounded" style="font-size: 32px;">cardiology</span></div>"""
 
-    st.markdown(f"""
-<div class="header-container">
+    with st.container(key="header_card"):
+        header_col, toggle_col = st.columns([0.93, 0.07])
+        with header_col:
+            st.markdown(f"""
+<div class="header-content">
     <div style="display: flex; align-items: center; gap: 15px;">
         {icon_container}
         <div>
             <h1 class="app-title">NeuroFetal AI</h1>
-            <p class="app-subtitle">Clinical Decision Support System v3.0</p>
+            <p class="app-subtitle">Clinical Decision Support System v4.0</p>
         </div>
     </div>
-    <div style="display: flex; gap: 10px;">
+    <div style="display: flex; gap: 10px; align-items: center;">
         <div class="status-pill status-online">
             <span class="material-symbols-rounded" style="font-size: 16px;">check_circle</span> System Online
         </div>
@@ -57,6 +60,10 @@ def render_header(theme="Light"):
     </div>
 </div>
 """, unsafe_allow_html=True)
+        with toggle_col:
+            if st.button(" ", key="theme_toggle_btn"):
+                st.session_state.dark_mode = not st.session_state.dark_mode
+                st.rerun()
 
 def render_kpi_cards(prob, signal_dur_min):
     col1, col2, col3, col4 = st.columns(4)

@@ -74,10 +74,6 @@ def render_sidebar():
     st.sidebar.image(logo_path, width=120)
     st.sidebar.title("NeuroFetal AI")
     
-    # Theme Toggle
-    dark_mode = st.sidebar.toggle("Dark Mode", value=False)
-    theme = "Dark" if dark_mode else "Light"
-    
     st.sidebar.markdown("---")
     
     st.sidebar.subheader("Patient Data")
@@ -126,18 +122,23 @@ def render_sidebar():
     </div>
     """, unsafe_allow_html=True)
     
-    return uploaded_file, uploaded_header, parity, gestation, age, run_btn, theme
+    return uploaded_file, uploaded_header, parity, gestation, age, run_btn
 
 # --- MAIN APP LOGIC ---
 
 def main():
-    # Render Sidebar first to get Theme
-    uploaded_file, uploaded_header, parity, gestation, age, run_btn, theme = render_sidebar()
+    # Theme State Management
+    if 'dark_mode' not in st.session_state:
+        st.session_state.dark_mode = False
+    theme = "Dark" if st.session_state.dark_mode else "Light"
+    
+    # Render Sidebar
+    uploaded_file, uploaded_header, parity, gestation, age, run_btn = render_sidebar()
     
     # Inject CSS based on theme
     inject_custom_css(theme)
     
-    # Header
+    # Header (includes toggle button)
     render_header(theme)
     
     if run_btn:
@@ -324,12 +325,16 @@ def main():
             st.warning("Please upload both .dat and .hea files to proceed.")
             
     else:
-        # Welcome / Empty State
-        st.markdown("""
-        <div style="text-align: center; padding: 60px; background-color: white; border-radius: 12px; border: 2px dashed #e1e4e8; margin-top: 20px;">
+        # Welcome / Empty State (theme-aware)
+        empty_bg = "#262730" if theme == "Dark" else "white"
+        empty_border = "#3d3e45" if theme == "Dark" else "#e1e4e8"
+        empty_heading = "#e1f5fe" if theme == "Dark" else "#2c3e50"
+        empty_text = "#a0a5ab" if theme == "Dark" else "#6c757d"
+        st.markdown(f"""
+        <div style="text-align: center; padding: 60px; background-color: {empty_bg}; border-radius: 12px; border: 2px dashed {empty_border}; margin-top: 20px;">
             <span class="material-symbols-rounded" style="font-size: 64px; color: #005eb8; margin-bottom: 20px;">monitor_heart</span>
-            <h2 style="color: #2c3e50; margin-top: 10px;">Ready for Analysis</h2>
-            <p style="color: #6c757d; font-size: 1.1rem; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: {empty_heading}; margin-top: 10px;">Ready for Analysis</h2>
+            <p style="color: {empty_text}; font-size: 1.1rem; max-width: 600px; margin: 0 auto;">
                 Upload patient <b>PhysioNet recordings (.dat/.hea)</b> from the sidebar to initialize the clinical support system.
             </p>
         </div>
