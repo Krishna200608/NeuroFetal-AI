@@ -1,6 +1,8 @@
 import os
 import tensorflow as tf
 import streamlit as st
+import pickle
+import numpy as np
 from utils.attention_blocks import SEBlock, TemporalAttentionBlock
 from utils.model import CrossModalAttention
 from utils.focal_loss import FocalLoss
@@ -59,3 +61,75 @@ def load_model():
         st.error("Critical Error: No model found. Please verify model files exist in Code/models/")
     
     return model, path_used, is_enhanced
+
+
+@st.cache_resource
+def load_ensemble_models():
+    """
+    Load all 3 ensemble models for variance-based uncertainty estimation.
+    
+    Returns:
+        models: dict with keys 'resnet', 'inception', 'xgboost' (values may be None)
+        meta_learner: Calibrated stacking meta-learner (or None)
+        n_loaded: number of models successfully loaded
+    """
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    model_dir = os.path.join(current_dir, "..", "models")
+    
+    custom_objects = {
+        'SEBlock': SEBlock,
+        'TemporalAttentionBlock': TemporalAttentionBlock,
+        'CrossModalAttention': CrossModalAttention,
+        'FocalLoss': FocalLoss,
+        'focal_loss_fixed': FocalLoss(gamma=2.5, alpha=0.75)
+    }
+    
+    models = {'resnet': None, 'inception': None, 'xgboost': None}
+    
+    # Model A: AttentionFusionResNet (fold 1)
+    resnet_path = os.path.join(model_dir, "enhanced_model_fold_1.keras")
+    if os.path.exists(resnet_path):
+        try:
+            models['resnet'] = tf.keras.models.load_model(
+                resnet_path, custom_objects=custom_objects, compile=False
+            )
+            print("✓ Loaded ResNet model")
+        except Exception as e:
+            print(f"✗ ResNet load failed: {e}")
+    
+    # Model B: InceptionNet (fold 1)
+    inception_path = os.path.join(model_dir, "inception_model_fold_1.keras")
+    if os.path.exists(inception_path):
+        try:
+            models['inception'] = tf.keras.models.load_model(
+                inception_path, custom_objects=custom_objects, compile=False
+            )
+            print("✓ Loaded InceptionNet model")
+        except Exception as e:
+            print(f"✗ InceptionNet load failed: {e}")
+    
+    # Model C: XGBoost (fold 1)
+    xgb_path = os.path.join(model_dir, "xgboost_model_fold_1.pkl")
+    if os.path.exists(xgb_path):
+        try:
+            with open(xgb_path, 'rb') as f:
+                models['xgboost'] = pickle.load(f)
+            print("✓ Loaded XGBoost model")
+        except Exception as e:
+            print(f"✗ XGBoost load failed: {e}")
+    
+    # Meta-learner (calibrated stacking)
+    meta_learner = None
+    meta_path = os.path.join(model_dir, "stacking_meta_learner.pkl")
+    if os.path.exists(meta_path):
+        try:
+            with open(meta_path, 'rb') as f:
+                meta_learner = pickle.load(f)
+            print("✓ Loaded calibrated meta-learner")
+        except Exception as e:
+            print(f"✗ Meta-learner load failed: {e}")
+    
+    n_loaded = sum(1 for v in models.values() if v is not None)
+    print(f"Ensemble: {n_loaded}/3 models loaded")
+    
+    return models, meta_learner, n_loaded

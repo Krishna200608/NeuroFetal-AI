@@ -22,7 +22,7 @@ from utils.components import (
 )
 
 # Import Modularized Components
-from utils.model_loader import load_model
+from utils.model_loader import load_model, load_ensemble_models
 from utils.feature_extractor import extract_18_tabular_rt, extract_realtime_csp
 
 # Import SOTA feature extraction from data_ingestion
@@ -63,6 +63,7 @@ N_CSP_FEATURES = 19
 
 
 model, model_path_loaded, is_enhanced_model = load_model()
+ensemble_models, meta_learner, n_ensemble_loaded = load_ensemble_models()
 
 # --- UI COMPONENTS ---
 
@@ -246,10 +247,74 @@ def main():
                         except Exception:
                             st.warning("Using un-normalized features (Stats missing).", icon=":material/warning:")
                         
-                        predictions = model.predict([X_signal_batch, X_tabular_batch, X_csp_batch], verbose=0)
+                        # --- Ensemble Inference with Uncertainty ---
+                        base_preds = []
+                        dl_inputs = [X_signal_batch, X_tabular_batch, X_csp_batch]
+                        
+                        # Model A: ResNet (primary model / fallback)
+                        if ensemble_models.get('resnet') is not None:
+                            pred_resnet = ensemble_models['resnet'].predict(dl_inputs, verbose=0).flatten()
+                            base_preds.append(pred_resnet)
+                        elif model is not None:
+                            pred_resnet = model.predict(dl_inputs, verbose=0).flatten()
+                            base_preds.append(pred_resnet)
+                        
+                        # Model B: InceptionNet
+                        if ensemble_models.get('inception') is not None:
+                            pred_inception = ensemble_models['inception'].predict(dl_inputs, verbose=0).flatten()
+                            base_preds.append(pred_inception)
+                        
+                        # Model C: XGBoost (needs hand-crafted features)
+                        if ensemble_models.get('xgboost') is not None:
+                            from scipy.signal import find_peaks
+                            xgb_features = []
+                            for i in range(len(X_signal_batch)):
+                                fhr_1d = X_signal_batch[i].flatten()
+                                valid = fhr_1d[fhr_1d > 0] if np.any(fhr_1d > 0) else fhr_1d
+                                feat = [
+                                    np.mean(valid), np.std(valid), np.median(valid),
+                                    np.percentile(valid, 5), np.percentile(valid, 25),
+                                    np.percentile(valid, 75), np.percentile(valid, 95),
+                                    np.mean(np.abs(np.diff(valid))) if len(valid) > 1 else 0,
+                                ]
+                                if len(valid) > 1:
+                                    mc = valid - np.mean(valid)
+                                    feat.append(np.sum(np.diff(np.sign(mc)) != 0) / len(valid))
+                                else:
+                                    feat.append(0)
+                                if len(valid) > 10:
+                                    peaks, _ = find_peaks(valid, distance=30)
+                                    troughs, _ = find_peaks(-valid, distance=30)
+                                    feat.extend([len(peaks), len(troughs)])
+                                else:
+                                    feat.extend([0, 0])
+                                xgb_features.append(feat)
+                            X_fhr_feat = np.array(xgb_features, dtype=np.float32)
+                            X_xgb_combined = np.hstack([X_tabular_batch, X_csp_batch, X_fhr_feat])
+                            X_xgb_combined = np.nan_to_num(X_xgb_combined, nan=0.0)
+                            pred_xgb = ensemble_models['xgboost'].predict_proba(X_xgb_combined)[:, 1]
+                            base_preds.append(pred_xgb)
+                        
+                        # Compute ensemble mean and uncertainty
+                        if len(base_preds) >= 2:
+                            preds_stack = np.array(base_preds)  # (n_models, n_windows)
+                            ensemble_mean = np.mean(preds_stack, axis=0)
+                            ensemble_uncertainty = np.std(preds_stack, axis=0)
+                            
+                            # Use meta-learner if available for final prediction
+                            if meta_learner is not None and len(base_preds) == 3:
+                                meta_input = np.column_stack(base_preds)
+                                ensemble_mean = meta_learner.predict_proba(meta_input)[:, 1]
+                            
+                            predictions = ensemble_mean.reshape(-1, 1)
+                        else:
+                            # Fallback: single model only
+                            predictions = base_preds[0].reshape(-1, 1) if base_preds else model.predict(dl_inputs, verbose=0)
+                            ensemble_uncertainty = np.zeros(len(predictions))
                     else:
                         st.write(":material/memory: Running Legacy Inference Model...")
                         predictions = model.predict([X_signal_batch, X_tabular_batch], verbose=0)
+                        ensemble_uncertainty = np.zeros(len(predictions))
                     
                     if isinstance(predictions, list): predictions = predictions[0]
 
@@ -259,7 +324,8 @@ def main():
                     
                 # --- SELECT MAX RISK WINDOW ---
                 max_idx = np.argmax(predictions)
-                prob = float(predictions[max_idx][0])
+                prob = float(predictions[max_idx][0]) if predictions[max_idx].ndim > 0 else float(predictions[max_idx])
+                uncertainty_score = float(ensemble_uncertainty[max_idx]) if len(ensemble_uncertainty) > max_idx else 0.0
                 
                 risk_window_signal = X_signal_batch[max_idx:max_idx+1]
                 risk_window_start = window_indices[max_idx][0]
@@ -270,7 +336,7 @@ def main():
                 # Create normalized signal for visualization (0-1 range)
                 signal_norm = normalize_fhr(signal)
 
-                render_kpi_cards(prob, len(signal)/60)
+                render_kpi_cards(prob, len(signal)/60, uncertainty=uncertainty_score, n_models=n_ensemble_loaded)
                 
                 st.divider()
                 

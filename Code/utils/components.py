@@ -65,7 +65,7 @@ def render_header(theme="Light"):
                 st.session_state.dark_mode = not st.session_state.dark_mode
                 st.rerun()
 
-def render_kpi_cards(prob, signal_dur_min):
+def render_kpi_cards(prob, signal_dur_min, uncertainty=0.0, n_models=1):
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
@@ -90,12 +90,26 @@ def render_kpi_cards(prob, signal_dur_min):
         """, unsafe_allow_html=True)
         
     with col3:
-        confidence = prob if prob > 0.5 else (1 - prob)
+        # Ensemble agreement = 1 - uncertainty (std-dev of base model predictions)
+        if n_models >= 2 and uncertainty > 0:
+            agreement = max(0.0, 1.0 - uncertainty)
+            # Color code: green if high agreement, amber if medium, red if low
+            if agreement >= 0.85:
+                agree_class = "text-green"
+            elif agreement >= 0.70:
+                agree_class = ""
+            else:
+                agree_class = "text-red"
+            subtitle = f"Ensemble ({n_models} models)"
+        else:
+            agreement = prob if prob > 0.5 else (1 - prob)
+            agree_class = ""
+            subtitle = "Single Model"
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-label"><span class="material-symbols-rounded" style="font-size:18px; color:#64748b; margin-right:5px;">verified_user</span> Model Confidence</div>
-            <div class="metric-value">{confidence:.1%}</div>
-            <div class="metric-delta">Reliability Score</div>
+            <div class="metric-label"><span class="material-symbols-rounded" style="font-size:18px; color:#64748b; margin-right:5px;">verified_user</span> Ensemble Agreement</div>
+            <div class="metric-value {agree_class}">{agreement:.1%}</div>
+            <div class="metric-delta">{subtitle}</div>
         </div>
         """, unsafe_allow_html=True)
         

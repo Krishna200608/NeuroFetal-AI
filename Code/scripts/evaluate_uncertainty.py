@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
-MC Dropout Uncertainty Evaluation for NeuroFetal AI
-====================================================
+Ensemble Variance Uncertainty Evaluation for NeuroFetal AI
+==========================================================
 NOVEL contribution: Uncertainty quantification for clinical decision support.
 
-This script evaluates prediction confidence using Monte Carlo Dropout,
-providing calibrated uncertainty estimates for fetal distress predictions.
+This script evaluates prediction confidence using the AGREEMENT between the
+three ensemble models (AttentionFusionResNet, InceptionNet, XGBoost), providing
+calibrated uncertainty estimates for fetal distress predictions.
 
 Key Features:
-1. MC Dropout ensemble for predictive uncertainty
+1. Ensemble variance (std-dev across base models) for predictive uncertainty
 2. Expected Calibration Error (ECE) for calibration assessment
 3. Uncertainty-aware decision thresholds
 4. AUROC stratified by uncertainty (high vs low confidence)
@@ -20,6 +21,7 @@ import os
 import sys
 import numpy as np
 import tensorflow as tf
+import pickle
 from sklearn.metrics import roc_auc_score, precision_recall_curve
 from sklearn.calibration import calibration_curve
 import matplotlib.pyplot as plt
@@ -27,11 +29,11 @@ import matplotlib.pyplot as plt
 # Setup paths
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'utils'))
 from csp_features import MultimodalFeatureExtractor
+
 # ============================================================================
 # Configuration
 # ============================================================================
 
-N_MC_SAMPLES = 50  # Number of forward passes for MC Dropout
 CONFIDENCE_THRESHOLD = 0.3  # Uncertainty threshold for clinical flagging
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -39,51 +41,52 @@ MODEL_DIR = os.path.join(BASE_DIR, "Code", "models")
 RESULTS_DIR = os.path.join(BASE_DIR, "Reports", "uncertainty_analysis")
 
 
-def enable_mc_dropout(model):
+def ensemble_predict(models, X_inputs, X_tab_xgb, X_csp_xgb, X_fhr_feat_xgb):
     """
-    Enable dropout at inference time for MC Dropout.
+    Get predictions with uncertainty using ensemble variance.
     
-    This is done by setting training=True for Dropout layers during prediction.
-    """
-    # Create a function that calls the model with training=True
-    @tf.function
-    def mc_predict(inputs):
-        return model(inputs, training=True)
-    return mc_predict
-
-
-def mc_dropout_predict(model, X, n_samples=N_MC_SAMPLES):
-    """
-    Get predictions with uncertainty using MC Dropout.
-    
-    Performs multiple stochastic forward passes and returns:
-    - Mean prediction (point estimate)
-    - Predictive uncertainty (epistemic + aleatoric)
+    Runs all three base models and returns:
+    - Mean prediction (point estimate across models)
+    - Predictive uncertainty (std-dev across models = disagreement)
     
     Args:
-        model: Trained Keras model with Dropout layers
-        X: Input data (list of arrays for multi-input model)
-        n_samples: Number of MC forward passes
+        models: dict with keys 'resnet', 'inception', 'xgboost'
+        X_inputs: list [X_fhr, X_tab, X_csp] for deep learning models
+        X_tab_xgb: tabular features for XGBoost
+        X_csp_xgb: CSP features for XGBoost
+        X_fhr_feat_xgb: hand-crafted FHR features for XGBoost
     
     Returns:
-        mean_pred: Mean prediction probability
-        uncertainty: Standard deviation of predictions (uncertainty)
-        all_preds: All individual predictions for analysis
+        mean_pred: Mean prediction probability across ensemble
+        uncertainty: Standard deviation of predictions (ensemble disagreement)
+        all_preds: dict of individual model predictions
     """
-    predictions = []
+    pred_dict = {}
     
-    for i in range(n_samples):
-        # Run with training=True to enable dropout
-        # Note: model() call handles list inputs correctly for multi-input models
-        pred = model(X, training=True)
-        predictions.append(pred.numpy().flatten())
+    # Model A: AttentionFusionResNet
+    if models.get('resnet') is not None:
+        pred_a = models['resnet'].predict(X_inputs, verbose=0).flatten()
+        pred_dict['resnet'] = pred_a
     
-    predictions = np.array(predictions)  # (n_samples, n_data_points)
+    # Model B: InceptionNet
+    if models.get('inception') is not None:
+        pred_b = models['inception'].predict(X_inputs, verbose=0).flatten()
+        pred_dict['inception'] = pred_b
     
-    mean_pred = np.mean(predictions, axis=0)
-    uncertainty = np.std(predictions, axis=0)
+    # Model C: XGBoost
+    if models.get('xgboost') is not None:
+        X_combined = np.hstack([X_tab_xgb, X_csp_xgb, X_fhr_feat_xgb])
+        X_combined = np.nan_to_num(X_combined, nan=0.0)
+        pred_c = models['xgboost'].predict_proba(X_combined)[:, 1]
+        pred_dict['xgboost'] = pred_c
     
-    return mean_pred, uncertainty, predictions
+    # Stack all available predictions
+    preds_array = np.array(list(pred_dict.values()))  # (n_models, n_samples)
+    
+    mean_pred = np.mean(preds_array, axis=0)
+    uncertainty = np.std(preds_array, axis=0)
+    
+    return mean_pred, uncertainty, pred_dict
 
 
 def expected_calibration_error(y_true, y_pred, n_bins=10):
@@ -211,7 +214,7 @@ def plot_uncertainty_histogram(uncertainty, y_pred, y_true, save_path=None):
     ax.axvline(np.mean(uncertainty), color='black', linestyle='--', 
                label=f'Mean uncertainty: {np.mean(uncertainty):.3f}')
     
-    ax.set_xlabel('Prediction Uncertainty (Std Dev)', fontsize=12)
+    ax.set_xlabel('Prediction Uncertainty (Ensemble Std Dev)', fontsize=12)
     ax.set_ylabel('Count', fontsize=12)
     ax.set_title('Uncertainty Distribution: Correct vs Incorrect Predictions', fontsize=14)
     ax.legend()
@@ -225,13 +228,58 @@ def plot_uncertainty_histogram(uncertainty, y_pred, y_true, save_path=None):
     plt.close()
 
 
-def evaluate_uncertainty(model_path, X_val, y_val, output_dir=None):
+def extract_cnn_features(X_fhr):
     """
-    Comprehensive uncertainty evaluation for a trained model.
+    Extract hand-crafted features from FHR for XGBoost.
+    Mirrors the logic from train_diverse_ensemble.py.
+    """
+    from scipy.signal import find_peaks
+    
+    features = []
+    for fhr in X_fhr:
+        fhr_1d = fhr.flatten()
+        valid = fhr_1d[fhr_1d > 0]
+
+        feat = []
+        feat.append(np.mean(valid) if len(valid) > 0 else 0)
+        feat.append(np.std(valid) if len(valid) > 0 else 0)
+        feat.append(np.median(valid) if len(valid) > 0 else 0)
+
+        for p in [5, 25, 75, 95]:
+            feat.append(np.percentile(valid, p) if len(valid) > 0 else 0)
+
+        feat.append(np.mean(np.abs(np.diff(valid))) if len(valid) > 1 else 0)
+
+        if len(valid) > 1:
+            mean_centered = valid - np.mean(valid)
+            zcr = np.sum(np.diff(np.sign(mean_centered)) != 0) / len(valid)
+            feat.append(zcr)
+        else:
+            feat.append(0)
+
+        if len(valid) > 10:
+            peaks, _ = find_peaks(valid, distance=30)
+            troughs, _ = find_peaks(-valid, distance=30)
+            feat.append(len(peaks))
+            feat.append(len(troughs))
+        else:
+            feat.extend([0, 0])
+
+        features.append(feat)
+
+    return np.array(features, dtype=np.float32)
+
+
+def evaluate_ensemble_uncertainty(models, X_inputs, X_tab_xgb, X_csp_xgb, X_fhr_feat_xgb, y_val, output_dir=None):
+    """
+    Comprehensive uncertainty evaluation using ensemble variance.
     
     Args:
-        model_path: Path to trained Keras model
-        X_val: Validation inputs (list for multi-input model)
+        models: dict with 'resnet', 'inception', 'xgboost' model instances
+        X_inputs: list [X_fhr, X_tab, X_csp] for DL models
+        X_tab_xgb: raw tabular features for XGBoost
+        X_csp_xgb: raw CSP features for XGBoost
+        X_fhr_feat_xgb: hand-crafted FHR features for XGBoost
         y_val: Validation labels
         output_dir: Directory to save plots
     
@@ -239,43 +287,23 @@ def evaluate_uncertainty(model_path, X_val, y_val, output_dir=None):
         results: Dictionary with all uncertainty metrics
     """
     print("\n" + "="*60)
-    print("MC Dropout Uncertainty Evaluation")
+    print("Ensemble Variance Uncertainty Evaluation")
     print("="*60)
     
-    # Load model with custom keys
-    print(f"\nLoading model from: {model_path}")
-    
-    # Import custom layers
-    from attention_blocks import SEBlock, TemporalAttentionBlock
-    from model import CrossModalAttention
-    from focal_loss import FocalLoss
-    
-    custom_objects = {
-        'SEBlock': SEBlock,
-        'TemporalAttentionBlock': TemporalAttentionBlock,
-        'CrossModalAttention': CrossModalAttention,
-        'FocalLoss': FocalLoss,
-        'focal_loss_fixed': FocalLoss(gamma=2.5, alpha=0.75)
-    }
-    
-    try:
-        model = tf.keras.models.load_model(model_path, custom_objects=custom_objects, compile=False)
-    except TypeError as e:
-        print(f"Warning directly loading: {e}")
-        # Build model from config if direct load fails (common in Keras 3/TF 2.16+)
-        print("Attempting to reconstruct model from config...")
-        # (This is a complex fallback, let's trust custom_objects works first)
-        raise e
-        
-    # Get MC Dropout predictions
-    print(f"\nPerforming {N_MC_SAMPLES} MC Dropout forward passes...")
-    mean_pred, uncertainty, all_preds = mc_dropout_predict(model, X_val)
+    # Get ensemble predictions
+    n_models = sum(1 for v in models.values() if v is not None)
+    print(f"\nComputing predictions from {n_models} base models...")
+    mean_pred, uncertainty, pred_dict = ensemble_predict(
+        models, X_inputs, X_tab_xgb, X_csp_xgb, X_fhr_feat_xgb
+    )
     
     # Basic stats
     print(f"\nPrediction Statistics:")
     print(f"  Mean prediction: {np.mean(mean_pred):.4f}")
-    print(f"  Mean uncertainty: {np.mean(uncertainty):.4f}")
+    print(f"  Mean uncertainty (ensemble std): {np.mean(uncertainty):.4f}")
     print(f"  Max uncertainty: {np.max(uncertainty):.4f}")
+    for name, preds in pred_dict.items():
+        print(f"  {name} mean: {np.mean(preds):.4f}")
     
     # Calculate metrics
     auc = roc_auc_score(y_val, mean_pred)
@@ -283,7 +311,7 @@ def evaluate_uncertainty(model_path, X_val, y_val, output_dir=None):
     stratified = stratify_by_uncertainty(y_val, mean_pred, uncertainty)
     
     print(f"\nPerformance Metrics:")
-    print(f"  AUC (MC mean): {auc:.4f}")
+    print(f"  AUC (ensemble mean): {auc:.4f}")
     print(f"  Expected Calibration Error: {ece:.4f}")
     print(f"\nUncertainty Stratification (threshold={stratified['threshold']}):")
     print(f"  Low uncertainty samples: {stratified['n_low_uncertainty']}")
@@ -317,12 +345,11 @@ def evaluate_uncertainty(model_path, X_val, y_val, output_dir=None):
         'mean_uncertainty': np.mean(uncertainty),
         'stratified_metrics': stratified,
         'predictions': mean_pred,
-        'uncertainties': uncertainty
+        'uncertainties': uncertainty,
+        'per_model_preds': pred_dict
     }
     
     return results
-
-
 
 
 def main():
@@ -345,10 +372,27 @@ def main():
         print("Warning: UC signals not found. Using 2-input mode (No CSP).")
         X_uc = None
     
+    # Ensure 3D FHR
+    if X_fhr.ndim == 2:
+        X_fhr = np.expand_dims(X_fhr, axis=-1)
+    
     # Create results directory
     os.makedirs(RESULTS_DIR, exist_ok=True)
     
-    # Replicate StratifiedKFold to get the same validation splits as training
+    # Import custom layers for model loading
+    from attention_blocks import SEBlock, TemporalAttentionBlock
+    from model import CrossModalAttention
+    from focal_loss import FocalLoss
+    
+    custom_objects = {
+        'SEBlock': SEBlock,
+        'TemporalAttentionBlock': TemporalAttentionBlock,
+        'CrossModalAttention': CrossModalAttention,
+        'FocalLoss': FocalLoss,
+        'focal_loss_fixed': FocalLoss(gamma=2.5, alpha=0.75)
+    }
+    
+    # StratifiedKFold to get the same validation splits as training
     from sklearn.model_selection import StratifiedKFold
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     
@@ -357,57 +401,103 @@ def main():
     for fold, (train_idx, val_idx) in enumerate(skf.split(X_fhr, y), 1):
         print(f"\nProcessing Fold {fold}...")
         
-        model_path = os.path.join(MODEL_DIR, f"enhanced_model_fold_{fold}.keras")
-        if not os.path.exists(model_path):
-            print(f"Model not found: {model_path}. Skipping.")
+        # --- Load all 3 models for this fold ---
+        models = {}
+        
+        # Model A: AttentionFusionResNet
+        resnet_path = os.path.join(MODEL_DIR, f"enhanced_model_fold_{fold}.keras")
+        if os.path.exists(resnet_path):
+            try:
+                models['resnet'] = tf.keras.models.load_model(
+                    resnet_path, custom_objects=custom_objects, compile=False
+                )
+                print(f"  Loaded ResNet fold {fold}")
+            except Exception as e:
+                print(f"  ResNet load failed: {e}")
+                models['resnet'] = None
+        else:
+            models['resnet'] = None
+            print(f"  ResNet not found: {resnet_path}")
+        
+        # Model B: InceptionNet
+        inception_path = os.path.join(MODEL_DIR, f"inception_model_fold_{fold}.keras")
+        if os.path.exists(inception_path):
+            try:
+                models['inception'] = tf.keras.models.load_model(
+                    inception_path, custom_objects=custom_objects, compile=False
+                )
+                print(f"  Loaded InceptionNet fold {fold}")
+            except Exception as e:
+                print(f"  InceptionNet load failed: {e}")
+                models['inception'] = None
+        else:
+            models['inception'] = None
+            print(f"  InceptionNet not found: {inception_path}")
+        
+        # Model C: XGBoost
+        xgb_path = os.path.join(MODEL_DIR, f"xgboost_model_fold_{fold}.pkl")
+        if os.path.exists(xgb_path):
+            with open(xgb_path, 'rb') as f:
+                models['xgboost'] = pickle.load(f)
+            print(f"  Loaded XGBoost fold {fold}")
+        else:
+            models['xgboost'] = None
+            print(f"  XGBoost not found: {xgb_path}")
+        
+        # Check we have at least 2 models for meaningful variance
+        n_loaded = sum(1 for v in models.values() if v is not None)
+        if n_loaded < 2:
+            print(f"  Only {n_loaded} models loaded. Need ≥2 for variance. Skipping fold.")
             continue
-            
+        
         # Prepare data for this fold
         X_fhr_train = X_fhr[train_idx]
         X_fhr_val = X_fhr[val_idx]
-        
         X_tab_val = X_tab[val_idx]
         y_val_fold = y[val_idx]
         y_train_fold = y[train_idx]
         
+        # CSP features
         if X_uc is not None:
-             X_uc_train = X_uc[train_idx]
-             X_uc_val = X_uc[val_idx]
-             
-             # Squeeze for CSP (N, L)
-             X_fhr_train_2d = X_fhr_train.squeeze()
-             X_uc_train_2d = X_uc_train.squeeze()
-             X_fhr_val_2d = X_fhr_val.squeeze()
-             X_uc_val_2d = X_uc_val.squeeze()
-             
-             # Create and Fit Multimodal Extractor
-             # Default n_csp=4 + 15 stats = 19 features (Matches model input)
-             extractor = MultimodalFeatureExtractor(n_csp_components=4)
-             
-             # Normal/Pathologic masks for CSP
-             normal_mask = (y_train_fold == 0)
-             path_mask = (y_train_fold == 1)
-             
-             extractor.fit(
+            X_uc_train = X_uc[train_idx]
+            X_uc_val = X_uc[val_idx]
+            
+            X_fhr_train_2d = X_fhr_train.squeeze()
+            X_uc_train_2d = X_uc_train.squeeze()
+            X_fhr_val_2d = X_fhr_val.squeeze()
+            X_uc_val_2d = X_uc_val.squeeze()
+            
+            extractor = MultimodalFeatureExtractor(n_csp_components=4)
+            
+            normal_mask = (y_train_fold == 0)
+            path_mask = (y_train_fold == 1)
+            
+            extractor.fit(
                 X_fhr_train_2d[normal_mask], X_uc_train_2d[normal_mask],
                 X_fhr_train_2d[path_mask], X_uc_train_2d[path_mask]
-             )
-             
-             # Transform Validation Data
-             X_csp_val = extractor.extract_batch(X_fhr_val_2d, X_uc_val_2d)
-             
-             X_val_inputs = [X_fhr_val, X_tab_val, X_csp_val]
+            )
+            
+            X_csp_val = extractor.extract_batch(X_fhr_val_2d, X_uc_val_2d)
         else:
-             X_val_inputs = [X_fhr_val, X_tab_val]
-             
+            X_csp_val = np.zeros((len(val_idx), 19))
+        
+        # DL model inputs
+        X_inputs = [X_fhr_val, X_tab_val, X_csp_val]
+        
+        # XGBoost features
+        X_fhr_feat_val = extract_cnn_features(X_fhr_val)
+        
         # Evaluate
         fold_output_dir = os.path.join(RESULTS_DIR, f"fold_{fold}")
-        results = evaluate_uncertainty(
-            model_path, X_val_inputs, y_val_fold,
-            output_dir=fold_output_dir
+        results = evaluate_ensemble_uncertainty(
+            models, X_inputs, X_tab_val, X_csp_val, X_fhr_feat_val,
+            y_val_fold, output_dir=fold_output_dir
         )
         fold_metrics.append(results)
-        print(f"Fold {fold} AUC: {results['auc']:.4f}")
+        print(f"Fold {fold} AUC: {results['auc']:.4f}, ECE: {results['ece']:.4f}")
+        
+        # Clear GPU memory
+        tf.keras.backend.clear_session()
 
     if fold_metrics:
         # Average metrics
@@ -420,11 +510,9 @@ def main():
         print(f"{'='*60}")
         print(f"Mean AUC: {mean_auc:.4f}")
         print(f"Mean ECE: {mean_ece:.4f}")
-        print(f"Mean Uncertainty: {mean_unc:.4f}")
+        print(f"Mean Uncertainty (ensemble std): {mean_unc:.4f}")
     
     print("\nUncertainty evaluation complete!")
-
-
 
 
 if __name__ == "__main__":

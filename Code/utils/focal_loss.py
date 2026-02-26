@@ -5,7 +5,7 @@ Implements Focal Loss for handling extreme class imbalance in fetal compromise d
 
 Focal Loss formula: FL(p_t) = -α_t * (1 - p_t)^γ * log(p_t)
 - α_t: Weighting factor for class imbalance
-- γ: Focusing parameter (typically 2.0)
+- γ: Focusing parameter (1.5 recommended; lower than typical 2.0 to reduce overconfidence)
 - (1 - p_t)^γ: Down-weights easy examples, focuses on hard negatives
 
 Reference: Lin et al. 2017 "Focal Loss for Dense Object Detection"
@@ -26,7 +26,7 @@ class FocalLoss(losses.Loss):
     - reduction: Reduction method ('auto', 'sum', 'none')
     """
     
-    def __init__(self, alpha=0.25, gamma=2.0, reduction="sum_over_batch_size", name="focal_loss"):
+    def __init__(self, alpha=0.25, gamma=1.5, reduction="sum_over_batch_size", name="focal_loss"):
         super().__init__(reduction=reduction, name=name)
         self.alpha = alpha
         self.gamma = gamma
@@ -67,7 +67,7 @@ class WeightedFocalLoss(losses.Loss):
     - pos_weight: Additional weight multiplier for positive class
     """
     
-    def __init__(self, alpha=0.25, gamma=2.0, pos_weight=5.0, reduction="sum_over_batch_size"):
+    def __init__(self, alpha=0.25, gamma=1.5, pos_weight=5.0, reduction="sum_over_batch_size"):
         super().__init__(reduction=reduction)
         self.alpha = alpha
         self.gamma = gamma
@@ -99,7 +99,7 @@ class WeightedFocalLoss(losses.Loss):
         return alpha_weight * class_weight * focal_weight * bce
 
 
-def get_focal_loss(alpha=0.25, gamma=2.0, use_weighted=False, pos_weight=5.0):
+def get_focal_loss(alpha=0.25, gamma=1.5, use_weighted=False, pos_weight=5.0):
     """
     Factory function to create focal loss.
     

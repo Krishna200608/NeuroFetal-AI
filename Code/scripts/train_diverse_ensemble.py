@@ -19,6 +19,7 @@ import json
 from datetime import datetime
 from sklearn.model_selection import StratifiedKFold
 from sklearn.linear_model import LogisticRegression
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import roc_auc_score
 import pickle
 
@@ -507,9 +508,12 @@ def train_stacking_meta_learner(oof_preds, y, weights=None):
         print("  Not enough valid OOF predictions for stacking. Using weighted average.")
         return None, 0.0
 
-    # Logistic Regression meta-learner (Platt scaling built-in)
-    meta_model = LogisticRegression(
+    # Logistic Regression meta-learner + Isotonic Regression post-hoc calibration
+    base_meta = LogisticRegression(
         C=1.0, max_iter=1000, random_state=RANDOM_STATE
+    )
+    meta_model = CalibratedClassifierCV(
+        estimator=base_meta, method='isotonic', cv=5
     )
     meta_model.fit(oof_valid, y_valid)
 
