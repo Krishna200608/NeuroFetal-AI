@@ -521,8 +521,13 @@ def train_stacking_meta_learner(oof_preds, y, weights=None):
     meta_auc = roc_auc_score(y_valid, meta_preds)
 
     print(f"\n  Stacking Meta-Learner AUC: {meta_auc:.4f}")
-    print(f"  Meta-learner weights: {meta_model.coef_.flatten()}")
-    print(f"  Meta-learner bias: {meta_model.intercept_}")
+    # Access underlying LogisticRegression weights through CalibratedClassifierCV
+    try:
+        base_lr = meta_model.calibrated_classifiers_[0].estimator
+        print(f"  Meta-learner weights: {base_lr.coef_.flatten()}")
+        print(f"  Meta-learner bias: {base_lr.intercept_}")
+    except (AttributeError, IndexError):
+        print("  (Calibrated model — internal weights not directly accessible)")
 
     # Compare with simple weighted average
     if weights is None:
