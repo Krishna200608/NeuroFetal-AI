@@ -403,8 +403,11 @@ def generate_oof_predictions(X_fhr, X_tabular, X_csp, y, n_folds=5):
                 input_shapes['fhr'], input_shapes['tab'], input_shapes['csp']
             )
 
-            loss_fn = get_focal_loss(alpha=0.65, gamma=2.0, use_weighted=True, pos_weight=5.0)
-            optimizer = tf.keras.optimizers.AdamW(learning_rate=0.001, weight_decay=5e-4)
+            # Fix: use_weighted=False to avoid double class-weighting (alpha already handles imbalance)
+            # Fix: gamma 2.0 → 1.5 to reduce overconfidence
+            loss_fn = get_focal_loss(alpha=0.65, gamma=1.5, use_weighted=False)
+            # Fix: LR 0.001 → 3e-4, weight_decay 5e-4 → 1e-4 for stability
+            optimizer = tf.keras.optimizers.AdamW(learning_rate=3e-4, weight_decay=1e-4)
             model_b.compile(optimizer=optimizer, loss=loss_fn,
                           metrics=[tf.keras.metrics.AUC(name='auc')])
 
@@ -414,7 +417,10 @@ def generate_oof_predictions(X_fhr, X_tabular, X_csp, y, n_folds=5):
                     inception_path, monitor='val_auc', save_best_only=True, mode='max'
                 ),
                 tf.keras.callbacks.EarlyStopping(
-                    monitor='val_auc', patience=25, mode='max', restore_best_weights=True
+                    monitor='val_auc', patience=15, mode='max', restore_best_weights=True
+                ),
+                tf.keras.callbacks.ReduceLROnPlateau(
+                    monitor='val_auc', factor=0.5, patience=7, mode='max', min_lr=1e-6
                 ),
             ]
 
