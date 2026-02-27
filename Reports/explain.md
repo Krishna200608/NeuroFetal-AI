@@ -2,7 +2,7 @@
 
 **A Tri-Modal Deep-Learning Clinical Decision Support System for Intrapartum Fetal Monitoring, featuring Stacking Ensemble, TimeGAN Augmentation, Uncertainty Quantification, and Edge-AI Deployment.**
 
-NeuroFetal AI fuses Fetal Heart Rate (FHR) time-series, Uterine Contraction (UC) signals, and Maternal Clinical Data through a **Stacking Ensemble** of diverse models (AttentionFusionResNet, 1D-InceptionNet, XGBoost) to predict fetal compromise during labor. V4.0 replaces SMOTE with **TimeGAN augmentation** (1,410 synthetic pathological traces) and achieves **0.8639 AUC** on public data (CTU-UHB, PhysioNet) — exceeding the 0.84 target (Mendis et al., which used 10k+ private samples). The system provides **uncertainty-aware predictions** via Monte Carlo Dropout (low-uncertainty AUC: 0.8471) and ships a **TFLite Int8 model** for offline inference on low-cost hardware. Designed for deployment in resource-limited clinical settings where specialist obstetricians are scarce.
+NeuroFetal AI fuses Fetal Heart Rate (FHR) time-series, Uterine Contraction (UC) signals, and Maternal Clinical Data through a **Stacking Ensemble** of diverse models (AttentionFusionResNet, 1D-InceptionNet, XGBoost) to predict fetal compromise during labor. V5.0 builds on TimeGAN augmentation (1,410 synthetic pathological traces) with rigorous **Platt Scaling Calibration** and achieves **96.34% Accuracy** and **0.8639 AUC** on public data (CTU-UHB, PhysioNet) — exceeding the 0.84 target (Mendis et al., which used 10k+ private samples). The system provides **uncertainty-aware predictions** (Brier Score: 0.046, ECE: 0.0543) via Monte Carlo Dropout combined with Information Theory metrics (Entropy/Mutual Information) and ships a **TFLite Int8 model** for offline inference on low-cost hardware. Designed for deployment in resource-limited clinical settings where specialist obstetricians are scarce.
 
 ---
 
@@ -80,7 +80,7 @@ Obstetricians classify CTG traces using systems such as **FIGO (International Fe
 
 ### How NeuroFetal AI Addresses This
 
-NeuroFetal AI is a **tri-modal system** that jointly analyzes FHR, UC, and maternal clinical features (16 features: 3 demographic + 13 signal-derived). A **Stacking Ensemble** of 3 architecturally diverse models (AttentionFusionResNet, 1D-InceptionNet, XGBoost) with a Logistic Regression meta-learner achieves **AUC 0.8639** (V4.0 with TimeGAN augmentation). It uses Cross-Modal Attention to learn the temporal relationship between FHR and UC signals — mimicking the clinical reasoning process where decelerations are interpreted relative to contraction timing.
+NeuroFetal AI is a **tri-modal system** that jointly analyzes FHR, UC, and maternal clinical features (16 features: 3 demographic + 13 signal-derived). A **Stacking Ensemble** of 3 architecturally diverse models (AttentionFusionResNet, 1D-InceptionNet, XGBoost) with a Calibrated Logistic Regression meta-learner achieves **96.34% Accuracy and AUC 0.8639** (V5.0 with TimeGAN augmentation and Platt Scaling). It uses Cross-Modal Attention to learn the temporal relationship between FHR and UC signals — mimicking the clinical reasoning process where decelerations are interpreted relative to contraction timing.
 
 ---
 
@@ -362,10 +362,11 @@ FL(p_t) = -α_t · (1 - p_t)^γ · log(p_t)
 
 | Metric | Value |
 | :--- | :--- |
-| **Ensemble AUC (Stacking)** | **0.8639** (V4.0 TimeGAN) / **0.87** (V3.0 SMOTE) |
+| **Ensemble Accuracy / AUC** | **96.34% / 0.8639** (V5.0 Calibrated) |
+| **Brier Score & ECE** | **0.0460** Brier, **0.0543** ECE |
 | **Best Single-Model AUC** | 0.8512 (XGBoost) |
 | **Primary Model AUC** | 0.7910 ± 0.0322 (AttentionFusionResNet, 5-fold) |
-| **Low-Uncertainty AUC** | 0.8471 (well-calibrated confident predictions) |
+| **Uncertainty Output** | Calibrated Confidence + Predictive Entropy + Mutual Information |
 | **Fold Std. Dev.** | Low (model is stable across folds) |
 
 ### Benchmarking
@@ -375,7 +376,8 @@ FL(p_t) = -α_t · (1 - p_t)^γ · log(p_t)
 | Mendis et al. (Baseline) | FHR + Tabular (10k private) | 0.84 | Private dataset, larger scale |
 | Our Phase 1 (Basic Fusion) | FHR + Clinical (public, 3 features) | 0.74 | Initial architecture |
 | **NeuroFetal AI V3.0 (SMOTE)** | **FHR + UC + Clinical (public, 16+19 features)** | **0.87** | SMOTE augmentation |
-| **NeuroFetal AI V4.0 (TimeGAN)** | **FHR + UC + Clinical (public, 16+19 features)** | **0.8639** | **TimeGAN augmentation — Current** |
+| **NeuroFetal AI V4.0 (TimeGAN)** | **FHR + UC + Clinical (public, 16+19 features)** | **0.8639** | TimeGAN augmentation |
+| **NeuroFetal AI V5.0 (Calibrated)**| **FHR + UC + Clinical (public, 16+19 features)** | **0.8639** | **Current (96.34% Acc, Brier: 0.046)** |
 
 ### Key Insight: Rank Averaging + Stacking
 

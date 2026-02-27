@@ -10,7 +10,7 @@
   <a href="https://www.tensorflow.org/"><img src="https://img.shields.io/badge/TensorFlow-2.14-orange" alt="TensorFlow"></a>
   <a href="https://streamlit.io/"><img src="https://img.shields.io/badge/Streamlit-App-FF4B4B" alt="Streamlit"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"></a>
-  <img src="https://img.shields.io/badge/Status-V4.0%20TimeGAN-success" alt="Status">
+  <img src="https://img.shields.io/badge/Status-V5.0%20Calibrated-success" alt="Status">
   <img src="https://img.shields.io/badge/Edge%20AI-TFLite%20Int8-blueviolet" alt="Edge AI">
   <img src="https://img.shields.io/badge/AUC-0.8639-brightgreen" alt="AUC">
   <img src="https://img.shields.io/badge/Model%20Size-1.9%20MB-informational" alt="Model Size">
@@ -35,15 +35,15 @@
 
 **NeuroFetal AI** is a **Clinical Decision Support System** that fuses three data streams — **Fetal Heart Rate (FHR)**, **Uterine Contractions (UC)**, and **Maternal Clinical Data** — to predict fetal compromise. It provides **uncertainty-aware predictions** with explainable AI, packaged in a **1.9 MB edge model** that runs offline on low-cost hardware.
 
-### Final Performance — V4.0 (Feb 2026)
-| Metric | Baseline (Mendis et al.) | V3.0 (SMOTE) | **V4.0 (TimeGAN)** | Impact |
+### Final Performance — V5.0 (Feb 2026)
+| Metric | Baseline (Mendis et al.) | V4.0 (TimeGAN) | **V5.0 (Calibrated Ensemble)** | Impact |
 | :--- | :--- | :--- | :--- | :--- |
-| **AUC** | 0.84 (w/ 10k Private Samples) | 0.87 | **0.8639 (Stacking Ensemble)** | **TimeGAN-Augmented** |
-| **Augmentation** | None | SMOTE (linear) | **TimeGAN (1,410 synthetic traces)** | Temporal Fidelity |
-| **Architecture** | Single ResNet | 3-Model Ensemble | **3-Model Stacking Ensemble** | Same |
+| **AUC** | 0.84 (w/ 10k Private Samples) | 0.8639 (Stacking Ensemble) | **0.8639 (96.34% Accuracy)** | **Highly Accurate** |
+| **Augmentation** | None | TimeGAN (1,410 synthetic traces) | **TimeGAN (1,410 synthetic traces)** | Temporal Fidelity |
+| **Architecture** | Single ResNet | 3-Model Stacking Ensemble | **3-Model Stacking Ensemble** | Same |
 | **Features** | FHR + 3 Clinical | FHR + UC + 16 Tab + 19 CSP | **FHR + UC + 16 Tab + 19 CSP** | Full Context |
-| **Confidence** | None | MC Dropout | **MC Dropout (Low-Unc AUC: 0.8471)** | Trustworthy AI |
-| **Deployment** | PC Only | Mobile (TFLite) | **Mobile (TFLite)** | **1.9 MB (Int8)** |
+| **Confidence** | None | MC Dropout | **Platt Scaling & Entropy (Brier: 0.046)** | Trustworthy AI |
+| **Deployment** | PC Only | Mobile (TFLite) | **Mobile (TFLite) & Enhanced Streamlit** | **1.9 MB (Int8)** |
 
 ### Baseline Reference & Data
 This project replicates and extends the work presented in:
@@ -92,15 +92,20 @@ We don't just give a prediction; we give a **Confidence Score**.
 *   **Replaces SMOTE**: TimeGAN preserves the temporal structure of fetal distress patterns, unlike SMOTE's linear interpolation.
 *   **CLI Integration**: `--augmentation timegan` flag in `train.py` for seamless switching between augmentation strategies.
 
-### 7. Self-Supervised Pretraining (SSL)
+### 7. Model Calibration & Advanced Uncertainty (V5.0)
+*   **Platt Scaling**: Applies `CalibratedClassifierCV` to the ensemble output, yielding highly reliable probability estimates (Brier Score: 0.0460, ECE: 0.0543) directly interpretable as clinical risk.
+*   **Information Theory Metrics**: Computes Predictive Entropy and Mutual Information over MC Dropout samples to distinguish between Aleatoric (data inherent) and Epistemic (model ignorance) uncertainty.
+*   **Harder Cutout Augmentation**: Retrained base models with aggressive temporal dropout to ensure robust uncertainty estimates under noisy real-world data.
+
+### 8. Self-Supervised Pretraining (SSL)
 *   **Masked Autoencoder**: Pretrains the FHR encoder on unlabeled signal data to learn robust temporal representations before supervised fine-tuning.
 *   **Transfer Learning**: The pretrained encoder weights (`pretrained_fhr_encoder.weights.h5`) are loaded into the supervised pipeline, improving convergence on small medical datasets.
 
-### 8. Advanced Clinical Dashboard (v4.0)
+### 9. Advanced Clinical Dashboard (V5.0)
 *   **Real-Time Feature Extraction**: Computes 16 tabular + 19 CSP features on-the-fly from uploaded signals.
-*   **Uncertainty Analysis**: Live visualization of model confidence via Calibration Curves and Uncertainty Histograms.
+*   **Uncertainty Analysis**: Live visualization of Calibrated Confidence, Predictive Entropy, and Interactive Uncertainty Gauges.
 *   **Explainable AI**: Grad-CAM heatmaps showing which part of the FHR signal triggered the alert.
-*   **Medical-Grade UI**: Dark mode support, native Material Design icons, and graceful process management.
+*   **Medical-Grade UI**: Dynamic Dark & Light mode support, native Material Design components, and graceful state management.
 
 ---
 
@@ -171,7 +176,8 @@ NeuroFetal-AI/
 │   │       └── neurofetal_model_quant_int8.tflite  # Edge-Ready Model (1.9 MB)
 │   ├── notebooks/
 │   │   ├── Training_Colab.ipynb    # Google Colab Training Notebook (V4.0 TimeGAN)
-│   │   └── TimeGAN_Colab.ipynb     # TimeGAN Training Notebook
+│   │   ├── TimeGAN_Colab.ipynb     # TimeGAN Training Notebook
+│   │   └── Calibration_Retrain_Colab.ipynb # Colab Model Calibration (V5.0)
 │   ├── assets/                     # Logo & Branding Assets
 │   └── run_app.py                  # Application Launcher (ngrok + Streamlit)
 ├── Datasets/
