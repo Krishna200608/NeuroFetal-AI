@@ -112,11 +112,23 @@ def load_ensemble_models():
     xgb_path = os.path.join(model_dir, "xgboost_model_fold_1.pkl")
     if os.path.exists(xgb_path):
         try:
+            import xgboost as xgb
             with open(xgb_path, 'rb') as f:
-                models['xgboost'] = pickle.load(f)
+                loaded_model = pickle.load(f)
+                
+            # Streamlit cloud sometimes struggles with XGBClassifier wrappers from newer versions
+            # Extract the raw booster if it's a wrapper, otherwise use as-is
+            if hasattr(loaded_model, 'get_booster'):
+                models['xgboost'] = loaded_model
+            elif hasattr(loaded_model, 'predict'):
+                models['xgboost'] = loaded_model
+            else:
+                st.warning("XGBoost model loaded but missing standard prediction methods.")
+                
             print("[OK] Loaded XGBoost model")
         except Exception as e:
-            print(f"[ERROR] XGBoost load failed: {e}")
+            print(f"[ERROR] XGBoost load failed: {type(e).__name__} - {str(e)}")
+            st.warning(f"Failed to load XGBoost: {type(e).__name__} - {str(e)}")
     
     # Meta-learner (calibrated stacking)
     meta_learner = None
