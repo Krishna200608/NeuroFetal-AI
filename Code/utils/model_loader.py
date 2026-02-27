@@ -93,9 +93,9 @@ def load_ensemble_models():
             models['resnet'] = tf.keras.models.load_model(
                 resnet_path, custom_objects=custom_objects, compile=False
             )
-            print("✓ Loaded ResNet model")
+            print("[OK] Loaded ResNet model")
         except Exception as e:
-            print(f"✗ ResNet load failed: {e}")
+            print(f"[ERROR] ResNet load failed: {e}")
     
     # Model B: InceptionNet (fold 1)
     inception_path = os.path.join(model_dir, "inception_model_fold_1.keras")
@@ -104,9 +104,9 @@ def load_ensemble_models():
             models['inception'] = tf.keras.models.load_model(
                 inception_path, custom_objects=custom_objects, compile=False
             )
-            print("✓ Loaded InceptionNet model")
+            print("[OK] Loaded InceptionNet model")
         except Exception as e:
-            print(f"✗ InceptionNet load failed: {e}")
+            print(f"[ERROR] InceptionNet load failed: {e}")
     
     # Model C: XGBoost (fold 1)
     xgb_path = os.path.join(model_dir, "xgboost_model_fold_1.pkl")
@@ -114,9 +114,9 @@ def load_ensemble_models():
         try:
             with open(xgb_path, 'rb') as f:
                 models['xgboost'] = pickle.load(f)
-            print("✓ Loaded XGBoost model")
+            print("[OK] Loaded XGBoost model")
         except Exception as e:
-            print(f"✗ XGBoost load failed: {e}")
+            print(f"[ERROR] XGBoost load failed: {e}")
     
     # Meta-learner (calibrated stacking)
     meta_learner = None
@@ -125,9 +125,9 @@ def load_ensemble_models():
         try:
             with open(meta_path, 'rb') as f:
                 meta_learner = pickle.load(f)
-            print("✓ Loaded calibrated meta-learner")
+            print("[OK] Loaded calibrated meta-learner")
         except Exception as e:
-            print(f"✗ Meta-learner load failed: {e}")
+            print(f"[ERROR] Meta-learner load failed: {e}")
     
     n_loaded = sum(1 for v in models.values() if v is not None)
     print(f"Ensemble: {n_loaded}/3 models loaded")
