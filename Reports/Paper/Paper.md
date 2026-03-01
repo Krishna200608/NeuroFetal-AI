@@ -78,7 +78,7 @@ Intrapartum fetal compromise—encompassing hypoxia and acidosis during
 labor—remains a principal cause of perinatal mortality, stillbirth, and
 long-term neonatal neurological injury worldwide, with disproportionate
 impact in low-and-middle-income countries where trained obstetric personnel
-are scarce. While Cardiotocography (CTG) serves as the frontline method for evaluating fetal health during active contractions, diagnosing the resulting traces purely by eye remains highly subjective. In fact, different obstetricians interpreting the exact same trace will often disagree roughly 30-40\% of the time, leading to a surplus of unnecessary surgical interventions and highlighting the critical demand for trustworthy algorithmic assistance. This paper
+are scarce. While Cardiotocography (CTG) serves as the frontline method for evaluating fetal health during active contractions, diagnosing the resulting traces purely by eye remais notoriously subjective. In fact, when multiple obstetricians look at the exact same reading, they tend to disagree roughly 30-40\% of the time. This massive variance drives up unnecessary surgical interventions and proves we urgently need objective, algorithmic backup in the delivery room. This paper
 presents \textbf{NeuroFetal AI v5.0}, a clinically
 deployable, uncertainty-aware decision support system that performs tri-modal
 fusion of Fetal Heart Rate (FHR) time-series, Uterine Contraction (UC)
@@ -122,7 +122,7 @@ Quantification, Explainable AI, Edge Deployment, Clinical Decision Support.
 
 \subsection{Clinical Context and Motivation}
 
-Global estimates indicate that nearly \textbf{2.6 million stillbirths} happen annually. Tragically, these adverse events are overwhelmingly concentrated in under-resourced hospital networks, specifically in regions where mothers face severe shortages of available, specialized obstetric care \cite{who2020stillbirth}. A
+Global estimates indicate that nearly \textbf{2.6 million stillbirths} happen annually. The worst part is that these adverse outcomes don't happen evenly—they overwhelmingly strike under-resourced hospital networks, specifically in regions where mothers simply cannot get access to specialized obstetric care \cite{who2020stillbirth}. A
 significant proportion of these adverse outcomes are attributable to
 undetected or late-detected intrapartum fetal compromise—a condition
 characterized by progressive fetal hypoxia and metabolic acidosis during labor,
@@ -134,7 +134,7 @@ As contractions intensify, maternity wards almost universally turn to \textbf{Ca
 Heart Rate (FHR) through a Doppler ultrasound belt, while simultaneously measuring Uterine 
 Contractions (UC) with a pressure tocodynamometer. 
 
-Extracting meaning from the resulting paper strips requires doctors to quickly spot complex FHR behaviors---such as shifting baseline levels, short- and long-term variability (STV and LTV) fluctuations, and sudden accelerations or decelerations. Crucially, they must judge the timing of these heart rate changes relative to the peaks of the uterine contractions. Based on these visual cues, the International Federation of Gynecology and Obstetrics (FIGO) provides a standardized rubric dictating whether a sequence sits in the Normal, Suspicious, or Pathological category \cite{figo2015}.
+Extracting meaning from the resulting paper strips requires doctors to quickly spot complex FHR behaviors---such as shifting baseline levels, short- and long-term variability (STV and LTV) fluctuations, and sudden accelerations or decelerations. Crucially, they must judge the exact timing of these heart rate dips compared to the peak of the uterine contractions. Based on these visual cues, the International Federation of Gynecology and Obstetrics (FIGO) provides a standardized rubric dictating whether a sequence sits in the Normal, Suspicious, or Pathological category \cite{figo2015}.
 
 However, visual CTG analysis is hindered by several limitations:
 
@@ -802,7 +802,7 @@ NeuroFetal AI (v5.0) introduces a tri-modal deep learning architecture, designat
 
 The network is structurally composed of three independent feature extraction branches that converge at a \\textit{Cross-Modal Attention Fusion (CMAF)} module, followed by a probabilistic classification head with Monte Carlo (MC) Dropout for epistemic uncertainty quantification.
 
-The primary signal branch processes the 20-minute FHR sequence $\mathbf{X}_{\text{FHR}} \in \mathbb{R}^{1200 \times 1}$. The foundation of the temporal branch relies on a 1-Dimensional Residual Network (ResNet). We heavily adapted this backbone by injecting Squeeze-and-Excitation (SE) recalibration blocks \cite{hu2018} capped off with a Multi-Head Self-Attention routine. 
+The primary signal branch processes the 20-minute FHR sequence $\mathbf{X}_{\text{FHR}} \in \mathbb{R}^{1200 \times 1}$. We built the temporal backbone entirely around a 1-Dimensional Residual Network (ResNet). We heavily adapted this backbone by injecting Squeeze-and-Excitation (SE) recalibration blocks \cite{hu2018} capped off with a Multi-Head Self-Attention routine. 
 
 The encoder begins with a large receptive field convolution (kernel size 7, stride 2) and max pooling to rapidly downsample the uninformative high-frequency noise. This is followed by three stages of cascading residual blocks. Let $\mathbf{x}_l$ denote the input to the $l$-th residual block. The block operation is defined as:
 \begin{equation}
