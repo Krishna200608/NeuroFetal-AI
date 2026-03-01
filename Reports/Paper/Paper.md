@@ -22,6 +22,8 @@
 \usepackage{multirow}
 \usepackage{url}
 \usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, calc, shadows, shadows.blur}
 \usepackage{pifont} % for \ding check/cross symbols
 \newcommand{\cmark}{\ding{51}}  % checkmark
 \newcommand{\xmark}{\ding{55}}  % cross
@@ -74,11 +76,9 @@
 Intrapartum fetal compromise—encompassing hypoxia and acidosis during
 labor—remains a principal cause of perinatal mortality, stillbirth, and
 long-term neonatal neurological injury worldwide, with disproportionate
-impact in low-and-middle-income countries where trained obstetric personnel are
-scarce. Cardiotocography (CTG), the clinical gold standard for intrapartum
-monitoring, suffers from poor inter-observer agreement (60–70\%) and high
-false-positive rates, motivating the need for reliable, automated decision
-support. This paper presents \textbf{NeuroFetal AI v5.0}, a clinically
+impact in low-and-middle-income countries where trained obstetric personnel
+are scarce. While Cardiotocography (CTG) serves as the frontline method for evaluating fetal health during active contractions, diagnosing the resulting traces purely by eye remains highly subjective. In fact, different obstetricians interpreting the exact same trace will often disagree roughly 30-40\% of the time, leading to a surplus of unnecessary surgical interventions and highlighting the critical demand for trustworthy algorithmic assistance. This paper
+presents \textbf{NeuroFetal AI v5.0}, a clinically
 deployable, uncertainty-aware decision support system that performs tri-modal
 fusion of Fetal Heart Rate (FHR) time-series, Uterine Contraction (UC)
 signals, and 16-dimensional maternal clinical tabular features. The core
@@ -121,9 +121,7 @@ Quantification, Explainable AI, Edge Deployment, Clinical Decision Support.
 
 \subsection{Clinical Context and Motivation}
 
-Approximately \textbf{2.6 million stillbirths} occur globally each year, with
-the vast majority concentrated in low-resource settings where access to trained
-obstetric specialists is critically limited \cite{who2020stillbirth}. A
+Global estimates indicate that nearly \textbf{2.6 million stillbirths} happen annually. Tragically, these adverse events are overwhelmingly concentrated in under-resourced hospital networks, specifically in regions where mothers face severe shortages of available, specialized obstetric care \cite{who2020stillbirth}. A
 significant proportion of these adverse outcomes are attributable to
 undetected or late-detected intrapartum fetal compromise—a condition
 characterized by progressive fetal hypoxia and metabolic acidosis during labor,
@@ -131,11 +129,11 @@ resulting from insufficient uteroplacental oxygen delivery. Catching fetal compr
 
 \subsection{Cardiotocography: The Clinical Standard and Its Limitations}
 
-Clinicians virtually everywhere rely on \textbf{Cardiotocography (CTG)} as the standard approach for keeping track of fetal health during labor. It simultaneously records two signals: the Fetal
-Heart Rate (FHR), measured by an ultrasound Doppler transducer on the maternal
-abdomen, and Uterine Contractions (UC), measured via tocodynamometry. To interpret these readings, doctors look for specific patterns in the FHR, such as baseline rate, short-term and long-term variability (STV and LTV), accelerations, and decelerations. They then analyze these patterns against the timeline of uterine contractions. Guidelines from
-the International Federation of Gynecology and Obstetrics (FIGO) classify
-CTG traces as Normal, Suspicious, or Pathological \cite{figo2015}.
+As contractions intensify, maternity wards almost universally turn to \textbf{Cardiotocography (CTG)} to track fetal stability. This dual-sensor hardware concurrently records the Fetal
+Heart Rate (FHR) through a Doppler ultrasound belt, while simultaneously measuring Uterine 
+Contractions (UC) with a pressure tocodynamometer. 
+
+Extracting meaning from the resulting paper strips requires doctors to quickly spot complex FHR behaviors---such as shifting baseline levels, short- and long-term variability (STV and LTV) fluctuations, and sudden accelerations or decelerations. Crucially, they must judge the timing of these heart rate changes relative to the peaks of the uterine contractions. Based on these visual cues, the International Federation of Gynecology and Obstetrics (FIGO) provides a standardized rubric dictating whether a sequence sits in the Normal, Suspicious, or Pathological category \cite{figo2015}.
 
 However, visual CTG analysis is hindered by several limitations:
 
@@ -177,11 +175,7 @@ critical deficiencies that limit their clinical applicability:
     clinician to identify ambiguous or out-of-distribution cases requiring
     human review.
 
-    \item \textbf{Reliance on large private datasets}: State-of-the-art
-    results, such as those reported by Mendis et al.\ \cite{mendis2023} (AUC
-    0.84), were achieved using a private institutional dataset of 9,887
-    recordings—far exceeding the size of any publicly available CTG database.
-    This places their results beyond reproducibility and limits comparative
+    \item \textbf{Dependence on closed private data}: Leading literature metrics, notably the AUC of 0.84 published by Mendis et al.\ \cite{mendis2023}, heavily relied on a massive proprietary hospital cohort of 9,887 records. Because this eclipses the size of any open-access CTG bank, it completely blocks outside researchers from verifying or benchmarking against their findings.
     benchmarking within the research community.
 
     \item \textbf{Deployment inaccessibility}: Published models are typically
@@ -205,9 +199,7 @@ resource-limited obstetric settings?}
 
 The specific research objectives are:
 \begin{enumerate}
-    \item To design a tri-modal fusion architecture that exploits the
-    complementary information in FHR signals, UC signals, and structured
-    clinical tabular data for fetal compromise classification.
+    \item To architect a tri-modal fusion mechanism capable of extracting and combining the distinct, complementary patterns hidden within FHR waves, UC contraction cycles, and static bedside clinical features to better classify fetal compromise.
     \item To overcome documented class imbalance (7.25\% pathological) and
     limited dataset size (552 recordings) through a physiologically realistic
     time-series generative augmentation strategy (TimeGAN).
@@ -227,13 +219,13 @@ The specific research objectives are:
 
 \section{Literature Survey}
 
-Historically, researchers trying to automate CTG analysis have gone through three major phases. Initially, they focused on manually designing features, then moved on to classical machine learning techniques, and most recently, they have embraced deep learning. In this section, we take a look at some of the most impactful studies to show exactly where NeuroFetal AI fits in.
+The ongoing quest to automate CTG reading has experienced profound shifts over time. Hand-crafted feature extraction dominated the early years, gradually stepping aside for robust classical machine learning frameworks. Today, however, deep neural networks dictate the pace of innovation. The following subsections analyze the milestone publications driving this evolution and map out the unique space NeuroFetal AI fills.
 
 \subsection{Classical Feature-Engineering and Machine Learning Approaches}
 
 Early automated CTG analysis systems relied on expert-defined morphological
 features derived from FHR traces. Surveys such as those by Georgoulas et
-al.\ \cite{georgoulas2006} and Spilka et al.\ used predefined feature sets such as baseline FHR, STV, LTV, accelerations, and deceleration counts.
+al.\ \cite{georgoulas2006} and Spilka et al.\ relied on extracting standard FIGO metrics directly from the raw data, such as baseline heart rates, STV and LTV variances, and raw counts of acceleration/deceleration events.
 These features were then fed to classical classifiers:
 
 \textbf{Support Vector Machines (SVM)} formed the backbone of early competitive
@@ -251,23 +243,16 @@ individual engineered metrics. The real problem with these classical methods, ho
 
 \subsection{Deep Learning Approaches: Single-Modal Signal Analysis}
 
-Convolutional neural networks (CNNs) have facilitated the extraction of temporal patterns directly from raw FHR sequences, reducing reliance on hand-crafted features.
+The arrival of Convolutional Neural Networks (CNNs) shifted the paradigm by letting models learn temporal morphologies straight from the raw FHR signal, effectively bypassing the need for doctors to manually engineer features.
 
-\textbf{1D Convolutional Neural Networks}: Zhao et al.\ \cite{zhao2019}
+\textbf{1D Convolution Architectures}: A foundational study by Zhao et al.\ \cite{zhao2019}
 proposed a 1D-CNN architecture processing raw FHR sequences, demonstrating
 superior performance over classical baselines on the CTU-UHB dataset.
 However, evaluation was limited to the FHR channel exclusively, ignoring UC.
 Building on this, \textbf{Petrozziello et al.\ (2019)} \cite{petrozziello2019}
-introduced an input-length invariant deep learning approach for FHR, allowing
-rapid detection of fetal compromise without requiring fixed-length windows,
-improving potential clinical utility.
+tackled the rigidity of fixed window sizes by building an input-length invariant network. This allowed their algorithm to process CTG strips of varying durations on the fly, which represents a major step toward practical ward deployment.
 
-Segment selection duration is an important factor in FHR analysis.
-Recent studies, such as the cross-database evaluation by \textbf{Lopes et al.\ (2025)}
-\cite{lopes2025}, have demonstrated that utilizing extended continuous FHR segments
-(e.g., $\geq 30$ minutes immediately preceding delivery) and explicitly preserving signal
-gaps yields stronger generalization performance across diverse clinical datasets
-compared to aggressively gap-interpolated 10-minute snippets.
+How long of a segment you look at plays a huge role in CTG analysis. In a large cross-database review, \textbf{Lopes et al.\ (2025)} \cite{lopes2025} showed that training models on massive contiguous blocks—like an unbroken 30-minute stretch right before delivery—dramatically boosts how well an algorithm generalizes to new hospitals compared to chopping the data into tiny, heavily smoothed 10-minute fragments.
 
 \textbf{Residual Networks (ResNet)}: Spilka et al. \cite{spilka2016} and
 subsequent work demonstrated that residual connections substantially improved
@@ -296,10 +281,7 @@ consistently outperform well-regularized ResNets on the CTU-UHB benchmark.
 \textbf{Foundation Models} to CTG. For instance, a 2024 study \cite{foundation2024}
 proposed a foundation model approach pre-trained on massive unlabeled FHR corpora
 and fine-tuned on CTU-UHB for fetal stress prediction during labor, demonstrating
-strong zero-shot and few-shot capabilities. Additionally, research expanding beyond
-just the second stage of labor has shown that deep learning classifiers can predict
-fetal health across \textit{both} stages of labor \cite{bothstages2023}, though
-these models often struggle generalizing across diverse hospital protocols.
+strong zero-shot and few-shot capabilities. A recent parallel effort expanded the scope beyond just the active second stage of delivery, demonstrating that neural networks can forecast fetal wellbeing across \textit{both} stages of labor \cite{bothstages2023}; however, these broader models frequently encounter severe generalization issues when tested in hospitals with different admission protocols.
 
 \subsection{Multimodal and Fusion-Based Approaches}
 
@@ -322,14 +304,9 @@ NeuroFetal AI explicitly incorporates. The authors provided SHAP-based
 tabular feature attribution and Grad-CAM signal localization, establishing
 dual-XAI as the interpretability standard for this domain.
 
-\textbf{Christensen et al.} and related work explored clinical risk scoring
-combined with CTG signal features, confirming that maternal clinical covariates
-(Parity, Age, Gestation) add discriminative value beyond signal morphology alone.
+\textbf{Christensen et al.} alongside similar groups proved that integrating static maternal covariates (such as Parity, Age, and Gestation limits) alongside CTG waveforms yields vastly superior discriminative accuracy compared to analyzing the signal morphology in a vacuum.
 
-\textbf{Sadeghi et al.\ (2024)} \cite{sadeghi2024} advanced the multimodal paradigm by
-developing a deep learning algorithm trained exclusively on the CTU-UHB database
-to detect specific morphological FIGO events (e.g., variable decelerations)
-rather than just binary fetal outcomes. This approach indicates a shift toward event-specific detection rather than broad risk scoring.
+\textbf{Sadeghi et al.\ (2024)} \cite{sadeghi2024} pushed the multimodal framework further. Instead of predicting a binary birth outcome, they trained a specialized architecture strictly on CTU-UHB data to automatically flag specific morphological FIGO features (like identifying individual variable decelerations). This hints at an industry shift toward granular event detection rather than just broad risk scoring.
 
 \subsection{Time-Series Data Augmentation for Medical Imbalance}
 
@@ -341,9 +318,7 @@ a standard baseline augmentation, though it operates in feature space and
 destroys temporal structure—generating synthetic sequences that may not
 correspond to physiologically plausible FHR patterns.
 
-\textbf{TimeGAN} (Yoon et al., 2019) \cite{yoon2019} introduced a framework
-for realistic time-series synthesis using a GAN architecture with a supervised
-loss component preserving stepwise temporal dynamics. Application of TimeGAN
+\textbf{TimeGAN} (Yoon et al., 2019) \cite{yoon2019} provided a breakthrough for sequence generation by incorporating a supervised stepwise penalty into a standard GAN, strongly enforcing the preservation of complex temporal dynamics. Application of TimeGAN
 to pathological CTG synthesis has not been widely explored in prior work,
 which we investigate in this study. NeuroFetal AI
 employs a WGAN-GP variant of TimeGAN that generates physiologically coherent
@@ -390,13 +365,10 @@ deployment on commodity mobile hardware. Its application to deployed
 obstetric AI systems remains limited in published literature, with most
 systems assuming continuous hospital network connectivity and GPU hardware.
 
-Addressing this constraint, recent literature has explored the integration of
-deep learning into mobile clinical interfaces. For example, the
+To overcome this infrastructural hurdle, a handful of recent efforts have focused on shrinking deep learning tools so they can run directly inside mobile clinical software. For example, the
 \textbf{AI-based Mobile Partograph (2025)} \cite{eajhs2025} explicitly targets
 resource-limited delivery rooms by embedding a predictive CTG framework
-(validated on CTU-UHB) directly into a digital labor chart interface. However,
-such mobile systems currently lack predictive uncertainty quantification, a
-critical requirement for clinical trust.
+(validated on CTU-UHB) directly into a digital labor chart interface. Yet, these portable implementations still fail to surface any measure of predictive uncertainty—a glaring omission when asking doctors to trust a black-box suggestion during a high-stakes delivery.
 
 \subsection{Research Gap and Positioning of NeuroFetal AI}
 
@@ -463,14 +435,17 @@ objective biochemical outcome labels.
 \subsubsection{Dataset Characteristics}
 
 \begin{itemize}
-    \item \textbf{Total Recordings}: 552 intrapartum CTG recordings from
-    singleton pregnancies with a cephalic presentation and a gestational age
-    of at least 36 weeks.
-    \item \textbf{Signal Channels}: Two channels per recording—Channel 1
-    (FHR, beats per minute, bpm) and Channel 2 (UC, arbitrary tocodynamometric
-    units).
-    \item \textbf{Native Sampling Rate}: 4 Hz (i.e., 4 samples per second,
-    corresponding to 240 samples per minute).
+    \item \textbf{Dataset Cohort}: 552 high-quality intrapartum CTG recordings
+    from the Czech Technical University and University Hospital in Brno
+    (CTU-UHB). To ensure a highly homogeneous and reliable evaluation cohort,
+    these 552 recordings were carefully filtered from a larger pool of 9,164
+    raw deliveries based on strict inclusion criteria: singleton pregnancies,
+    gestational age $>36$ weeks, absence of known developmental defects,
+    stage 2 of labor duration $\leq$ 30 minutes, FHR signal quality $>50$\% 
+    in all 30-minute windows, and available umbilical cord pH analysis
+    \cite{chudacek2014}.
+    \item \textbf{Recorded Modalities}: Both FHR (captured in beats per minute) and maternal uterine contractions (measured through arbitrary toco units) are strictly paired in the dataset timeseries.
+    \item \textbf{Original Frequency Setup}: Signals were gathered natively at 4 Hz, equating to 4 distinct samples recorded every single second.
     \item \textbf{Recording Duration}: Variable; clinically the last 60 minutes
     of the intrapartum period are most diagnostically relevant and are
     exclusively used in this study.
@@ -486,21 +461,43 @@ objective biochemical outcome labels.
     \end{align}
     A pH of 7.05 is the established clinical threshold for significant fetal
     metabolic acidemia \cite{figo2015}.
-    \item \textbf{Class Distribution}: 40 recordings (7.25\%) are labeled
-    Compromised; 512 recordings (92.75\%) are labeled Normal. This constitutes
-    a heavily imbalanced binary classification problem.
-    \item \textbf{Clinical Metadata}: Each recording is accompanied by structured
-    clinical metadata including: maternal age (years), gravidity, parity
-    (nulliparous or multiparous), gestational age (weeks), delivery type, and
-    Apgar scores at 1 and 5 minutes.
-    \item \textbf{Dataset Availability}: Freely accessible at
-    \url{https://physionet.org/content/ctu-uhb-ctgdb/1.0.0/}.
+    \item \textbf{Label Skew}: The data exhibits extreme real-world skew. Only 40 traces (~7.25\%) carry the pathological Compromised label, while the remaining 512 are classified as Normal, enforcing the need for rigorous minority-class handling.
+    \item \textbf{Static Context Vectors}: Tying the signals to the patient, the data includes core bedside measurements like maternal age, gravidity, binary parity thresholds, gestational limits, intervention types, and post-birth Apgar benchmarks.
+    \item \textbf{Public Repository Link}: The raw files are hosted openly via PhysioNet at \url{https://physionet.org/content/ctu-uhb-ctgdb/1.0.0/}.
     \item \textbf{Ethics}: The CTU-UHB dataset was collected under appropriate
     ethical approval at the originating institution and is made available under
-    PhysioNet's data use agreement. No Protected Health Information (PHI) is
-    present. No additional institutional review was required for secondary
+    PhysioNet's data use agreement. The creators completely scrubbed all Protected Health Information (PHI) before release. No additional institutional review was required for secondary
     analysis.
 \end{itemize}
+
+\begin{table}[htbp]
+\caption{\textsc{Participant Characteristics of the CTU-UHB Cohort ($n=552$)}}
+\label{tab:ctu_characteristics}
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{l c c c c}
+\toprule
+\textbf{Continuous Variables} & \textbf{Mean (STD)} & \textbf{Median (IQR)} & \textbf{Min} & \textbf{Max} \\
+\midrule
+Gestation (weeks)   & 40 (1.13)    & 40 (39--41)      & 37   & 43 \\
+Maternal Age (years)& 29.67 (4.54) & 30 (27--33)      & 18   & 46 \\
+Umbilical Artery pH & 7.23 (0.11)  & 7.25 (7.17--7.3) & 6.85 & 7.47 \\
+\midrule
+\textbf{Categorical Variables} & & \textbf{n (\%)} & & \\
+\midrule
+\multirow{4}{*}{Parity ($n$ previous births)} 
+        & 0      & 376 (68.1\%) & & \\
+        & 1      & 140 (25.4\%) & & \\
+        & 2      & 29 (5.2\%) & & \\
+        & $\geq 3$& 7 (1.3\%) & & \\
+Diabetes          &        & 37 (6.7\%) & & \\
+Hypertension      &        & 44 (8.0\%) & & \\
+Meconium          &        & 64 (11.6\%) & & \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
 
 \subsection{Preprocessing Pipeline}
 
@@ -521,9 +518,8 @@ interpolated. Gaps of 15 seconds or longer were preserved as zero-padded
 segments, as interpolation over extended dropouts risks introducing
 physiologically implausible artifacts.
 
-\subsubsection{Step 3: UC Signal Cleaning}
-Tocodynamometer signals are notoriously susceptible to maternal movement
-artefacts and baseline drift. A dedicated UC cleaning pipeline
+\subsubsection{Step 3: Uterine Contraction Filtering}
+Because simple tocodynamometers are highly prone to shifting baselines when the mother moves, raw UC data is often incredibly noisy. A dedicated UC cleaning pipeline
 (\texttt{uc\_cleaning.py}) applied median baseline subtraction and
 amplitude normalization to improve contraction detection reliability.
 
@@ -539,8 +535,7 @@ FHR and UC signals were independently scaled to the range $[0, 1]$:
 \begin{equation}
     x_{\text{norm}} = \frac{x - x_{\min}}{x_{\max} - x_{\min}}
 \end{equation}
-Normalization was computed per-recording to remove inter-patient amplitude
-variation and was applied prior to windowing.
+These limits were calculated on a strictly per-patient basis to wash out vast amplitude differences between individuals. This scaling was locked in before any window slicing occurred.
 
 \subsubsection{Step 6: Sliding Window Segmentation}
 Given the 60-minute (3,600 samples at 1 Hz) signal per recording, a sliding
@@ -567,24 +562,21 @@ across two categories:
 \begin{enumerate}
     \item \textit{Maternal Age} (years, continuous) — Risk factor for
     uteroplacental insufficiency.
-    \item \textit{Parity} (binary: 0 = Nulliparous, 1 = Multiparous) —
-    Nulliparity is strongly associated with prolonged labor.
+    \item \textit{Maternal Parity} (0 for Nulliparous, 1 for Multiparous) —
+    First-time mothers historically experience significantly longer labor profiles, altering expected FHR patterns.
     \item \textit{Gestational Age} (weeks, continuous) — Determinant of
     fetal maturity and expected FHR baseline range.
 \end{enumerate}
 
-\textbf{Signal-Derived Features (13)}: Per-window statistics computed from
-the FHR signal:
+\textbf{Signal-Derived Traits (13)}: Per-window metrics extracted straight from the FHR waveform:
 \begin{enumerate}
-    \item \textit{Baseline FHR} (bpm) — Estimated mean FHR, excluding
-    accelerations and decelerations.
+    \item \textit{Resting Baseline} (bpm) — The underlying heart rhythm, calculated by stripping away all sharp spikes and dips.
     \item \textit{Short-Term Variability (STV)} — RMS of beat-to-beat
     differences; a critical marker of fetal neurological integrity.
     \item \textit{Long-Term Variability (LTV)} — Amplitude range of
     oscillatory cycles; reduced LTV is associated with fetal compromise.
-    \item \textit{Acceleration Count} — Number of FHR rises $\geq 15$ bpm
-    above baseline for $\geq 15$ seconds.
-    \item \textit{Deceleration Count} — Number of FHR drops below baseline.
+    \item \textit{Absolute Accelerations} — A straight tally tracking how many times the heart rate jumped by at least 15 beats for a minimum of 15 seconds.
+    \item \textit{Total Decelerations} — An aggregate count of any notable fetal heart rate dips falling below the established resting baseline.
     \item \textit{Late Deceleration Flag} — Binary indicator of decelerations
     temporally lagging contraction peaks (key marker of uteroplacental
     insufficiency).
@@ -601,8 +593,7 @@ the FHR signal:
     \item \textit{FHR–UC Lag} — Cross-correlation lag at peak FHR-UC
     correlation, distinguishing early, variable, and late deceleration
     patterns.
-    \item \textit{Signal Quality Index} — Percentage of non-artefact samples
-    in the FHR window.
+    \item \textit{Valid Sample Density} — A ratio indicating the literal percentage of clean, non-gap segments available inside a given 20-minute inspection zone.
 \end{enumerate}
 
 Missing values in tabular features (arising from recordings with insufficient
@@ -655,6 +646,46 @@ cross-validation iteration to prevent data leakage.
 
 \subsection{TimeGAN Data Augmentation Strategy}
 
+\begin{figure}[htbp]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[
+  node distance=1.2cm and 1.5cm,
+  box/.style={rectangle, draw=blue!70, fill=blue!5, thick, minimum width=2.5cm, minimum height=0.8cm, align=center, rounded corners=2pt, blur shadow},
+  gan_box/.style={rectangle, draw=orange!80, fill=orange!10, thick, minimum width=2.5cm, minimum height=1cm, align=center, rounded corners=2pt, blur shadow},
+  output_box/.style={rectangle, draw=green!60!black, fill=green!5, thick, minimum width=2.5cm, minimum height=0.8cm, align=center, rounded corners=2pt, blur shadow},
+  arrow/.style={->, >=Stealth, thick}
+]
+
+% Nodes
+\node[box] (real) {Real Pathological \\ Traces (Minority)};
+\node[box, below=0.8cm of real] (noise) {Random Noise \\ $\mathcal{N}(0, I)$};
+
+\node[gan_box, right=of noise] (gen) {WGAN-GP \\ Generator (1D-CNN)};
+\node[output_box, right=of gen] (synth) {Synthetic \\ Temporal Traces};
+\node[gan_box, above=of synth] (disc) {Discriminator \\ (Temporal Penalty)};
+
+\node[output_box, right=of disc] (loss) {Wasserstein Loss \\ + Gradient Penalty};
+
+% Lines
+\draw[arrow] (noise) -- (gen);
+\draw[arrow] (gen) -- (synth);
+\draw[arrow] (synth) -- (disc);
+\draw[arrow] (real) -- (disc);
+\draw[arrow] (disc) -- (loss);
+
+% Feedback loop
+\draw[arrow, dashed, red!80] (loss.north) -- ++(0, 0.8) -| node[pos=0.25, above, text=black] {\footnotesize Weight Update} (gen.north);
+
+\end{tikzpicture}
+}
+\vspace{0.2cm}
+\caption{TimeGAN data augmentation pipeline utilizing a Wasserstein GAN with Gradient Penalty (WGAN-GP) to synthesize physiologically plausible FHR and UC segments while preserving sequential dynamics.}
+\label{fig:timegan}
+\end{figure}
+
+
+
 The extreme class imbalance (7.25\% pathological) necessitated a robust
 augmentation strategy. NeuroFetal AI v4.0 replaced the previously employed
 SMOTE with \textbf{TimeGAN}, a time-series generative adversarial network
@@ -688,9 +719,7 @@ was performed under \textbf{Stratified 5-Fold Cross-Validation}:
 \begin{itemize}
     \item \textbf{Stratification}: Each fold preserves the $\approx$7.25\%
     pathological class proportion.
-    \item \textbf{Evaluation paradigm}: Out-of-Fold (OOF) evaluation—each
-    sample is predicted exactly once by a model that did not observe it during
-    training, producing an unbiased estimate of generalization performance.
+    \item \textbf{Validation Ruleset}: We enforced strict Out-of-Fold (OOF) testing. In this setup, the algorithm generates exactly one blind prediction for every recorded window, guaranteeing that the reported metrics faithfully mirror unseen generalization performance.
     \item \textbf{Leakage prevention}: All data-dependent transformations
     (normalization statistics, CSP filter training, TimeGAN training, tabular
     imputation values) are computed exclusively from the training portion of
@@ -699,8 +728,7 @@ was performed under \textbf{Stratified 5-Fold Cross-Validation}:
     size (552 recordings), reserving a separate test partition would
     substantially reduce training data. The OOF paradigm provides an
     equivalent statistical guarantee without this sacrifice.
-    \item \textbf{Reproducibility}: All stochastic operations were seeded with
-    \texttt{random\_state=42}.
+    \item \textbf{Deterministic Execution}: To permit perfect subsequent replication, we rigorously locked all pseudo-random generators using the initialization seed \texttt{42}.
 \end{itemize}
 
 % ============================================================
@@ -709,6 +737,63 @@ was performed under \textbf{Stratified 5-Fold Cross-Validation}:
 
 \section{Proposed Architecture: AttentionFusionResNet}
 
+\begin{figure*}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  node distance=1.5cm and 2.0cm,
+  data_box/.style={rectangle, draw=blue!60, fill=blue!5, thick, minimum width=3cm, minimum height=1cm, align=center, rounded corners=2pt, blur shadow},
+  encoder_box/.style={rectangle, draw=orange!80, fill=orange!10, thick, minimum width=3.5cm, minimum height=1cm, align=center, rounded corners=2pt, blur shadow},
+  fusion_box/.style={rectangle, draw=green!60!black, fill=green!5, thick, minimum width=4cm, minimum height=1.5cm, align=center, rounded corners=4pt, blur shadow},
+  output_box/.style={rectangle, draw=red!60, fill=red!5, thick, minimum width=3cm, minimum height=1cm, align=center, rounded corners=2pt, blur shadow},
+  arrow/.style={->, >=Stealth, thick}
+]
+
+% Inputs
+\node[data_box] (fhr) {FHR Time-Series \\ $\mathbf{X}_{\text{FHR}} \in \mathbb{R}^{1200 \times 1}$};
+\node[data_box, below=1cm of fhr] (csp) {FHR-UC Patterns \\ $\mathbf{X}_{\text{CSP}} \in \mathbb{R}^{19}$};
+\node[data_box, below=1cm of csp] (tab) {Clinical Context \\ $\mathbf{X}_{\text{tab}} \in \mathbb{R}^{16}$};
+
+% Encoders
+\node[encoder_box, right=of fhr] (res) {1D ResNet + SE \\ Global Avg Pooling};
+\node[encoder_box, right=of csp] (mlp_csp) {Dense MLP \\ ($p=0.3$ Dropout)};
+\node[encoder_box, right=of tab] (mlp_tab) {Dense MLP \\ ($p=0.3$ Dropout)};
+
+% Embeddings
+\node[right=0.7cm of res] (v_fhr) {$\mathbf{v}_{\text{FHR}}$};
+\node[right=0.7cm of mlp_csp] (v_csp) {$\mathbf{v}_{\text{CSP}}$};
+\node[right=0.7cm of mlp_tab] (v_tab) {$\mathbf{v}_{\text{tab}}$};
+
+% Fusion Module
+\node[fusion_box, right=2.0cm of mlp_csp] (cmaf) {\textbf{Cross-Modal} \\ \textbf{Attention Fusion} \\ $\mathbf{v}_{\text{FHR}} + \text{Attention}(\mathbf{v}_{\text{FHR}}, \mathbf{v}_{\text{CSP}}) \odot \sigma(\mathbf{v}_{\text{tab}})$};
+
+% Classifier
+\node[output_box, right=1.5cm of cmaf] (class) {MC Dropout Classifier \\ $\hat{p} \pm \sigma^2$};
+
+% Arrows
+\draw[arrow] (fhr) -- (res);
+\draw[arrow] (csp) -- (mlp_csp);
+\draw[arrow] (tab) -- (mlp_tab);
+
+\draw[arrow] (res) -- (v_fhr);
+\draw[arrow] (mlp_csp) -- (v_csp);
+\draw[arrow] (mlp_tab) -- (v_tab);
+
+\draw[arrow] (v_fhr.east) -| ([xshift=-1cm]cmaf.north);
+\draw[arrow] (v_csp.east) -- (cmaf.west);
+\draw[arrow] (v_tab.east) -| ([xshift=-1cm]cmaf.south);
+
+\draw[arrow] (cmaf) -- (class);
+
+\end{tikzpicture}
+}
+\vspace{0.3cm}
+\caption{Overall flow of the Tri-Modal AttentionFusionResNet Architecture. Raw FHR sequences are processed via 1D ResNet, while CSP variance and clinical metadata act as key/value patterns and gating contexts, respectively, converging at the Cross-Modal Attention Fusion (CMAF) layer.}
+\label{fig:arch}
+\end{figure*}
+
+
+
 NeuroFetal AI (v5.0) introduces a tri-modal deep learning architecture, designated as \textbf{AttentionFusionResNet}. Unlike conventional CTG classifiers that rely exclusively on the FHR continuous waveform, this architecture combines three distinct clinical representations: 
 (1) Raw 1D Temporal FHR Signals, 
 (2) Static Maternal Clinical Tabular Data, and 
@@ -716,8 +801,7 @@ NeuroFetal AI (v5.0) introduces a tri-modal deep learning architecture, designat
 
 The network is structurally composed of three independent feature extraction branches that converge at a \\textit{Cross-Modal Attention Fusion (CMAF)} module, followed by a probabilistic classification head with Monte Carlo (MC) Dropout for epistemic uncertainty quantification.
 
-\subsection{FHR Temporal Encoder Branch}
-The primary signal branch processes the 20-minute FHR sequence $\mathbf{X}_{\text{FHR}} \in \mathbb{R}^{1200 \times 1}$. The backbone is a 1D Residual Network (ResNet) enhanced with Squeeze-and-Excitation (SE) blocks \cite{hu2018} and Multi-Head Self-Attention. 
+The primary signal branch processes the 20-minute FHR sequence $\mathbf{X}_{\text{FHR}} \in \mathbb{R}^{1200 \times 1}$. The foundation of the temporal branch relies on a 1-Dimensional Residual Network (ResNet). We heavily adapted this backbone by injecting Squeeze-and-Excitation (SE) recalibration blocks \cite{hu2018} capped off with a Multi-Head Self-Attention routine. 
 
 The encoder begins with a large receptive field convolution (kernel size 7, stride 2) and max pooling to rapidly downsample the uninformative high-frequency noise. This is followed by three stages of cascading residual blocks. Let $\mathbf{x}_l$ denote the input to the $l$-th residual block. The block operation is defined as:
 \begin{equation}
@@ -728,10 +812,10 @@ The encoder begins with a large receptive field convolution (kernel size 7, stri
 \end{equation}
 where $*$ denotes 1D convolution, BN is Batch Normalization, and $\text{SE}(\cdot)$ represents the channel-wise attention recalibration. 
 
-To mitigate overfitting on the small CTU-UHB dataset, we implement \textbf{Stochastic Depth} (Spatial Dropout 1D) within the residual paths, randomly dropping entire representation channels during training with a linearly increasing rate ($p \in [0.05, 0.15]$). Following the residual stages, Temporal Multi-Head Attention extracts long-range dependencies (e.g., relating a baseline shift at minute 2 to a late deceleration at minute 18). Finally, Global Average Pooling (GAP) reduces the temporal sequence to a dense vector $\mathbf{v}_{\text{FHR}} \in \mathbb{R}^{192}$.
+To mitigate overfitting on the small CTU-UHB dataset, we implement \textbf{Stochastic Depth} (Spatial Dropout 1D) within the residual paths, randomly dropping entire representation channels during training with a linearly increasing rate ($p \in [0.05, 0.15]$). Following the residual stages, Temporal Multi-Head Attention extracts long-range dependencies (e.g., relating a baseline shift at minute 2 to a late deceleration at minute 18). Finally, to collapse the extensive positional map into a tight descriptive bottleneck, a Global Average Pooling (GAP) layer squeezes the output into a single unified embedding vector $\mathbf{v}_{\text{FHR}} \in \mathbb{R}^{192}$.
 
 \subsection{Clinical Context and CSP Branches}
-Medical decision-making is heavily context-dependent; a moderate deceleration is interpreted differently in a 40-week nulliparous woman compared to a 36-week multiparous woman. 
+Obstetric interpretation rarely happens in a vacuum. A doctor tracking a sudden deceleration handles the situation quite differently depending on whether the mother is 40 weeks along delivering her first child, versus 36 weeks along delivering her third. 
 
 The 16-dimensional tabular vector $\mathbf{X}_{\text{tab}}$ (comprising maternal demographics and extracted signal statistics such as Signal-to-Noise ratio and UC frequency) is processed through a two-layer Multi-Layer Perceptron (MLP) with ReLU activations and heavy dropout ($p=0.3$) to yield the clinical embedding $\mathbf{v}_{\text{tab}} \in \mathbb{R}^{128}$. 
 
@@ -762,9 +846,9 @@ The attention output is gated by a learned, sigmoid-activated projection of the 
 This gating mechanism enables the network to actively modulate how much weight it assigns to spatial contraction patterns based on the patient's specific clinical risk factors.
 
 \subsection{Classification and Uncertainty Head}
-The fused embedding $\mathbf{v}_{\text{fusion}}$ is passed to a classification head comprising two dense layers. To estimate epistemic (model) uncertainty, we apply \textbf{Monte Carlo (MC) Dropout} \cite{gal2016}. 
+The fused embedding $\mathbf{v}_{\text{fusion}}$ is passed to a classification head comprising two dense layers. To capture robust diagnostic doubt and model uncertainty logic, the architecture implements the highly reliable Monte Carlo (MC) Dropout bayesian approximation technique \cite{gal2016}. 
 
-Unlike standard dropout which is disabled during inference, target dropout layers ($p=0.3$) remain active. For clinical prediction, the system performs $T=20$ stochastic forward passes for a single patient trace. The final predictive probability $\hat{p}$ is the mean of these passes, while the predictive variance $\sigma^2$ provides a measure of diagnostic uncertainty, flagging cases that require immediate human obstetrician review.
+Unlike standard dropout which is disabled during inference, target dropout layers ($p=0.3$) remain active. For clinical prediction, the system performs $T=20$ stochastic forward passes for a single patient trace. The final predictive probability $\hat{p}$ is the mean of these passes, while the predictive variance $\sigma^2$ provides a critical measure of diagnostic uncertainty, effectively flagging ambiguous cases that require an immediate human obstetrician review.
 
 % ============================================================
 % SECTION VI: EXPERIMENTAL SETUP \& RESULTS
@@ -901,6 +985,9 @@ in \textit{Proc. IEEE CVPR}, 2018, pp. 7132--7141.
 R.~Lopes \textit{et al.}, ``Cross-Database Evaluation of Deep Learning Methods
 for Intrapartum Cardiotocography Classification,'' \textit{IEEE}, 2025.
 
+\bibitem{mendis2023}
+B.~Mendis, D.~A.~Medagoda, C.~L.~Mendis, W.~Perera, and J.~D.~Amarasinghe, `Fusing tabular features and deep learning for fetal heart rate analysis: A clinically interpretable model for fetal compromise detection,'' \textit{IEEE Access}, 2023.
+
 \bibitem{sadeghi2024}
 R.~Sadeghi \textit{et al.}, ``Multimodal Deep Learning-based Algorithm for
 Specific Fetal Heart Rate Event Detection,'' \textit{ResearchGate}, 2024.
@@ -950,6 +1037,9 @@ Instantaneous Frequency and Common Spatial Pattern,''
 %
 % 4. For final submission, remove the compilation notes at the end if desired.
 %
+
+
+
 
 
 
