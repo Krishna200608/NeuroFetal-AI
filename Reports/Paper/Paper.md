@@ -795,12 +795,12 @@ was performed under \textbf{Stratified 5-Fold Cross-Validation}:
 
 
 
-NeuroFetal AI (v5.0) introduces a tri-modal deep learning architecture, designated as \textbf{AttentionFusionResNet}. Unlike conventional CTG classifiers that rely exclusively on the FHR continuous waveform, this architecture combines three distinct clinical representations: 
+NeuroFetal AI (v5.0) introduces a tri-modal deep learning architecture, designated as \textbf{AttentionFusionResNet}. Most standard CTG classifiers lean entirely on the continuous FHR wave. In contrast, our setup weaves together three distinct layers of clinical reality: 
 (1) Raw 1D Temporal FHR Signals, 
 (2) Static Maternal Clinical Tabular Data, and 
 (3) FHR-UC Spatial Pattern Features (CSP). 
 
-The network is structurally composed of three independent feature extraction branches that converge at a \\textit{Cross-Modal Attention Fusion (CMAF)} module, followed by a probabilistic classification head with Monte Carlo (MC) Dropout for epistemic uncertainty quantification.
+Architecturally, the model splits the data processing across three parallel feature extraction pipelines. These branches eventually merge at a \textit{Cross-Modal Attention Fusion (CMAF)} hub before feeding into a final probabilistic classifier. We also integrated Monte Carlo (MC) Dropout specifically to quantify epistemic uncertainty.
 
 The primary signal branch processes the 20-minute FHR sequence $\mathbf{X}_{\text{FHR}} \in \mathbb{R}^{1200 \times 1}$. We built the temporal backbone entirely around a 1-Dimensional Residual Network (ResNet). We heavily adapted this backbone by injecting Squeeze-and-Excitation (SE) recalibration blocks \cite{hu2018} capped off with a Multi-Head Self-Attention routine. 
 
@@ -813,7 +813,7 @@ The encoder begins with a large receptive field convolution (kernel size 7, stri
 \end{equation}
 where $*$ denotes 1D convolution, BN is Batch Normalization, and $\text{SE}(\cdot)$ represents the channel-wise attention recalibration. 
 
-To mitigate overfitting on the small CTU-UHB dataset, we implement \textbf{Stochastic Depth} (Spatial Dropout 1D) within the residual paths, randomly dropping entire representation channels during training with a linearly increasing rate ($p \in [0.05, 0.15]$). Following the residual stages, Temporal Multi-Head Attention extracts long-range dependencies (e.g., relating a baseline shift at minute 2 to a late deceleration at minute 18). Finally, to collapse the extensive positional map into a tight descriptive bottleneck, a Global Average Pooling (GAP) layer squeezes the output into a single unified embedding vector $\mathbf{v}_{\text{FHR}} \in \mathbb{R}^{192}$.
+To prevent the model from memorizing the relatively small CTU-UHB dataset, we layered in \textbf{Stochastic Depth} (Spatial Dropout 1D) across the residual branches. This forces the network to dynamically drop entire communication channels during training with an increasing probability scale ($p \in [0.05, 0.15]$). Once the residual stages finish, a Temporal Multi-Head Attention block scans the data for long-range interactions---for instance, linking a subtle baseline shift at the 2-minute mark with a severe late deceleration hitting at minute 18. Finally, to collapse the extensive positional map into a tight descriptive bottleneck, a Global Average Pooling (GAP) layer squeezes the output into a single unified embedding vector $\mathbf{v}_{\text{FHR}} \in \mathbb{R}^{192}$.
 
 \subsection{Clinical Context and CSP Branches}
 Obstetric interpretation rarely happens in a vacuum. A doctor tracking a sudden deceleration handles the situation quite differently depending on whether the mother is 40 weeks along delivering her first child, versus 36 weeks along delivering her third. 
@@ -825,7 +825,7 @@ Concurrently, the 19-dimensional Common Spatial Pattern vector $\mathbf{X}_{\tex
 \subsection{Cross-Modal Attention Fusion (CMAF)}
 Existing late-fusion architectures often naively concatenate or multiply modal embeddings \cite{mendis2023}. We propose a dynamic \textbf{Cross-Modal Attention Fusion (CMAF)} layer where the FHR temporal embedding attends to the FHR-UC spatial patterns, explicitly gated by the maternal clinical context.
 
-The CMAF mechanism projects the embeddings into Query ($\mathbf{Q}$), Key ($\mathbf{K}$), and Value ($\mathbf{V}$) spaces:
+Inside the CMAF unit, the data embeddings are dynamically projected out into Query ($\mathbf{Q}$), Key ($\mathbf{K}$), and Value ($\mathbf{V}$) coordinates:
 \begin{align}
     \mathbf{Q} &= \mathbf{W}_Q \mathbf{v}_{\text{FHR}} \\
     \mathbf{K} &= \mathbf{W}_K \mathbf{v}_{\text{CSP}} \\
@@ -844,12 +844,12 @@ The attention output is gated by a learned, sigmoid-activated projection of the 
 \begin{equation}
     \mathbf{v}_{\text{fusion}} = \text{LayerNorm}(\mathbf{v}_{\text{FHR}} + \text{Dropout}(\mathbf{A} \odot \mathbf{G}_{\text{clinical}}))
 \end{equation}
-This gating mechanism enables the network to actively modulate how much weight it assigns to spatial contraction patterns based on the patient's specific clinical risk factors.
+This essentially creates a gating mechanism. It permits the main network to on-the-fly adjust exactly how much importance it places on the spatial contraction patterns, strictly dictated by the mother's unique clinical risk profile.
 
 \subsection{Classification and Uncertainty Head}
-The fused embedding $\mathbf{v}_{\text{fusion}}$ is passed to a classification head comprising two dense layers. To capture robust diagnostic doubt and model uncertainty logic, the architecture implements the highly reliable Monte Carlo (MC) Dropout bayesian approximation technique \cite{gal2016}. 
+The resulting fused embedding $\mathbf{v}_{\text{fusion}}$ acts as the input for a classification block built from two stacked dense layers. To capture robust diagnostic doubt and model uncertainty logic, the architecture implements the highly reliable Monte Carlo (MC) Dropout bayesian approximation technique \cite{gal2016}. 
 
-Unlike standard dropout which is disabled during inference, target dropout layers ($p=0.3$) remain active. For clinical prediction, the system performs $T=20$ stochastic forward passes for a single patient trace. The final predictive probability $\hat{p}$ is the mean of these passes, while the predictive variance $\sigma^2$ provides a critical measure of diagnostic uncertainty, effectively flagging ambiguous cases that require an immediate human obstetrician review.
+While standard dropout is normally shut off during testing, we deliberately leave the target dropout layers ($p=0.3$) open during active inference. When evaluating a new patient trace in a clinical setting, the system runs $T=20$ randomized forward passes. The architecture's final predictive probability $\hat{p}$ simply averages those passes together, while tracking the predictive variance $\sigma^2$ to measure how much diagnostic doubt exists. This variance is crucial for instantly flagging borderline cases that demand human intervention.
 
 % ============================================================
 % SECTION VI: EXPERIMENTAL SETUP \& RESULTS
