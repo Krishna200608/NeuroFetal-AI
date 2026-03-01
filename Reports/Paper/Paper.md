@@ -60,10 +60,11 @@
   iit2023138@iiita.ac.in}
   \and
   \IEEEauthorblockN{Dr. Nikhilanand Arya}
-  \IEEEauthorblockA{\textit{Department of Information Technology}\\
+  \IEEEauthorblockA{\textit{Research Supervisor}\\
+  \textit{Department of Information Technology}\\
   \textit{Indian Institute of Information Technology Allahabad}\\
   Allahabad, India\\
-  nikhilanand@iiita.ac.in}
+  narya@iiita.ac.in}
 }
 
 \maketitle
