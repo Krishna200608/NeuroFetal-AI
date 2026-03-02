@@ -184,3 +184,23 @@ The following outline provides comprehensive text and speaker notes for a 20+ sl
   Spilka, J., et al. (2014). "Using nonlinear features for fetal heart rate classification." *Biomedical Signal Processing and Control*.
 - **[5] TimeGAN Generative AI:** 
   Yoon, J., et al. (2019). "Time-series Generative Adversarial Networks." *NeurIPS*.
+
+---
+### **Slide 24: References (Core Deep Learning Architecture)**
+**Body:**
+- **[6] Imbalance Handling (Focal Loss):** 
+  Lin, T.-Y., et al. (2017). "Focal loss for dense object detection." *IEEE ICCV*.
+- **[7] Residual Connections:** 
+  Szegedy, C., et al. (2015). "Going deeper with convolutions." *IEEE CVPR*.
+- **[8] Epistemic Uncertainty (MC Dropout):** 
+  Gal, Y., and Ghahramani, Z. (2016). "Dropout as a Bayesian approximation: Representing model uncertainty in deep learning." *ICML*.
+
+---
+### **Slide 25: References (Explainability & Calibration)**
+**Body:**
+- **[9] Probability Scaling:** 
+  Platt, J. (1999). "Probabilistic outputs for support vector machines and comparisons to regularized likelihood methods." *Adv. Large Margin Classifiers*.
+- **[10] Explainable AI (Grad-CAM):** 
+  Selvaraju, R. R., et al. (2017). "Grad-CAM: Visual explanations from deep networks via gradient-based localization." *IEEE ICCV*.
+- **[11] Model Interpretability (SHAP/General):** 
+  Lundberg, S. M., and Lee, S.-I. (2017). "A unified approach to interpreting model predictions." *NeurIPS*.
