@@ -166,3 +166,21 @@ The following outline provides comprehensive text and speaker notes for a 20+ sl
 - Visual CTG evaluation represents a dangerous and highly subjective diagnostic flaw.
 - NeuroFetal AI presents an architecturally complete blueprint designed specifically to bridge this gap intelligently.
 - By moving to Phase II (Execution, Testing, Calibration, & Edge App Delivery), we aim to deliver an uncertainty-aware, hardware-optimized safeguard setting a new benchmark for fetal monitoring accessibility.
+
+---
+### **Slide 22: References (Primary Baseline & Dataset)**
+**Body:**
+- **[1] Baseline Reference:** 
+  Mendis, S. T., et al. (2023). "Fusing Tabular Features and Deep Learning for Fetal Heart Rate Analysis: A Clinically Interpretable Model for Fetal Compromise Detection." *IEEE Xplore*.
+- **[2] Core Dataset:** 
+  Chudáček, V., Spilka, J., et al. (2014). "CTU-UHB Intrapartum Cardiotocography Database." *PhysioNet*. https://doi.org/10.13026/C2Q012
+
+---
+### **Slide 23: References (Literature Mapping)**
+**Body:**
+- **[3] Deep Learning Sequences:** 
+  Petrozziello, A., et al. (2019). "Deep Learning for Continuous Electronic Fetal Monitoring in Labor." *IEEE Engineering in Medicine and Biology Society (EMBC)*.
+- **[4] Classical Feature Extraction:** 
+  Spilka, J., et al. (2014). "Using nonlinear features for fetal heart rate classification." *Biomedical Signal Processing and Control*.
+- **[5] TimeGAN Generative AI:** 
+  Yoon, J., et al. (2019). "Time-series Generative Adversarial Networks." *NeurIPS*.
