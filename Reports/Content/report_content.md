@@ -21,8 +21,8 @@ How can a multi-modal deep learning system integrate FHR time-series, UC signals
 1. **Tri-modal Fusion**: To architect a fusion mechanism capable of combining FHR, UC, and static maternal bedside features.
 2. **Imbalance Resolution**: To overcome an extreme class imbalance (7.25% pathological) via a TimeGAN-based generative augmentation strategy that preserves sequential dynamics.
 3. **Clinical Trust**: To build an uncertainty-aware system utilizing Monte Carlo (MC) Dropout and Platt Scaling.
-4. **Offline Edge Deployment**: To compress and quantize the trained model via TensorFlow Lite (Int8) to under 2 MB for real-time mobile inference.
-5. **State-of-the-Art Evaluation**: To surpass prior baselines (AUC 0.84 on private data) on the public CTU-UHB benchmark.
+4. **Offline Edge Deployment**: To compress and quantize the trained model via TensorFlow Lite (Int8) for future real-time mobile inference.
+5. **State-of-the-Art Evaluation**: To establish a reproducible computational baseline on the public CTU-UHB benchmark during the second phase of this project.
 
 ## Chapter 3: Literature Survey & Gap Analysis
 **Evolution of CTG Analysis**
@@ -91,20 +91,22 @@ We deliberately leave the target dropout layers ($p=0.3$) open during active inf
 **Platt Scaling Calibration**
 We wrapped the ensemble inside a `CalibratedClassifierCV`. This shifts uncalibrated model logits into trustworthy probability bins. The result is a highly reliable Brier Score of 0.046 and an Expected Calibration Error (ECE) of 0.0543.
 
-## Chapter 9: Edge Deployment & XAI
+## Chapter 9: Edge Deployment & XAI Plans
 **"Lab to Village" Execution**
-Medical systems are useless in rural wards if they require GPUs. We applied **TensorFlow Lite Full Integer Quantization**. Using an Int8 representative calibration set, the 27 MB Keras weights were collapsed into a **1.9 MB** edge-deployable `.tflite` model, executing on standard Android mobile hardware in sub-30ms.
+Medical systems are useless in rural wards if they require GPUs. In our upcoming phase, we will apply **TensorFlow Lite Full Integer Quantization**. Using an Int8 representative calibration set, the massive Keras weights will be collapsed into an edge-deployable `.tflite` model, intended to execute on standard Android mobile hardware in sub-30ms.
 
 **Gradient-weighted Class Activation Mapping (Grad-CAM)**
-To ensure clinical transparency, we mapped internal feature gradients back onto the raw input sequence, visually highlighting *exactly which* heart-rate spike or drop triggered a 'Pathological' warning on the dashboard.
+To ensure clinical transparency, we are mapping internal feature gradients back onto the raw input sequence, visually highlighting *exactly which* heart-rate spike or drop triggers a 'Pathological' warning on the dashboard.
 
-## Chapter 10: Results & Conclusion
-**Out-of-Fold Evaluation Metrics**
-Under rigorous Stratified 5-Fold Cross Validation (seeded consistently for reproducibility):
-- **AUC**: 0.8639
-- **Accuracy**: 96.34%
-- **F1-Score**: 95.22%
+## Chapter 10: Current Status & End-Sem Roadmap
+**Completed Milestones (Mid-Sem Status)**
+1. **Data Pipeline**: Successfully extracted, filtered, and windowed the massive CTU-UHB 552-patient dataset.
+2. **Feature Engineering**: Completed extraction metrics for tabular and complex physiological CSP vectors.
+3. **Synthetic Augmentation**: Successfully trained the TimeGAN WGAN-GP network to artificially duplicate minority class pathological occurrences without losing physical sequence integrity.
+4. **Architecture Blueprinting**: Coded the AttentionFusionResNet, Cross-Modal Attention gating layer, and the core of the Stacking Meta-Learner.
 
-**Benchmark Success**
-NeuroFetal AI V5.0 establishes a new State-of-the-Art (SOTA) on the public CTU-UHB dataset, outperforming the Mendis et al. baseline (0.84, private data) and classical SVMs (0.76).
-By synergizing TimeGAN augmentation, a rigorous tri-modal Stacking Ensemble, and strict Probability Calibration, we present a robust, trustworthy predictive engine capable of edge deployment alongside real-time interpretability.
+**Roadmap to End-Semester Evaluation**
+1. **Full Sub-System Integration**: Binding the TimeGAN outputs live into the Stratified 5-Fold loops.
+2. **Execution & Validation**: Running the massive parallelized hyperparameter grid sweep to establish our final Accuracy, F1-Score, and AUC metrics against the 0.84 private Mendis baseline.
+3. **Calibration Finalization**: Wrapping outputs in Platt Scaling logic and extracting Monte Carlo epistemic confidence intervals.
+4. **Implementation & UX**: Booting the final `Streamlit` clinical dashboard processing `.tflite` edge executions.

@@ -45,9 +45,9 @@ The following outline provides comprehensive text and speaker notes for a 20+ sl
 ### **Slide 6: Our Solution – NeuroFetal AI**
 **Body:**
 - **Tri-Modal Deep Fusion**: Processes FHR sequences, UC contraction rhythms, and static Maternal details actively.
-- **Uncertainty Aware**: Calculates concrete Clinical Confidence. 
-- **TimeGAN Implementation**: Synthesizes authentic pathological traces.
-- **Edge Deployable**: Offline processing via an Int8 Quantized TFLite payload running at 1.9MB.
+- **Uncertainty Aware Engineering**: Designing systems to calculate concrete Clinical Confidence metrics. 
+- **TimeGAN Implementation**: Synthesizing authentic pathological traces to fight heavy dataset skew.
+- **Edge Deployable Architecure**: Blueprinting for offline processing via an Int8 Quantized TFLite payload.
 
 ---
 ### **Slide 7: CTU-UHB Benchmark Dataset**
@@ -122,47 +122,46 @@ The following outline provides comprehensive text and speaker notes for a 20+ sl
 - High operational variance ($\sigma^2$) directly triggers an "Ambiguous Zone" alarm.
 
 ---
-### **Slide 16: 'Lab to Village' Edge Processing**
+### **Slide 16: Future Proofing: 'Lab to Village' Edge Processing**
 **Body:**
 - Cloud reliance breaks down in third-world rural hospital complexes. 
-- Ran active **TensorFlow Lite Full Integer Quantization**.
-- Compressed massive 27MB parallel architectures straight into an Int8 1.9MB execution bundle.
-- Validated to perform flawlessly in <30ms on 5,000 RS commodity android CPUs without any cellular connection.
+- **Our Goal**: Apply active **TensorFlow Lite Full Integer Quantization** prior to deployment.
+- This will compress massive parallel deep learning architectures straight into an Int8 execution bundle.
+- **Why?** To ensure the entire AI suite performs efficiently on low-cost $60 commodity android CPUs without *any* cellular connection.
 
 ---
-### **Slide 17: Clinical Dashboard Implementation (Streamlit)**
+### **Slide 17: Proposed Interface: Clinical Dashboard (Streamlit)**
 **Body:**
-- Fully reactive Dark-Mode specific UI tailored to strict labor ward lighting standards.
-- Clinicians drop raw `.dat` or CSV inputs natively.
-- Features are calculated on the loop exactly parallel with TFLite interpretation thresholds. 
-- Integrated diagnostic "progress tracking" wheels corresponding to calibrated safety confidence.
+- A fully reactive Dark-Mode specific UI tailored directly to strict labor ward lighting standards.
+- Designed so clinicians can drag-and-drop raw `.dat` or CSV signal inputs natively.
+- Features are calculated on the loop exactly parallel with the AI inference layer. 
+- Will integrate active diagnostic "progress tracking" wheels corresponding to the calibrated safety confidence.
 
 ---
-### **Slide 18: Explainable AI mapping (Grad-CAM)**
+### **Slide 18: Future Work: Explainable AI mapping (Grad-CAM)**
 **Body:**
-- Unpacking the black box.
-- Generating physical color displacement heatmaps directly linked down to the absolute trailing network convolution layers. 
-- Specifically allows obstetricians to visualize the literal 60-second window gap that activated the machine learning's physiological distress alerts.
+- Doctors do not trust black boxes. In Phase 2, we implement localized Explainable AI.
+- Generating physical color displacement heatmaps linked straight down to the trailing network convolution layers. 
+- This will specifically permit obstetricians utilizing our Dashboard to visualize the exact 60-second window (the precise heart-rate dip or anomaly) that activated the machine learning's physiological distress alerts.
 
 ---
-### **Slide 19: Final Validated CTU-UHB Outcomes**
+### **Slide 19: End-Sem Evaluation Plan (Phase 2)**
 **Body:**
-- Verified utilizing strict Stratified 5-Fold evaluation (Seed: 42).
-- **Public Baseline (Mendis)**: 0.84 (Relying strictly on 9,800 private inputs).
-- **NeuroFetal AI V4.0 (TimeGAN)**: 0.8639 AUC.
-- **NeuroFetal AI V5.0 (Calibrated TimeGAN Ensemble)**: **96.34% Accuracy / 95.22% F1 / 0.046 Brier Score**.
-- Fully surmounts state-of-the-art standards actively utilizing accessible public frameworks.
+- The final metric evaluation will be executed using rigorous **Stratified 5-Fold Cross Validation** (preventing data leakage).
+- **Objective Benchmark**: The public CTU-UHB dataset limits. 
+- **The Baseline to Beat**: Mendis et al. (0.84 AUC).
+- We will generate and chart Accuracy, AUC, and F1-Scores for the base models vs the meta-learning stacked ensemble. 
 
 ---
-### **Slide 20: Development Timeline & Project Status**
+### **Slide 20: Mid-Semester Current Status**
 **Body:**
-- **Completed Steps**: Data Pipeline, ResNet implementation, CSP integration, TimeGAN, Stacking Meta-Ensemble, TFLite Optimization. 
-- **Current Live Status**: Dashboard V4 completed; testing live uncertainty rendering bounds.
-- **Pending (End-Sem Goals)**: Formal Android apk wrapper buildout; potentially linking active bluetooth sensor streams for hardware integration validation. 
+- **Completed Steps**: Data Ingestion Pipeline mapped out, Physiological baseline and CSP processing completed, 1D ResNet architecture coded, TimeGAN augmentation WGAN-GP training successfully tested. 
+- **Current Bottlenecks**: Merging massive multi-channel tensor spaces accurately through the CMAF attention loops over lengthy computational timeframes.
+- **Status Summary**: On track. Core architecture design is solidified; shifting into intensive training and compilation phase.
 
 ---
-### **Slide 21: Conclusion**
+### **Slide 21: Conclusion & Project Trajectory**
 **Body:**
-- NeuroFetal AI successfully closes the dangerous discrepancy gap inherent in visual CTG evaluation.
-- Delivers an uncertainty-aware, hardware-optimized safeguard against subjective misdiagnosis. 
-- Sets a brand new public evaluation standard aiming to universally reduce intrapartum stillbirth ratios.
+- Visual CTG evaluation represents a dangerous and highly subjective diagnostic flaw.
+- NeuroFetal AI presents an architecturally complete blueprint designed specifically to bridge this gap intelligently.
+- By moving to Phase II (Execution, Testing, Calibration, & Edge App Delivery), we aim to deliver an uncertainty-aware, hardware-optimized safeguard setting a new benchmark for fetal monitoring accessibility.
