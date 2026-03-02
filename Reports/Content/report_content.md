@@ -25,8 +25,10 @@ How can a multi-modal deep learning system integrate FHR time-series, UC signals
 5. **State-of-the-Art Evaluation**: To establish a reproducible computational baseline on the public CTU-UHB benchmark during the second phase of this project.
 
 ## Chapter 3: Literature Survey & Gap Analysis
-**Evolution of CTG Analysis**
-The ongoing quest to automate CTG reading has experienced profound shifts. Early work focused heavily on extracting morphological features (e.g., Support Vector Machines yielding 0.72 AUC). Eventually, isolated Deep Learning systems (like 1D Convolutional Neural Networks and LSTMs) processed the FHR wave directly, achieving ~0.80 AUC.
+**Scope of Review: The Evolution of CTG Analysis**
+In preparation for this architecture, we conducted a comprehensive review of over 10 foundational and state-of-the-art research papers regarding automated fetal monitoring. The ongoing quest to automate CTG reading has experienced profound shifts across these studies:
+- *Classical Methods*: Early work (e.g., Spilka et al., 2014) focused heavily on extracting morphological features and routing them through Support Vector Machines or Random Forests, yielding a ceiling of roughly 0.76 AUC.
+- *Deep Sequence Models*: Eventually, isolated Deep Learning systems (e.g., Petrozziello et al., 2019 utilizing 1D Convolutional Neural Networks and LSTMs) processed the FHR time-series directly, pushing the boundary to ~0.80 AUC.
 
 **The Fusion ResNet Baseline (Mendis et al., 2023)**
 Mendis et al. pioneered multimodal CTG analysis, combining a 1D-ResNet for FHR and a Dense Network for Tabular data. They achieved an impressive 0.84 AUC. However, three massive gaps remained in their work—and the broader literature:

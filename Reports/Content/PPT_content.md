@@ -27,10 +27,11 @@ The following outline provides comprehensive text and speaker notes for a 20+ sl
 - **Real-World Impact**: This subjectivity drives up unnecessary surgical interventions or tragically delays critical action in low-resource settings.
 
 ---
-### **Slide 4: Literature Review**
+### **Slide 4: Literature Review (10+ Papers Analyzed)**
 **Body:**
-- **Classical ML Approaches**: Early work focused heavily on manually extracting morphological features (e.g., SVMs achieving ~0.72 AUC).
-- **Deep Learning Era**: 1D Convolutional Neural Networks and LSTMs bypassed manual feature extraction, processing the FHR wave directly (achieving ~0.80 AUC).
+- **Scope of Review**: We comprehensively analyzed over 10 recent research papers spanning classical ML and modern Deep Learning applied to CTG analysis.
+- **Classical ML Approaches (e.g., Spilka et al., 2014)**: Early work focused heavily on manually extracting morphological features. (Classifiers like SVMs and Random Forests peaked at ~0.76 AUC).
+- **Deep Learning Era (e.g., Petrozziello et al., 2019)**: 1D Convolutional Neural Networks and LSTMs bypassed manual feature extraction, processing the FHR wave directly (achieving ~0.80 AUC).
 - **Recent SOTA (Mendis et al., 2023)**: Pioneered multimodal analysis, fusing a 1D-ResNet for FHR and a Dense Network for Maternal Tabular data to achieve a 0.84 AUC.
 
 ---
