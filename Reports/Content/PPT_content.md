@@ -10,36 +10,36 @@ The following outline provides comprehensive text and speaker notes for a 20+ sl
 **Institution:** Indian Institute of Information Technology, Allahabad
 
 ---
-### **Slide 2: Clinical Motivation – The Global Tragedy**
+### **Slide 2: Introduction**
 **Body:**
-- ~2.6 million instances of stillbirths occur globally every single year.
-- Fetal Compromise (hypoxia/acidosis) is a primary trigger.
-- The burden disproportionately hits low-resource geographic setups.
-- **The Need**: Early intervention gives doctors the time necessary to perform successful emergency instrumental deliveries.
-
----
-### **Slide 3: Cardiotocography (CTG) – The Clinical Standard**
-**Body:**
-- CTG is the frontline method for fetal monitoring during labor.
+- Intrapartum fetal monitoring relies globally on Cardiotocography (CTG).
 - Two Simultaneous Signals recorded:
   - **FHR**: Fetal Heart Rate via Doppler ultrasound.
   - **UC**: Uterine Contractions via a pressure tocodynamometer.
-- **Goal**: Doctors analyze complex timing between the contraction peak and the heartrate nadir.
+- ~2.6 million instances of stillbirths occur globally every year, with Fetal Compromise (hypoxia/acidosis) being a primary trigger.
 
 ---
-### **Slide 4: The Flaws in Subjective Analysis**
+### **Slide 3: Problem Statement**
 **Body:**
 - Extracting meaning from CTG paper strips is visually demanding and highly flawed.
 - **Inter-Observer Disagreement**: Different obstetricians looking at the exact same trace disagree 30-40% of the time.
 - **Alert Fatigue**: Conventional automated threshold systems generate intense false-positive alarms.
-- **Result**: Excessive unnecessary C-section surgeries, or tragically missed diagnoses.
+- **Real-World Impact**: This subjectivity drives up unnecessary surgical interventions or tragically delays critical action in low-resource settings.
 
 ---
-### **Slide 5: Limitations of Current AI (Gap Analysis)**
+### **Slide 4: Literature Review**
 **Body:**
-- **Unimodal Limitation**: Prior neural networks (ResNets, 1D-CNNs) ignore the UC string entirely, looking only at heart rates.
-- **Private Dependencies**: Heavy baseline papers (Mendis et al., 0.84 AUC) rely on 9,800+ closed corporate traces.
-- **Black-Box AI**: Lack of uncertainty metrics makes current predictions medically unsafe to trust implicitly.
+- **Classical ML Approaches**: Early work focused heavily on manually extracting morphological features (e.g., SVMs achieving ~0.72 AUC).
+- **Deep Learning Era**: 1D Convolutional Neural Networks and LSTMs bypassed manual feature extraction, processing the FHR wave directly (achieving ~0.80 AUC).
+- **Recent SOTA (Mendis et al., 2023)**: Pioneered multimodal analysis, fusing a 1D-ResNet for FHR and a Dense Network for Maternal Tabular data to achieve a 0.84 AUC.
+
+---
+### **Slide 5: Identified Gaps**
+**Body:**
+- **UC Signal Omission**: Mendis et al. completely discarded the uterine contraction channel, ignoring the vital FHR–contraction temporal delay necessary for spotting late decelerations.
+- **No Uncertainty Quantification**: Prior models provided deterministic point predictions, which is medically dangerous when an AI encounters a trace it doesn't recognize.
+- **Dependence on Private Data**: State-of-the-Art models (0.84 AUC) were validated on massive, closed corporate datasets (9,887 cases), making them non-reproducible and potentially biased.
+- **Hardware Limitations**: Deep learning models historically require high-end GPUs, making them useless in rural, low-resource labor wards.
 
 ---
 ### **Slide 6: Our Solution – NeuroFetal AI**
