@@ -176,25 +176,26 @@ def mc_dropout_predict(model, inputs, T=20):
 # =============================================================================
 # Feature Extraction (16-dim tabular — matches V5.0 training pipeline)
 # =============================================================================
-def extract_16_tabular(fhr_raw, uc_raw, age, parity, gestation):
+def extract_18_tabular(fhr_raw, uc_raw, age, parity, gestation, gravidity, weight):
     """
-    Extract 16 tabular features from a single FHR/UC window.
-    Matches the V5.0 training data order exactly:
-      [Age, Parity, Gestation,
+    Extract 18 tabular features from a single FHR/UC window.
+    Matches the trained model's expected input (18-dim) exactly:
+      [Age, Parity, Gestation, Gravidity, Weight,
        fhr_baseline, fhr_stv, fhr_ltv, fhr_accel_count,
-       fhr_decel_count, fhr_late_decel_flag, fhr_variable_decel,
-       fhr_approx_entropy, fhr_sample_entropy,
-       uc_freq, uc_amplitude, fhr_uc_lag, signal_quality]
+       fhr_decel_count, fhr_decel_area, fhr_range, fhr_iqr, fhr_entropy,
+       uc_freq, uc_intensity_mean, fhr_uc_lag, signal_loss_pct]
     """
     from scipy.signal import find_peaks, correlate
 
     valid = fhr_raw[fhr_raw > 0]
-    signal_quality = float(np.sum(fhr_raw > 0)) / max(len(fhr_raw), 1)
+    signal_loss = 1.0 - (float(np.sum(fhr_raw > 0)) / max(len(fhr_raw), 1))
 
-    # --- Demographics (3) ---
+    # --- Demographics (5) ---
     f_age = float(age if age is not None else 30)
     f_parity = float(parity if parity is not None else 0)
     f_gestation = float(gestation if gestation is not None else 39)
+    f_gravidity = float(gravidity if gravidity is not None else 1)
+    f_weight = float(weight if weight is not None else 70)
 
     # --- Signal-Derived (13) ---
     # 1. Baseline
@@ -225,7 +226,7 @@ def extract_16_tabular(fhr_raw, uc_raw, age, parity, gestation):
     ends_a = np.where(runs == -1)[0]
     accel_count = float(sum(1 for s, e in zip(starts_a, ends_a) if (e - s) >= 15))
 
-    # 5-6. Decelerations
+    # 5-6. Decelerations & area
     valid_mask = fhr_raw > 0
     diff_below = baseline - fhr_raw
     below = (diff_below > 15) & valid_mask
@@ -233,55 +234,30 @@ def extract_16_tabular(fhr_raw, uc_raw, age, parity, gestation):
     starts_d = np.where(runs_d == 1)[0]
     ends_d = np.where(runs_d == -1)[0]
     decel_count = 0
+    decel_area = 0.0
     for s, e in zip(starts_d, ends_d):
         if (e - s) >= 15:
             decel_count += 1
+            decel_area += float(np.sum(diff_below[s:e]))
 
-    # 7. Late Deceleration Flag (requires UC context)
-    late_decel_flag = 0.0
-    if uc_raw is not None and len(uc_raw) > 10:
-        uc_smooth = np.convolve(uc_raw, np.ones(30) / 30, mode='same')
-        uc_threshold = np.mean(uc_smooth) + 0.3 * np.std(uc_smooth)
-        uc_peaks, _ = find_peaks(uc_smooth, height=uc_threshold, distance=120)
-        for pk in uc_peaks:
-            search_start = pk
-            search_end = min(pk + 120, len(fhr_raw))
-            if search_end > search_start:
-                window = fhr_raw[search_start:search_end]
-                if len(window) > 0 and np.min(window[window > 0]) < baseline - 15 if np.any(window > 0) else False:
-                    late_decel_flag = 1.0
-                    break
+    # 7-8. Range & IQR
+    fhr_range = float(np.max(valid) - np.min(valid)) if len(valid) > 0 else 0.0
+    fhr_iqr = float(np.percentile(valid, 75) - np.percentile(valid, 25)) if len(valid) > 0 else 0.0
 
-    # 8. Variable Deceleration Count (abrupt drops)
-    variable_decel = 0.0
-    for s, e in zip(starts_d, ends_d):
-        dur = e - s
-        if 15 <= dur <= 120:  # Short but sharp
-            drop = np.max(diff_below[s:e])
-            if drop > 30:
-                variable_decel += 1.0
+    # 9. Entropy
+    fhr_entropy = float(np.log(np.std(valid) + 1e-8)) if len(valid) > 50 else 0.0
 
-    # 9. Approximate Entropy
-    fhr_approx_entropy = float(np.log(np.std(valid) + 1e-8)) if len(valid) > 50 else 0.0
-
-    # 10. Sample Entropy (simplified)
-    if len(valid) > 100:
-        diffs = np.abs(np.diff(valid))
-        fhr_sample_entropy = float(-np.log(np.mean(diffs < np.std(valid) * 0.2) + 1e-8))
-    else:
-        fhr_sample_entropy = 0.0
-
-    # 11-12. UC features
+    # 10-11. UC features
     uc_freq = 0.0
-    uc_amplitude = 0.0
+    uc_intensity = 0.0
     if uc_raw is not None and len(uc_raw) > 10:
         uc_smooth = np.convolve(uc_raw, np.ones(30) / 30, mode='same')
         threshold = np.mean(uc_smooth) + 0.3 * np.std(uc_smooth)
-        peaks, props = find_peaks(uc_smooth, height=threshold, distance=120, prominence=0.1)
+        peaks, _ = find_peaks(uc_smooth, height=threshold, distance=120, prominence=0.1)
         uc_freq = float(len(peaks))
-        uc_amplitude = float(np.mean(uc_smooth[peaks])) if len(peaks) > 0 else 0.0
+        uc_intensity = float(np.mean(uc_smooth[peaks])) if len(peaks) > 0 else 0.0
 
-    # 13. FHR-UC lag
+    # 12. FHR-UC lag
     fhr_uc_lag = 0.0
     if uc_raw is not None and np.std(fhr_raw) > 0 and np.std(uc_raw) > 0:
         fhr_n = (fhr_raw - np.mean(fhr_raw)) / (np.std(fhr_raw) + 1e-8)
@@ -296,12 +272,16 @@ def extract_16_tabular(fhr_raw, uc_raw, age, parity, gestation):
             lag_idx = np.argmax(np.abs(corr_window)) - (end - start) // 2
             fhr_uc_lag = float(lag_idx)
 
+    # Assemble 18-feature vector (matches trained model input)
     return np.array([
-        f_age, f_parity, f_gestation,
-        baseline, fhr_stv, fhr_ltv, accel_count,
-        float(decel_count), late_decel_flag, variable_decel,
-        fhr_approx_entropy, fhr_sample_entropy,
-        uc_freq, uc_amplitude, fhr_uc_lag, signal_quality
+        # Demographics (5)
+        f_age, f_parity, f_gestation, f_gravidity, f_weight,
+        # Signal-derived (13)
+        baseline, fhr_stv, fhr_ltv,
+        accel_count, float(decel_count), decel_area,
+        fhr_range, fhr_iqr, fhr_entropy,
+        uc_freq, uc_intensity, fhr_uc_lag,
+        signal_loss
     ], dtype=np.float32)
 
 
@@ -442,6 +422,8 @@ def main():
             age = feats.get('Age')
             parity = feats.get('Parity')
             gestation = feats.get('Gestation')
+            gravidity = feats.get('Gravidity')
+            weight = feats.get('Weight')
 
             n_windows = (len(fhr_proc_60) - w_size) // stride + 1
 
@@ -452,11 +434,11 @@ def main():
                 win_fhr = fhr_proc_60[start:end]
                 win_uc = uc_proc_60[start:end]
 
-                # Extract 16-dim tabular features (V5.0)
-                win_tab = extract_16_tabular(win_fhr, win_uc, age, parity, gestation)
+                # Extract 18-dim tabular features (matches trained model)
+                win_tab = extract_18_tabular(win_fhr, win_uc, age, parity, gestation, gravidity, weight)
 
                 # Signal quality check: skip if > 50% loss
-                if win_tab[-1] < 0.50:  # signal_quality is now fraction of VALID samples
+                if win_tab[-1] > 0.50:  # signal_loss_pct is last feature
                     skipped_quality += 1
                     continue
 
