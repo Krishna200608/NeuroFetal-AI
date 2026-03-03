@@ -158,16 +158,26 @@ def load_custom_model(model_path):
 # =============================================================================
 # MC Dropout Inference
 # =============================================================================
-def mc_dropout_predict(model, inputs, T=20):
+def mc_dropout_predict(model, inputs, T=20, batch_size=128):
     """
     Run T stochastic forward passes with Dropout enabled at inference time.
+    Uses mini-batching to avoid GPU OOM on T4 (16 GB VRAM).
     Returns: mean prediction, predictive variance (epistemic uncertainty).
     """
-    preds = []
-    for _ in range(T):
-        p = model(inputs, training=True)  # training=True keeps Dropout active
-        preds.append(tf.squeeze(p).numpy())
-    preds = np.array(preds)  # (T, N)
+    N = len(inputs[0])
+    all_preds = []  # Will be (T, N)
+
+    for t in range(T):
+        batch_preds = []
+        for start in range(0, N, batch_size):
+            end = min(start + batch_size, N)
+            batch_inputs = [x[start:end] for x in inputs]
+            p = model(batch_inputs, training=True)  # training=True keeps Dropout active
+            batch_preds.append(tf.squeeze(p).numpy())
+        # Concatenate all batches for this forward pass
+        all_preds.append(np.concatenate(batch_preds))
+
+    preds = np.array(all_preds)  # (T, N)
     mean_pred = np.mean(preds, axis=0)
     var_pred = np.var(preds, axis=0)
     return mean_pred, var_pred
