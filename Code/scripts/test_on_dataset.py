@@ -614,7 +614,12 @@ def main():
             rankdata(xgb_preds) / N
         ])
         ensemble_preds = meta_model.predict_proba(stacking_input)[:, 1]
-        print(f"    Meta-learner weights: {meta_model.coef_.flatten()}")
+        # CalibratedClassifierCV wraps the base estimator; try to print weights
+        try:
+            base = getattr(meta_model, 'estimator', None) or meta_model.calibrated_classifiers_[0].estimator
+            print(f"    Meta-learner weights: {base.coef_.flatten()}")
+        except (AttributeError, IndexError):
+            print("    Meta-learner: CalibratedClassifierCV (weights not directly accessible)")
     else:
         # Fallback: simple average of available models
         active = []
