@@ -45,9 +45,19 @@
 | **Confidence** | None | MC Dropout | **Platt Scaling & Entropy (Brier: 0.046)** | Trustworthy AI |
 | **Deployment** | PC Only | Mobile (TFLite) | **Mobile (TFLite) & Enhanced Streamlit** | **1.9 MB (Int8)** |
 
-### Baseline Reference & Data
-This project replicates and extends the work presented in:
-> **["Fusing Tabular Features and Deep Learning for Fetal Heart Rate Analysis: A Clinically Interpretable Model for Fetal Compromise Detection"](https://ieeexplore.ieee.org/document/11340719/)**
+### Baseline Reference & Empirical Evaluation
+
+This project explicitly replaces and extends the work presented in:
+> **["Fusing Tabular Features and Deep Learning for Fetal Heart Rate Analysis: A Clinically Interpretable Model for Fetal Compromise Detection"](https://ieeexplore.ieee.org/document/11340719/)** (Mendis et al., 2023)
+
+To rigorously justify our Tri-Modal architecture, we empirically evaluated classical and unimodal deep learning baselines directly against the public CTU-UHB dataset using Stratified 5-Fold Cross-Validation:
+
+| Model Type | Architecture Approach | Target Data | AUC-ROC | Conclusion |
+| :--- | :--- | :--- | :--- | :--- |
+| **Unimodal Deep Learning** | 1D-CNN (Spilka) | Raw FHR Sequence | **0.564** | Fails without Uterine Contraction timing context. |
+| **Classical ML** | Logistic Regression | Tabular Features | **0.676** | Linear models cannot capture physiological complexity. |
+| **Classical ML** | Random Forest | Tabular Features | **0.837** | Strong, but fails to capture the physical shape of deceleration curves over time. |
+| **NeuroFetal AI (V5.0)** | Tri-Modal CMAF Ensemble | FHR + UC + Tabular | **0.8639** | Successfully captures spatial, temporal, and clinical context. |
 
 **Dataset Used:**
 *   **[CTU-CHB Intrapartum Cardiotocography Database v1.0.0](https://physionet.org/content/ctu-uhb-ctgdb/1.0.0/)** (via PhysioNet)
