@@ -511,6 +511,48 @@ def main():
         X_csp = np.zeros((len(X_fhr), 19), dtype=np.float32)
 
     # =========================================================================
+    # Step 4b: Hand-Crafted FHR Statistics (for XGBoost — 11 features)
+    # =========================================================================
+    # Matches extract_cnn_features() in train_diverse_ensemble.py exactly.
+    print("\n[4b/7] Extracting FHR statistics for XGBoost (11-dim)...")
+    from scipy.signal import find_peaks as _find_peaks
+
+    fhr_stats_list = []
+    for fhr in X_fhr:
+        fhr_1d = fhr.flatten()
+        valid = fhr_1d[fhr_1d > 0]
+        feat = []
+        # Basic stats (3)
+        feat.append(np.mean(valid) if len(valid) > 0 else 0)
+        feat.append(np.std(valid) if len(valid) > 0 else 0)
+        feat.append(np.median(valid) if len(valid) > 0 else 0)
+        # Percentiles (4)
+        for p in [5, 25, 75, 95]:
+            feat.append(np.percentile(valid, p) if len(valid) > 0 else 0)
+        # Mean absolute diff (1)
+        feat.append(np.mean(np.abs(np.diff(valid))) if len(valid) > 1 else 0)
+        # Zero-crossing rate (1)
+        if len(valid) > 1:
+            mean_centered = valid - np.mean(valid)
+            zcr = np.sum(np.diff(np.sign(mean_centered)) != 0) / len(valid)
+            feat.append(zcr)
+        else:
+            feat.append(0)
+        # Peak/trough count (2)
+        if len(valid) > 10:
+            peaks, _ = _find_peaks(valid, distance=30)
+            troughs, _ = _find_peaks(-valid, distance=30)
+            feat.append(len(peaks))
+            feat.append(len(troughs))
+        else:
+            feat.extend([0, 0])
+        fhr_stats_list.append(feat)
+
+    X_fhr_stats = np.array(fhr_stats_list, dtype=np.float32)
+    X_fhr_stats = np.nan_to_num(X_fhr_stats, nan=0.0)
+    print(f"  FHR stats shape: {X_fhr_stats.shape}")
+
+    # =========================================================================
     # Step 5: Ensemble Inference
     # =========================================================================
     print("\n[5/7] Running Ensemble Inference...")
@@ -551,8 +593,9 @@ def main():
     xgb_preds = np.zeros(N)
     if xgb_models:
         print(f"  Model C (XGBoost): {len(xgb_models)} folds")
-        # XGBoost uses tabular + CSP features (no raw signal)
-        X_xgb = np.hstack([X_tab, X_csp])
+        # XGBoost uses tabular + CSP + hand-crafted FHR stats (48 features total)
+        X_xgb = np.hstack([X_tab, X_csp, X_fhr_stats])
+        print(f"    XGBoost input shape: {X_xgb.shape} (expected 48 features)")
         fold_preds = []
         for i, model in enumerate(xgb_models):
             p = model.predict_proba(X_xgb)[:, 1]
