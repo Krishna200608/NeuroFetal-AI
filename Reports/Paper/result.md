@@ -9,20 +9,6 @@ The system was implemented using Python 3.13 and TensorFlow 2.14. Model training
 
 Due to the severe class imbalance (only 7.25\% of cases exhibit pathological acidemia defined by $\text{pH} < 7.15$), we utilized a Time-Series Generative Adversarial Network (TimeGAN) \cite{yoon2019} with a Wasserstein-GP objective to synthesize 1,410 physiologically realistic minority class traces. The networks were optimized using Adam with Focal Loss \cite{lin2017} ($\alpha = 0.25, \gamma = 2.0$) to heavily penalize misclassifications of the critical minority class.
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\columnwidth]{gan_training_diagnostics.png}
-\caption{TimeGAN Training Diagnostics: Generator and Discriminator Loss Convergence.}
-\label{fig:gan_diagnostics}
-\end{figure}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\columnwidth]{timegan_final_comparison.png}
-\caption{Distribution Comparison: Authentic Pathological vs. TimeGAN Synthesized FHR and UC traces.}
-\label{fig:gan_comparison}
-\end{figure}
-
 \subsection{Performance Metrics}
 To rigorously benchmark against existing literature \cite{mendis2023, lopes2025}, we evaluated the ensemble on standard classification metrics: Accuracy, Sensitivity (Recall), Specificity, F1-Score, and the Area Under the Receiver Operating Characteristic Curve (AUC-ROC).
 

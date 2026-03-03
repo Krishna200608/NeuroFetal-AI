@@ -712,6 +712,20 @@ Following TimeGAN augmentation, standard time-series jitter, scaling,
 and time-warping transformations (2$\times$ expansion) were applied to the
 combined real+synthetic training set for additional regularization.
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{gan_training_diagnostics.png}
+\caption{TimeGAN Training Diagnostics: Generator and Discriminator Loss Convergence.}
+\label{fig:gan_diagnostics}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{timegan_final_comparison.png}
+\caption{Distribution Comparison: Authentic Pathological vs. TimeGAN Synthesized FHR and UC traces.}
+\label{fig:gan_comparison}
+\end{figure}
+
 \subsection{Cross-Validation Protocol}
 
 To ensure robust and unbiased evaluation, all model training and evaluation
