@@ -89,6 +89,10 @@ The following outline provides comprehensive text and speaker notes for a 20+ sl
 - Utilized a WGAN-GP 1D Convolution framework to maintain physiologically feasible waveform delay dynamics.
 - Resulted in 1,410 synthetic additions.
 
+**Visual Evidence**:
+![TimeGAN Training Diagnostics](../../Code/models/gan_training_diagnostics.png)
+![TimeGAN Final Comparison](../../Code/models/timegan_final_comparison.png)
+
 ---
 ### **Slide 11: Base Model A: AttentionFusionResNet**
 **Body:**

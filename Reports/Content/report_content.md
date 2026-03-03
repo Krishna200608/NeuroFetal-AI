@@ -78,6 +78,12 @@ To train robust deep networks on just 40 pathological recordings, we developed a
 - **TimeGAN Implementation (V4.0)**: We utilized a Wasserstein GAN with a Gradient Penalty (WGAN-GP, $\lambda=10$). Using a 1D Transposed Convolution network, the GAN trained exclusively on authentic pathological FHR+UC sequences.
 - **Result**: Generation of 1,410 physiologically realistic synthetic minority-class traces. Unlike SMOTE, TimeGAN respects realistic temporal delay between contraction peaks and fetal heart rate crashes.
 
+**Methodological Visualizations:**
+
+![TimeGAN Training Diagnostics](../../Code/models/gan_training_diagnostics.png)
+
+![TimeGAN Final Comparison](../../Code/models/timegan_final_comparison.png)
+
 ## Chapter 7: Proposed Architecture
 **Model 1: AttentionFusionResNet (The Deep Branch)**
 We built the temporal backbone entirely around a 1-Dimensional Residual Network (ResNet). We heavily adapted this backbone by injecting Squeeze-and-Excitation (SE) recalibration blocks capped off with a Multi-Head Self-Attention routine to capture long-range dependencies across the 20-minute sequence.
