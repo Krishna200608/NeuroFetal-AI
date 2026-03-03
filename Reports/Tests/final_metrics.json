@@ -1,0 +1,28 @@
+{
+  "version": "V5.0",
+  "timestamp": "2026-03-03 06:41",
+  "accuracy": 0.18460329929300864,
+  "auc_roc": 0.7012477964989955,
+  "auprc": 0.3519205652843982,
+  "brier_score": 0.2524742870478199,
+  "threshold": 0.25596551649974575,
+  "temperature": 2.9087630362131067,
+  "mean_uncertainty": 0.009823885224122978,
+  "n_samples": 2546,
+  "n_pathological": 470,
+  "confusion_matrix": [
+    [
+      0,
+      2076
+    ],
+    [
+      0,
+      470
+    ]
+  ],
+  "individual_aucs": {
+    "resnet": 0.5873683023818308,
+    "inception": 0.49903660886319845,
+    "xgboost": 0.7003771573812159
+  }
+}
