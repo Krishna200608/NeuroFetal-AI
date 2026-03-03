@@ -27,7 +27,6 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 import numpy as np
 import tensorflow as tf
 import xgboost as xgb
-import wfdb
 from scipy.optimize import minimize_scalar
 from scipy.special import expit  # sigmoid
 from scipy.stats import rankdata
@@ -54,7 +53,6 @@ sys.path.append(SCRIPTS_DIR)
 
 # Import project modules
 try:
-    from data_ingestion import process_signal, process_uc_signal, parse_header, normalize_fhr
     from csp_features import MultimodalFeatureExtractor
     from model import CrossModalAttention
     from attention_blocks import SEBlock, TemporalAttentionBlock
@@ -184,115 +182,7 @@ def mc_dropout_predict(model, inputs, T=20, batch_size=128):
 
 
 # =============================================================================
-# Feature Extraction (16-dim tabular — matches V5.0 training pipeline)
-# =============================================================================
-def extract_18_tabular(fhr_raw, uc_raw, age, parity, gestation, gravidity, weight):
-    """
-    Extract 18 tabular features from a single FHR/UC window.
-    Matches the trained model's expected input (18-dim) exactly:
-      [Age, Parity, Gestation, Gravidity, Weight,
-       fhr_baseline, fhr_stv, fhr_ltv, fhr_accel_count,
-       fhr_decel_count, fhr_decel_area, fhr_range, fhr_iqr, fhr_entropy,
-       uc_freq, uc_intensity_mean, fhr_uc_lag, signal_loss_pct]
-    """
-    from scipy.signal import find_peaks, correlate
-
-    valid = fhr_raw[fhr_raw > 0]
-    signal_loss = 1.0 - (float(np.sum(fhr_raw > 0)) / max(len(fhr_raw), 1))
-
-    # --- Demographics (5) ---
-    f_age = float(age if age is not None else 30)
-    f_parity = float(parity if parity is not None else 0)
-    f_gestation = float(gestation if gestation is not None else 39)
-    f_gravidity = float(gravidity if gravidity is not None else 1)
-    f_weight = float(weight if weight is not None else 70)
-
-    # --- Signal-Derived (13) ---
-    # 1. Baseline
-    baseline = float(np.median(valid)) if len(valid) > 0 else 140.0
-
-    # 2. STV (Short-Term Variability)
-    if len(valid) > 1:
-        fhr_stv = float(np.sqrt(np.mean(np.diff(valid) ** 2)))
-    else:
-        fhr_stv = 0.0
-
-    # 3. LTV (Long-Term Variability)
-    seg_len = 60
-    n_segs = len(fhr_raw) // seg_len
-    if n_segs >= 2:
-        seg_means = [float(np.mean(fhr_raw[i * seg_len:(i + 1) * seg_len][fhr_raw[i * seg_len:(i + 1) * seg_len] > 0]))
-                     for i in range(n_segs)
-                     if np.sum(fhr_raw[i * seg_len:(i + 1) * seg_len] > 0) > 0]
-        fhr_ltv = float(np.std(seg_means)) if len(seg_means) >= 2 else 0.0
-    else:
-        fhr_ltv = 0.0
-
-    # 4. Accelerations (>15 bpm for >15 sec)
-    diff_above = fhr_raw - baseline
-    above = diff_above > 15
-    runs = np.diff(np.concatenate(([0], above.astype(int), [0])))
-    starts_a = np.where(runs == 1)[0]
-    ends_a = np.where(runs == -1)[0]
-    accel_count = float(sum(1 for s, e in zip(starts_a, ends_a) if (e - s) >= 15))
-
-    # 5-6. Decelerations & area
-    valid_mask = fhr_raw > 0
-    diff_below = baseline - fhr_raw
-    below = (diff_below > 15) & valid_mask
-    runs_d = np.diff(np.concatenate(([0], below.astype(int), [0])))
-    starts_d = np.where(runs_d == 1)[0]
-    ends_d = np.where(runs_d == -1)[0]
-    decel_count = 0
-    decel_area = 0.0
-    for s, e in zip(starts_d, ends_d):
-        if (e - s) >= 15:
-            decel_count += 1
-            decel_area += float(np.sum(diff_below[s:e]))
-
-    # 7-8. Range & IQR
-    fhr_range = float(np.max(valid) - np.min(valid)) if len(valid) > 0 else 0.0
-    fhr_iqr = float(np.percentile(valid, 75) - np.percentile(valid, 25)) if len(valid) > 0 else 0.0
-
-    # 9. Entropy
-    fhr_entropy = float(np.log(np.std(valid) + 1e-8)) if len(valid) > 50 else 0.0
-
-    # 10-11. UC features
-    uc_freq = 0.0
-    uc_intensity = 0.0
-    if uc_raw is not None and len(uc_raw) > 10:
-        uc_smooth = np.convolve(uc_raw, np.ones(30) / 30, mode='same')
-        threshold = np.mean(uc_smooth) + 0.3 * np.std(uc_smooth)
-        peaks, _ = find_peaks(uc_smooth, height=threshold, distance=120, prominence=0.1)
-        uc_freq = float(len(peaks))
-        uc_intensity = float(np.mean(uc_smooth[peaks])) if len(peaks) > 0 else 0.0
-
-    # 12. FHR-UC lag
-    fhr_uc_lag = 0.0
-    if uc_raw is not None and np.std(fhr_raw) > 0 and np.std(uc_raw) > 0:
-        fhr_n = (fhr_raw - np.mean(fhr_raw)) / (np.std(fhr_raw) + 1e-8)
-        uc_n = (uc_raw - np.mean(uc_raw)) / (np.std(uc_raw) + 1e-8)
-        max_lag = 300
-        corr = np.correlate(fhr_n, uc_n, mode='full')
-        mid = len(corr) // 2
-        start = max(0, mid - max_lag)
-        end = min(len(corr), mid + max_lag + 1)
-        corr_window = corr[start:end]
-        if len(corr_window) > 0:
-            lag_idx = np.argmax(np.abs(corr_window)) - (end - start) // 2
-            fhr_uc_lag = float(lag_idx)
-
-    # Assemble 18-feature vector (matches trained model input)
-    return np.array([
-        # Demographics (5)
-        f_age, f_parity, f_gestation, f_gravidity, f_weight,
-        # Signal-derived (13)
-        baseline, fhr_stv, fhr_ltv,
-        accel_count, float(decel_count), decel_area,
-        fhr_range, fhr_iqr, fhr_entropy,
-        uc_freq, uc_intensity, fhr_uc_lag,
-        signal_loss
-    ], dtype=np.float32)
+# (Raw feature extraction removed — we now load pre-processed .npy arrays)
 
 
 # =============================================================================
@@ -390,101 +280,38 @@ def main():
         print(f"  ✓ Loaded optimal thresholds: {saved_thresholds}")
 
     # =========================================================================
-    # Step 3: Process raw CTU-UHB Records
+    # Step 3: Load Pre-Processed Data (from data_ingestion.py)
     # =========================================================================
-    print("\n[3/7] Processing CTU-UHB .dat records...")
+    # CRITICAL: We load the SAME standardized .npy arrays that training used.
+    # Re-extracting from raw .dat files would produce un-standardized features
+    # (missing the Z-score normalization), causing severe distribution mismatch.
+    print("\n[3/7] Loading pre-processed data from Datasets/processed/...")
 
-    record_files = sorted(glob.glob(os.path.join(DATA_DIR, "*.dat")))
-    print(f"  Found {len(record_files)} records.")
+    X_fhr = np.load(os.path.join(PROCESSED_DIR, "X_fhr.npy"))
+    X_tab = np.load(os.path.join(PROCESSED_DIR, "X_tabular.npy"))
+    y_true = np.load(os.path.join(PROCESSED_DIR, "y.npy"))
 
-    X_fhr_list, X_uc_list, X_tab_list, y_true_list = [], [], [], []
-    cnt, missing_ph, skipped_quality = 0, 0, 0
+    try:
+        X_uc = np.load(os.path.join(PROCESSED_DIR, "X_uc.npy"))
+    except FileNotFoundError:
+        X_uc = np.zeros_like(X_fhr)
+        print("  ⚠ UC data not found, using zeros.")
 
-    for rec_path in record_files:
-        base = os.path.splitext(rec_path)[0]
-        header_path = base + ".hea"
-        rec_name = os.path.basename(base)
+    # Ensure correct shapes
+    if X_fhr.ndim == 2:
+        X_fhr = np.expand_dims(X_fhr, axis=-1)  # (N, 1200) → (N, 1200, 1)
+    if X_uc.ndim == 2:
+        X_uc = np.expand_dims(X_uc, axis=-1)
 
-        feats = parse_header(header_path)
+    X_tab = np.nan_to_num(X_tab.astype(np.float32), nan=0.0)
 
-        if feats['pH'] is None:
-            missing_ph += 1
-            continue
-
-        # Ground Truth: pH < 7.15 = Compromised (matches training threshold)
-        label = 1 if feats['pH'] < 7.15 else 0
-
-        try:
-            signals, fields = wfdb.rdsamp(base)
-            fs = fields['fs']
-
-            fhr_raw = signals[:, 0]
-            uc_raw = signals[:, 1] if signals.shape[1] > 1 else None
-
-            # Preprocess: last 60 mins → 3600 samples at 1 Hz
-            fhr_proc_60 = process_signal(fhr_raw, fs)
-            uc_proc_60 = process_uc_signal(uc_raw, fs) if uc_raw is not None else np.zeros_like(fhr_proc_60)
-
-            # Windowing: 20-min windows, 10-min stride (matches training)
-            w_size = 20 * 60  # 1200 samples
-            stride = 10 * 60  # 600 samples (50% overlap)
-
-            age = feats.get('Age')
-            parity = feats.get('Parity')
-            gestation = feats.get('Gestation')
-            gravidity = feats.get('Gravidity')
-            weight = feats.get('Weight')
-
-            n_windows = (len(fhr_proc_60) - w_size) // stride + 1
-
-            for i in range(n_windows):
-                start = i * stride
-                end = start + w_size
-
-                win_fhr = fhr_proc_60[start:end]
-                win_uc = uc_proc_60[start:end]
-
-                # Extract 18-dim tabular features (matches trained model)
-                win_tab = extract_18_tabular(win_fhr, win_uc, age, parity, gestation, gravidity, weight)
-
-                # Signal quality check: skip if > 50% loss
-                if win_tab[-1] > 0.50:  # signal_loss_pct is last feature
-                    skipped_quality += 1
-                    continue
-
-                # Normalize FHR to [0, 1]
-                win_fhr_norm = normalize_fhr(win_fhr)
-
-                X_fhr_list.append(win_fhr_norm)
-                X_uc_list.append(win_uc)
-                X_tab_list.append(win_tab)
-                y_true_list.append(label)
-
-            cnt += 1
-            if cnt % 100 == 0:
-                print(f"  Processed {cnt} records...")
-
-        except Exception as e:
-            print(f"  Error processing {rec_name}: {e}")
-            continue
-
-    print(f"\n  Processed {cnt} records successfully.")
-    print(f"  Skipped {missing_ph} records (missing pH).")
-    print(f"  Skipped {skipped_quality} windows (low signal quality).")
-    print(f"  Total valid windows: {len(X_fhr_list)}")
-
-    if len(X_fhr_list) == 0:
-        print("  ❌ No valid windows extracted. Exiting.")
-        return
-
-    # Convert to arrays
-    X_fhr = np.expand_dims(np.array(X_fhr_list), -1)  # (N, 1200, 1)
-    X_uc = np.expand_dims(np.array(X_uc_list), -1)    # (N, 1200, 1)
-    X_tab = np.nan_to_num(np.array(X_tab_list, dtype=np.float32), nan=0.0)
-    y_true = np.array(y_true_list)
-
+    print(f"  ✓ Loaded {len(X_fhr)} windows.")
     print(f"  FHR: {X_fhr.shape}, Tab: {X_tab.shape}, Labels: {y_true.shape}")
     print(f"  Class distribution: {np.mean(y_true):.1%} pathological")
+
+    if len(X_fhr) == 0:
+        print("  ❌ No data found. Run data_ingestion.py first.")
+        return
 
     # =========================================================================
     # Step 4: CSP Feature Extraction
