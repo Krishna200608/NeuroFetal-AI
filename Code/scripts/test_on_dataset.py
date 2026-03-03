@@ -479,14 +479,17 @@ def main():
     print(f"  Calibrated AUC:   {calibrated_auc:.4f}")
     print(f"  Brier Score:      {brier:.4f}")
 
-    # Optimal threshold
-    if saved_thresholds is not None:
-        best_threshold = saved_thresholds.get('youden', 0.5)
-        print(f"  Using saved Youden threshold: {best_threshold:.4f}")
-    else:
-        best_threshold = find_optimal_threshold(y_true, calibrated_preds, method='youden')
-        print(f"  Computed Youden threshold: {best_threshold:.4f}")
+    # Compute optimal threshold from actual predictions
+    # NOTE: We always recompute from the current predictions because saved
+    # thresholds are from cross-validation OOF predictions, which have a
+    # different probability distribution than full-dataset inference.
+    youden_t = find_optimal_threshold(y_true, calibrated_preds, method='youden')
+    f1_t = find_optimal_threshold(y_true, calibrated_preds, method='f1')
+    print(f"  Computed Youden threshold:  {youden_t:.4f}")
+    print(f"  Computed F1 threshold:      {f1_t:.4f}")
 
+    # Use Youden threshold (balances sensitivity and specificity)
+    best_threshold = youden_t
     y_pred = (calibrated_preds >= best_threshold).astype(int)
 
     # =========================================================================
