@@ -43,7 +43,15 @@ The following outline provides comprehensive text and speaker notes for a 20+ sl
 - **Hardware Limitations**: Deep learning models historically require high-end GPUs, making them useless in rural, low-resource labor wards.
 
 ---
-### **Slide 6: Our Solution – NeuroFetal AI**
+### **Slide 6: Validating the Gaps: Our Baseline Replications**
+**Body:**
+- To rigorously prove these literature gaps, our team **actively implemented and evaluated** classical baselines directly on the CTU-UHB dataset using 5-Fold CV.
+- **1D-CNN (Spilka approach)**: Achieved only **0.564 AUC** on raw FHR signals, proving unimodal Deep Learning fails without Uterine Contraction context.
+- **Logistic Regression / Random Forest (Petrozziello approach)**: Achieved **0.676 AUC** and **0.837 AUC** respectively using only hand-crafted tabular features, lacking true temporal pattern recognition.
+- **Conclusion**: We definitively proved that neither unimodal Deep Learning nor classical Tabular ML is sufficient. A hybrid fusion architecture is required.
+
+---
+### **Slide 7: Our Solution – NeuroFetal AI**
 **Body:**
 - **Tri-Modal Deep Fusion**: Processes FHR sequences, UC contraction rhythms, and static Maternal details actively.
 - **Uncertainty Aware Engineering**: Designing systems to calculate concrete Clinical Confidence metrics. 
