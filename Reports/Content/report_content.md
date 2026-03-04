@@ -123,3 +123,36 @@ To ensure clinical transparency, we are mapping internal feature gradients back 
 2. **Execution & Validation**: Running the massive parallelized hyperparameter grid sweep to establish our final Accuracy, F1-Score, and AUC metrics against the 0.84 private Mendis baseline.
 3. **Calibration Finalization**: Wrapping outputs in Platt Scaling logic and extracting Monte Carlo epistemic confidence intervals.
 4. **Implementation & UX**: Booting the final `Streamlit` clinical dashboard processing `.tflite` edge executions.
+
+## Chapter 11: References
+1. World Health Organization, "Stillbirths," *WHO Fact Sheets*, 2020. [Online]. Available: https://www.who.int/news-room/fact-sheets/detail/stillbirth
+2. A. Ayres-de-Campos, C. Spong, and C. Chandraharan, "FIGO consensus guidelines on intrapartum fetal monitoring: Cardiotocography," *Int. J. Gynaecol. Obstet.*, vol. 131, no. 1, pp. 13–24, 2015.
+3. J. Bernardes. et al., "Evaluation of interobserver agreement of cardiotocograms," *Int. J. Gynaecol. Obstet.*, vol. 57, no. 1, pp. 33–37, 1997.
+4. B. Mendis, et al., "Fusing tabular features and deep learning for fetal heart rate analysis: A clinically interpretable model for fetal compromise detection," *IEEE Access*, 2023.
+5. V. Chudáček, et al., "Open access intrapartum CTG database," *BMC Pregnancy Childbirth*, vol. 14, no. 1, p. 16, 2014.
+6. A. L. Goldberger et al., "PhysioBank, PhysioToolkit, and PhysioNet: Components of a new research resource for complex physiologic signals," *Circulation*, vol. 101, no. 23, pp. e215–e220, 2000.
+7. J. Spilka, et al., "Using nonlinear features for fetal distress classification," *Biomed. Signal Process. Control*, vol. 7, no. 4, pp. 393–401, 2012.
+8. J. Spilka et al., "Intrapartum fetal heart rate classification: A deep convolutional neural network approach," in *Proc. IEEE EMBC*, 2016, pp. 4570–4573.
+9. Z. Zhao, H. Zhang, and R. Fu, "Multi-scale convolutional neural network for fetal heart rate state classification," *Comput. Methods Programs Biomed.*, vol. 176, pp. 251–262, 2019.
+10. G. Georgoulas, et al., "Novel approach for fetal heart rate classification introducing grammatical evolution," *Biomed. Signal Process. Control*, vol. 1, no. 1, pp. 56–60, 2006.
+11. P. Fergus, et al., "Prediction of intrapartum hypoxia from cardiotocography data using machine learning," in *Proc. AISC*, 2013, pp. 369–376.
+12. B. N. Krupa, M. A. M. Ali, and E. Zahedi, "The application of empirical mode decomposition for the enhancement of cardiotocograph signals," *Physiol. Meas.*, vol. 32, no. 8, p. 1381, 2011.
+13. C. Szegedy et al., "Going deeper with convolutions," in *Proc. IEEE CVPR*, 2015, pp. 1–9.
+14. M. Xue, C. Luo, and T. Zhu, "Fetal health state assessment using LSTM and multiscale analysis," *IEEE J. Biomed. Health Inform.*, vol. 25, no. 5, pp. 1607–1616, 2021.
+15. J. Yoon, D. Jarrett, and M. van der Schaar, "Time-series generative adversarial networks," in *Proc. NeurIPS*, 2019, pp. 5508–5518.
+16. N. V. Chawla, et al., "SMOTE: Synthetic minority over-sampling technique," *J. Artif. Intell. Res.*, vol. 16, pp. 321–357, 2002.
+17. Y. Gal and Z. Ghahramani, "Dropout as a Bayesian approximation: Representing model uncertainty in deep learning," in *Proc. ICML*, 2016, pp. 1050–1059.
+18. A. Kendall and Y. Gal, "What uncertainties do we need in Bayesian deep learning for computer vision?," in *Proc. NeurIPS*, 2017, pp. 5574–5584.
+19. J. Platt, "Probabilistic outputs for support vector machines and comparisons to regularized likelihood methods," *Adv. Large Margin Classifiers*, vol. 10, no. 3, pp. 61–74, 1999.
+20. R. R. Selvaraju, et al., "Grad-CAM: Visual explanations from deep networks via gradient-based localization," in *Proc. IEEE ICCV*, 2017, pp. 618–626.
+21. S. M. Lundberg and S.-I. Lee, "A unified approach to interpreting model predictions," in *Proc. NeurIPS*, 2017, pp. 4765–4774.
+22. T.-Y. Lin, et al., "Focal loss for dense object detection," in *Proc. IEEE ICCV*, 2017, pp. 2980–2988.
+23. J. Hu, L. Shen, and G. Sun, "Squeeze-and-excitation networks," in *Proc. IEEE CVPR*, 2018, pp. 7132–7141.
+24. R. Lopes et al., "Cross-Database Evaluation of Deep Learning Methods for Intrapartum Cardiotocography Classification," *IEEE*, 2025.
+25. R. Sadeghi et al., "Multimodal Deep Learning-based Algorithm for Specific Fetal Heart Rate Event Detection," *ResearchGate*, 2024.
+26. "The AI-based Mobile Partograph: A Deep Learning Approach for Automated Fetal Distress Prediction," *East African Journal of Health and Science*, 2025.
+27. A. Petrozziello et al., "Rapid detection of fetal compromise using input length invariant deep learning on fetal heart rate signals," *IEEE*, 2019.
+28. "A Foundation Model Approach for Fetal Stress Prediction During Labor," *arXiv preprint*, 2024.
+29. "DeepCTG 1.0: an interpretable model to detect fetal hypoxia," *Frontiers in Pediatrics*, 2023.
+30. "Fetal Health Classification from Cardiotocograph for Both Stages of Labor," *MDPI Diagnostics*, 2023.
+31. "Fetal Hypoxia Classification from Cardiotocography Signals Using Instantaneous Frequency and Common Spatial Pattern," *MDPI Sensors*, 2023.
