@@ -1,0 +1,419 @@
+\documentclass[12pt,a4paper]{report}
+
+% ------------------------------------------------------------
+% --- PACKAGES ---
+% ------------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{parskip}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{fix-cm}
+\usepackage{array} % For table formatting
+
+% ------------------------------------------------------------
+% --- FONT AND SPACING ---
+% ------------------------------------------------------------
+\setstretch{1.3}
+\linespread{1.25}
+\renewcommand{\familydefault}{\sfdefault} % Modern sans-serif look
+
+% ------------------------------------------------------------
+% --- PAGE STYLE (Header/Footer) ---
+% ------------------------------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Behavioral Health Screening using Facial Thermal Imaging}
+\fancyhead[R]{\thepage}
+\fancyfoot[C]{\small Department of IT, IIIT Allahabad}
+
+\setlength{\headheight}{14pt}
+\setlength{\footskip}{20pt}
+
+% ------------------------------------------------------------
+% --- HYPERLINK SETUP ---
+% ------------------------------------------------------------
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=green!60!black,
+    urlcolor=blue,
+    pdfauthor={Krishna Sikheriya et al.},
+    pdftitle={Behavioral Health Screening using Facial Thermal Imaging}
+}
+
+% ------------------------------------------------------------
+% --- SECTION TITLE FORMATTING ---
+% ------------------------------------------------------------
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{blue!70!black}}
+  {\filleft\Huge\thechapter}
+  {1ex}
+  {\titlerule\vspace{1ex}\filright}
+  [\vspace{1ex}\titlerule]
+
+\titleformat{\section}
+  {\Large\bfseries\color{blue!50!black}}
+  {\thesection}{1em}{}
+
+\titleformat{\subsection}
+  {\large\bfseries\color{black!80}}
+  {\thesubsection}{1em}{}
+
+% ------------------------------------------------------------
+% --- BIBLIOGRAPHY (Using external references.bib file) ---
+% ------------------------------------------------------------
+\usepackage[backend=biber,style=ieee,sorting=none]{biblatex}
+\addbibresource{references.bib} % This line requires your references.bib file
+
+
+% ------------------------------------------------------------
+% --- CUSTOM COMMANDS ---
+% ------------------------------------------------------------
+\newcommand{\keywords}[1]{\par\vspace{1em}\noindent\textbf{Keywords: }#1\par}
+
+\renewenvironment{abstract}{%
+  \begin{center}\bfseries\large Abstract\end{center}\begin{quotation}}{\end{quotation}}
+  
+\usepackage{hyperref}
+\Urlmuskip=0mu plus 1mu\relax
+\def\UrlBreaks{\do\/\do-\do_}
+
+  
+% ------------------------------------------------------------
+% --- DOCUMENT ---
+% ------------------------------------------------------------
+\begin{document}
+
+% --- TITLE PAGE ---
+\begin{titlepage}
+  \centering
+  % --- Logo ---
+  \vspace*{-1cm}
+   \includegraphics[width=3cm]{logo.png}\\[1em] % Uncomment if you have a logo.png
+  % \framebox{\parbox{3cm}{\centering \vspace{2.5cm} Logo \vspace{2.5cm}}}\\[1em]
+  
+  % --- Institute Name ---
+  {\Large \textbf{Indian Institute of Information Technology, Allahabad}}\\[0.25em]
+  {\large Prayagraj, India}\\[3em]
+  
+  % --- Title ---
+  {\Huge \bfseries Behavioral Health Screening using Facial Thermal Imaging}\\[0.75em]
+  {\LARGE \textbf{Project Report}}\\[1.5em]
+  \rule{\textwidth}{1pt}\\[2em]
+  
+  % --- Group Info ---
+  {\Large \textbf{Group: B10}}\\[1em]
+  
+  % --- Member List ---
+  {\large \textbf{Team Members:}}\\[1.2em]
+  \begin{itemize}[label=\textbullet, leftmargin=2.5cm]
+      \item Krishna Sikheriya (IIT2023139)
+      \item Sameer Prasad (IIT2023134)
+      \item Lokesh Bawariya (IIT2023138)
+      \item Ishan Chadha (IIT2023158)
+      \item Gaurav Jaiswal (IIT2023157)
+      \item Pritam Kumar (IIT2022211)
+  \end{itemize}
+
+  % --- Footer Info ---
+  \vfill
+  \rule{0.5\textwidth}{0.4pt}\\[0.3em]
+  {\small Department of Information Technology}\\[0.3em]
+  {\large \textbf{Date:} November 5, 2025}
+
+\end{titlepage}
+
+\pagenumbering{roman}
+\clearpage
+
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+% ------------------------------------------------------------
+% --- ABSTRACT ---
+% ------------------------------------------------------------
+\begin{abstract}
+\noindent
+Emotion recognition is a vital task in human-computer interaction, but traditional systems using visible-light cameras are susceptible to poor lighting conditions and potential privacy concerns. Thermal facial imaging offers a robust alternative by capturing physiological temperature changes associated with emotional states.
+
+This paper presents a state-of-the-art deep learning pipeline for classifying **five emotions (anger, happy, neutral, sad, surprise)** from thermal images. Our approach replaces the common hybrid (ViT feature extraction + SVM) method with a more powerful **end-to-end finetuned Vision Transformer (ViT)** model. This allows the network to learn domain-specific features highly relevant to thermal emotion patterns, rather than relying on generic, static embeddings.
+
+We address the challenges of data scarcity and class imbalance by employing a robust preprocessing pipeline, including a DNN face detector and aggressive data augmentation on minority classes. The preprocessed dataset is then used to finetune a \texttt{ViTForImageClassification} model. Our final model, trained on the "Comprehensive Facial Thermal Dataset" from Mendeley, achieves a comprehensive **validation accuracy of 95.61\%**. This result is highly competitive with state-of-the-art results from related literature (95.8\%) and significantly outperforms our own ViT+SVM baseline (70.26\%), demonstrating the effectiveness of an end-to-end deep learning approach.
+
+\vspace{1em}
+\noindent\textbf{Keywords:} Emotion Recognition, Thermal Imaging, Vision Transformer (ViT), Finetuning, Deep Learning, Class Imbalance, Data Augmentation
+\end{abstract}
+
+
+\clearpage
+
+% --- 1. INTRODUCTION ---
+\chapter{Introduction}
+\label{sec:intro}
+The ability to automatically recognize human emotions has broad applications, from enhanced human-computer interaction and intelligent driver-assistance systems to mental health monitoring and behavioral analysis. Most contemporary emotion recognition systems rely on facial expressions captured by standard RGB (visible-light) cameras. While successful in controlled environments, these systems often fail in real-world scenarios due to variations in illumination, shadows, and occlusions. Furthermore, the use of identifiable facial images raises significant privacy concerns.
+
+Thermal infrared imaging presents a compelling alternative. By capturing the heat patterns emitted from the face, thermal cameras are invariant to visible light conditions and can operate in complete darkness. More importantly, these thermal patterns correlate with underlying physiological changes tied to emotional states, such as blood flow variations in different facial regions.
+
+However, developing models for thermal emotion recognition faces two significant challenges:
+\begin{enumerate}
+    \item \textbf{Data Scarcity:} Large-scale, high-quality, and well-annotated thermal emotion datasets are far less common than their RGB counterparts.
+    \item \textbf{Data Imbalance:} The datasets that do exist often suffer from severe class imbalance, with certain emotions being much rarer than others.
+\end{enumerate}
+
+Traditional machine learning approaches for this task involved handcrafted features, such as extracting the mean temperature from manually defined Regions of Interest (ROIs). This process is laborious and often fails to capture the complex, subtle patterns that define an emotional state.
+
+This paper proposes a state-of-the-art deep learning pipeline that directly addresses these challenges. We leverage the power of a large pre-trained Vision Transformer (ViT) \cite{vit} and **finetune it end-to-end** on our specific thermal dataset. This approach allows the model to learn powerful, domain-specific features, moving beyond the limitations of static feature extraction. We systematically address data imbalance through an aggressive offline data augmentation strategy during preprocessing.
+
+We demonstrate that this end-to-end pipeline achieves state-of-the-art performance, yielding a **95.61\% validation accuracy**. This is a massive improvement over our initial baseline (a hybrid ViT+SVM model, 70.26\% accuracy) and achieves performance on par with our base paper \cite{base_paper}. The project is delivered as a complete, verifiable system for thermal emotion recognition, including data preparation, training, and a functional Gradio-based demonstration application.
+
+% --- 2. RELATED WORK ---
+\chapter{Related Work}
+\label{sec:related}
+The field of facial emotion recognition has evolved from traditional computer vision techniques to sophisticated deep learning models.
+
+\section{Traditional Machine Learning Approaches}
+Early research in thermal emotion recognition focused on handcrafted features. This often involved defining static Regions of Interest (ROIs) on the face, such as the periorbital region, forehead, cheeks, and nose. Researchers would then extract statistical features from these ROIs and feed them into classical machine learning classifiers like Support Vector Machines (SVMs) \cite{svm} or k-Nearest Neighbors (k-NN). While interpretable, these methods are brittle and rely on accurate, often manual, ROI placement.
+
+\section{End-to-End Deep Learning Approaches}
+With the rise of deep learning, Convolutional Neural Networks (CNNs) became popular for learning features automatically. Models like those proposed in our base paper \cite{base_paper} and other works \cite{base_paper_1} have been applied. More recently, Vision Transformers (ViTs) \cite{vit} have shown state-of-the-art performance in image recognition. ViTs treat an image as a sequence of patches and apply the transformer architecture, which excels at capturing global relationships between different parts of an image.
+
+However, training these large models from scratch on small thermal datasets leads to overfitting. The dominant strategy is **finetuning**, where a model pre-trained on a large dataset (like ImageNet) is further trained on the smaller target dataset. This is the approach our final project adopts, as it allows the model to adapt its powerful learned representations to the nuances of thermal data.
+
+\section{Baseline (ViT+SVM) Approach}
+Our project's initial iteration, which now serves as our baseline, adopted a hybrid strategy. Instead of full finetuning, we used the pre-trained ViT as a fixed, off-the-shelf **feature extractor** \cite{huggingface_vit}. We extracted the final `pooler-output` embedding (a 768-dim vector) and used it to train a linear SVM.
+
+This approach was computationally efficient and provided a strong baseline (70.26\% accuracy). However, its primary limitation is that the ViT's features are static; the model never learns to look for features *specific* to thermal emotions. This limitation motivated our move to an end-to-end finetuning pipeline.
+
+% --- 3. METHODOLOGY ---
+\chapter{Methodology}
+\label{sec:methodology}
+Our system is designed as a modular pipeline, with each stage represented by a distinct Python script. This allows for reusability and independent testing. The complete workflow is illustrated in Figure \ref{fig:workflow}.
+
+\begin{figure}[h!]
+\centering
+
+% --- Try to include the actual image ---
+\IfFileExists{workflow_diagram.png}{
+    \includegraphics[width=\textwidth]{workflow_diagram.png}
+}{
+    % --- Placeholder if image not found ---
+    \framebox{\parbox{0.9\textwidth}{\centering
+    \vspace{5cm}
+    \textbf{Figure 1: Workflow Diagram}\\[0.3em]
+    \small\textit{A diagram showing the flow from Data Input → Preprocessing →
+    Model Finetuning → Evaluation and Inference.}
+    \vspace{5cm}
+    }}
+}
+
+\caption{Complete project workflow. The key step is the \texttt{train\_finetune\_vit.py} script, which handles both training and evaluation, replacing the old two-step extract-and-train process.}
+\label{fig:workflow}
+\end{figure}
+
+
+\section{Data Acquisition and Preparation}
+The project utilizes the **Comprehensive Facial Thermal Dataset** from Mendeley Data \cite{mendeley_dataset}. This dataset contains thermal images in `.bmp` format, categorized by emotion but nested within various sub-folders (e.g., `ICEBLUE`, `RAINBOW`).
+\begin{itemize}
+    \item \textbf{Dataset Link:} \url{https://data.mendeley.com/datasets/8885sc9p4z/1}
+\end{itemize}
+To create a unified data source for training, we developed a utility script, \texttt{flatten\_dataset.py}. This script recursively scans the downloaded Mendeley directory, extracts all `.bmp` images from the nested subfolders, and copies them into the corresponding parent emotion folder (e.g., `data/anger/`).
+
+\section{Preprocessing and Augmentation}
+The \texttt{preprocess.py} script is responsible for cleaning, normalizing, and augmenting the data. For each image in the `data/` directory:
+
+\begin{enumerate}
+    \item \textbf{Image Ingestion:} The script scans the `data/` directory and is configured to load all \texttt{.bmp} image files.
+    \item \textbf{Face Detection:} We use a robust deep learning-based face detector: a ResNet-based Single Shot Detector (SSD)~\cite{ssd_detector}, loaded via OpenCV. A confidence threshold (e.g., 0.25) is applied.
+    \item \textbf{Cropping and Resizing:} The detected facial bounding box is cropped and resized to $224 \times 224$ pixels, the required input size for the ViT model.
+    \item \textbf{Channel Conversion:} The thermal image is converted to a 3-channel (RGB) format, as the pre-trained ViT model expects a 3-channel input.
+    \item \textbf{Data Augmentation:} To increase model robustness and dataset size, we apply a set of random transformations:
+        \begin{itemize}
+            \item Random horizontal flip (\(p = 0.5\)).
+            \item Random rotation (between \(-10^{\circ}\) and \(+10^{\circ}\)).
+            \item Random brightness and contrast adjustment.
+        \end{itemize}
+    \item \textbf{Imbalance Handling:} A key challenge is class imbalance. To address this, we apply augmentation unevenly, using a higher factor for minority classes compared to majority classes.
+\end{enumerate}
+
+The final augmented image arrays and their corresponding labels are saved as a single compressed file, \texttt{outputs/preprocessed\_augmented.npz}.
+
+\section{Model Finetuning and Training}
+This step replaces the old feature extraction and SVM training. The \texttt{train\_finetune\_vit.py} script performs the end-to-end training.
+
+\begin{enumerate}
+    \item \textbf{Data Loading:} The script loads the image arrays and labels from \path{outputs/preprocessed_augmented.npz}.
+    \item \textbf{Data Split:} The data is split into training and validation sets (80/20 split) using a stratified split to ensure both sets have a similar class distribution.
+    \item \textbf{Model Initialization:} We load the \texttt{google/vit-base-patch16-224-in21k} model using \texttt{ViTForImageClassification} from the Hugging Face \texttt{transformers} library \cite{huggingface_vit}. The model's original 21k--class head is replaced with a new, randomly initialized classification head matching the number of emotion classes in our dataset.
+    \item \textbf{Training:} We use the \texttt{transformers.Trainer} API to manage the finetuning process. This high-level API automates the training loop, evaluation, and logging. Key hyperparameters include:
+        \begin{itemize}
+            \item \textbf{Epochs:} 10
+            \item \textbf{Learning Rate:} 2e-5 (a small learning rate for finetuning)
+            \item \textbf{Batch Size:} 16
+            \item \textbf{Mixed Precision (\texttt{fp16}):} Used to accelerate training on GPUs.
+        \end{itemize}
+    \item \textbf{Evaluation and Model Saving:} The \texttt{Trainer} evaluates the model against the validation set at the end of each epoch. It saves the checkpoint that achieves the best validation accuracy. The final best-performing model is saved to the \path{outputs/vit_finetuned_model/} directory.
+\end{enumerate}
+
+% --- 4. RESULTS AND DISCUSSION ---
+\chapter{Results and Discussion}
+\label{sec:results}
+The model was trained and evaluated using the pipeline described in Section \ref{sec:methodology}. The final dataset after preprocessing and augmentation was split into a training set and a validation set of **2,485 images**.
+
+\section{Dataset and Environment}
+\begin{itemize}
+    \item \textbf{Hardware:} Training was performed on a Google Colab Pro GPU (NVIDIA T4/V100).
+    \item \textbf{Software:} Python 3.11, PyTorch, Transformers (Hugging Face), Scikit-learn, OpenCV, Pandas, Matplotlib, Seaborn, Evaluate, Accelerate.
+    \item \textbf{Dataset Source:} Mendeley Comprehensive Facial Thermal Dataset \cite{mendeley_dataset}.
+    \item \textbf{Training Data:} 80\% of the preprocessed dataset.
+    \item \textbf{Validation Data:} 2,485 images (20\% of the preprocessed dataset).
+\end{itemize}
+
+\section{Evaluation Metrics}
+The model's performance on the unseen validation set of 2,485 images yielded an **overall accuracy of 95.61\%**. The detailed performance summary is shown in Table \ref{tab:summary-metrics}.
+
+% Table: Finetuned Model Summary
+\begin{table}[H]
+\centering
+\caption{Finetuned Model Evaluation Summary (on 2,485 validation samples).}
+\begin{tabular}{lr}
+\toprule
+\textbf{Metric} & \textbf{Value} \\
+\midrule
+Total Samples & 2485 \\
+Correct Matches & 2376 \\
+Incorrect Matches & 109 \\
+\textbf{Accuracy} & \textbf{95.61 \%} \\
+\bottomrule
+\end{tabular}
+\label{tab:summary-metrics}
+\end{table}
+
+The per-class performance is detailed in the classification report (Figure \ref{fig:class-report}).
+    
+% Figure: Finetuned Model Classification Report
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{classification_report.png}
+\caption{Finetuned Model Classification Report (Visual output from \texttt{outputs/metrics\_finetune/}).}
+\label{fig:class-report}
+\end{figure}
+
+
+% --- THIS SECTION HAS BEEN UPDATED ---
+\section{Comparative Analysis}
+\label{sec:comparison}
+To measure the success of our final pipeline, we compare it against both our initial baseline (ViT+SVM) and the results from our base paper, "AI Enabled Facial Emotion Recognition..." \cite{base_paper}.
+
+\begin{table}[h!]
+\centering
+\caption{Comparative Analysis: Base Paper vs. Baseline vs. Final Model.}
+\label{tab:comparison}
+\begin{tabular}{@{}l|cccc@{}}
+\toprule
+\textbf{Model} & \textbf{Accuracy} & \textbf{F1 (anger)} & \textbf{F1 (neutral)} & \textbf{F1 (fear)} \\
+\midrule
+Base Paper \cite{base_paper} & \textbf{95.8\%} & 95.4\% & 96.0\% & 92.5\% \\
+Our Baseline (ViT+SVM) & 70.26\% & 67.0\% & 65.4\% & 84.2\% \\
+\textbf{Our Final Model (Finetuned ViT)} & 95.61\% & \textbf{96.0\%} & \textbf{93.8\%} & \textbf{N/A*} \\
+\bottomrule
+\end{tabular}
+\end{table}
+\small
+\textit{*N/A: The 'fear' class was part of the original mixed dataset used for the baseline but was not present in the final Mendeley-only dataset used for the finetuned model.}
+
+\subsection{Discussion of Results}
+The end-to-end finetuning approach provided a massive \textbf{+25.35\%} increase in accuracy over our own baseline.
+
+\textbf{Key Success:} The most important finding is that our finetuned model's accuracy (95.61\%) is **highly competitive and nearly identical** to the state-of-the-art results presented in our base paper (95.8\%). This confirms that our pipeline is robust and achieves state-of-the-art performance. Our model even exceeds the base paper's F1-score for the 'anger' class (96.0\% vs 95.4\%).
+
+\textbf{Areas of Confusion:} While performance is high, the classification report (Figure \ref{fig:class-report}) shows that 'neutral' has the lowest precision (0.901). This suggests that 'neutral' is the most ambiguous class, acting as a "catch-all" that other emotions are sometimes mistaken for. This is a vast improvement from the baseline model (Figure \ref{fig:confusion_matrix}), which showed widespread confusion between 'anger', 'neutral', and 'sad'.
+
+% Figure: Baseline Confusion Matrix
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.8\textwidth]{confusion_matrix.png}
+\caption{Baseline (ViT+SVM) Confusion Matrix. Note the high confusion between anger, neutral, and sad, which the new model largely solved.}
+\label{fig:confusion_matrix}
+\end{figure}
+
+\textbf{Conclusion from Comparison:} The ViT+SVM baseline was a fast and effective starting point, but it was fundamentally limited. By allowing the ViT model to update its own weights (finetuning) on our specific dataset, we created a specialized model that achieves performance on par with the state-of-the-art results from our base paper.
+
+% --- 5. CONCLUSION AND FUTURE SCOPE ---
+\chapter{Conclusion and Future Scope}
+\label{sec:conclusion}
+\section{Conclusion}
+This project successfully designed, implemented, and evaluated a state-of-the-art deep learning pipeline for thermal emotion recognition. We have demonstrated that an end-to-end finetuned Vision Transformer (ViT) achieves outstanding performance, yielding a **95.61\% validation accuracy**.
+
+This approach represents a significant advancement over our initial hybrid baseline (ViT+SVM, 70.26\% accuracy) and achieves performance on par with our base paper (95.8\% accuracy) \cite{base_paper}. By finetuning the model on augmented, imbalance-aware data, the network learned to effectively differentiate between the five emotions, largely solving the ambiguity between 'anger', 'sad', and 'neutral' that plagued the baseline model. The project was delivered as a complete, reproducible system with modular scripts for preprocessing, training, and inference, as well as a Gradio web application for live demonstration.
+
+\section{Future Scope}
+Based on our findings, we propose the following directions for future work:
+\begin{itemize}
+    \item \textbf{Explore Other Architectures:} Now that the finetuning pipeline is established, it can be used to test other pre-trained models, such as Swin Transformers or larger ViT variants (e.g., ViT-Large), to potentially push performance even higher.
+    \item \textbf{Improved Face Detector:} While the DNN (ResNet-SSD) detector was effective, a future step would be to finetune a face detector *specifically* on a thermal dataset with bounding box annotations to achieve near-perfect face localization.
+    \item \textbf{Real-Time Webcam Integration:} The Gradio app could be extended to support real-time video stream input from a thermal camera, moving the project from static image analysis to a live demonstration system.
+    \item \textbf{Temporal Analysis:} For video, the pipeline could be extended to include temporal modeling (using LSTMs, GRUs, or Video Transformers) to see if the *change* in thermal patterns over time provides a stronger emotional signal than a single static frame.
+\end{itemize}
+
+% *** --- NEW CHAPTER ADDED HERE --- ***
+\chapter{Declaration of Sourced Content}
+\label{sec:declaration}
+\section{Declaration of Sourced Content}
+
+This project was completed in accordance with the institution's academic integrity policy. The core logic, pipeline integration, and comparative analysis are the original work of the authors. However, this project is built upon a foundation of open-source software, pre-trained models, and standard implementation patterns sourced from the internet.
+
+We estimate that approximately \textbf{40-50\%} of the total code content is derived from external sources. This percentage primarily reflects the use of:
+
+\begin{itemize}
+    \item \textbf{Pre-trained Models:} The core of our project relies on two models downloaded from the internet:
+    \begin{itemize}
+        \item The \texttt{google/vit-base-patch16-224-in21k} model, which serves as the backbone for our finetuning \cite{vit, huggingface_vit}.
+        \item The ResNet-SSD face detector model files used by OpenCV \cite{ssd_detector}.
+    \end{itemize}
+
+    \item \textbf{Library Implementations:} Standard boilerplate code for implementing libraries, which forms a significant part of the scripts:
+    \begin{itemize}
+        \item The \texttt{transformers.Trainer} API, which provides the complete finetuning, evaluation, and logging loop \cite{huggingface_vit}.
+        \item The \texttt{Gradio} library's standard interface code for building the web application.
+        \item The \texttt{scikit-learn} library for calculating baseline SVM metrics \cite{svm}.
+    \end{itemize}
+
+    \item \textbf{Dataset:} The project is trained exclusively on the "Comprehensive Facial Thermal Dataset" sourced from Mendeley Data \cite{mendeley_dataset}.
+\end{itemize}
+
+The remaining 50-60\% of the work represents the original contributions of the team, including: (1) the dataset preparation and flattening scripts, (2) the robust \texttt{preprocess.py} script integrating face detection and augmentation, (3) the \texttt{train\_finetune\_vit.py} script that defines and configures the entire training pipeline, (4) the updated inference and batch-inference scripts, (5) the improved Gradio UI, and (6) the complete comparative analysis and project report.
+
+% --- THIS SECTION HAS BEEN UPDATED ---
+\clearpage
+\chapter{Base Paper}
+\label{sec:Base Paper}
+\section*{Base Paper}
+\phantomsection
+\addcontentsline{toc}{section}{Base Paper}
+\begin{raggedright}
+\textbf{Title:} AI Enabled Facial Emotion Recognition Using Low-Cost Thermal Cameras\\
+\textbf{Authors:} James Thomas Black and Muhammad Zeeshan Shakir\\
+\textbf{Year:} 2025\\
+\textbf{Link:} \url{https://drive.google.com/file/d/16ygCPd1RdhJ8vupLsQqOx0i99NxLZr4m/view?usp=sharing}
+\end{raggedright}
+
+
+
+
+\phantomsection
+\printbibliography[heading=bibintoc,title={References}]
+
+\end{document}

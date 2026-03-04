@@ -180,17 +180,44 @@ During the 5-Fold Cross-Validation, out-of-fold (OOF) predictions are collated f
 A raw probability score of 85% outputted by a standard neural network does not mean there is an 85% chance of fetal hypoxia; it merely reflects the geometric distance of the mathematical embedding from the decision boundary. For NeuroFetal AI to be ethically deployed in a labor ward, it must know when it is "unsure" about a prediction.
 
 **8.1 Monte Carlo (MC) Dropout (Epistemic Uncertainty)**
-To quantify "model doubt," we integrated Monte Carlo (MC) Dropout. Dropout is traditionally only used during training to prevent overfitting. However, we deliberately leave the target dropout layers ($p=0.3$ dropout rate) active during live clinical inference. 
-- For every new patient window, the system runs $T=20$ randomized forward passes. 
-- Because neurons are randomly dropped during each pass, the network outputs 20 slightly different predictions.
-- The statistical **Standard Deviation/Variance ($\sigma^2$)** across these 20 predictions serves as our Epistemic Uncertainty metric. 
-- If $\sigma^2 > 0.05$, the trace is highly chaotic or out-of-distribution. Instead of making a dangerous diagnostic guess, the dashboard explicitly overrides the prediction and flags: "CONFIDENCE LOW: REQUIRES HUMAN REVIEW."
+To quantify "model doubt," we plan to integrate Monte Carlo (MC) Dropout. Dropout is traditionally only used during training to prevent overfitting. However, we will deliberately leave the target dropout layers ($p=0.3$ dropout rate) active during live clinical inference. 
+- For every new patient window, the system will run $T=20$ randomized forward passes. 
+- Because neurons are randomly dropped during each pass, the network will output 20 slightly different predictions.
+- The statistical **Standard Deviation/Variance ($\sigma^2$)** across these 20 predictions will serve as our Epistemic Uncertainty metric. 
+- If $\sigma^2 > 0.05$, indicating the trace is highly chaotic or out-of-distribution, the dashboard will explicitly override the prediction and flag: "CONFIDENCE LOW: REQUIRES HUMAN REVIEW."
 
 **8.2 Platt Scaling Calibration**
-To ensure the final ensemble probability output is clinically trustworthy, we implemented Platt Scaling. We wrapped the entire Stacking Ensemble inside a `CalibratedClassifierCV` (utilizing 5-Fold isotonic/sigmoid cross-validation). This shifts uncalibrated model logits into trustworthy probability bins aligned with actual disease frequency.
-- **Results:** The fully calibrated system achieves a highly reliable Brier Score of 0.046 and an Expected Calibration Error (ECE) of 0.0543, confirming that when the AI outputs a 90% risk probability, approximately 90% of those fetuses will actually be diagnosed with acidemia post-delivery.
+To ensure the final ensemble probability output is clinically trustworthy, we propose implementing Platt Scaling in the final deployment phase. We will wrap the entire Stacking Ensemble inside a `CalibratedClassifierCV` (utilizing 5-Fold isotonic/sigmoid cross-validation). This will shift uncalibrated model logits into trustworthy probability bins aligned with actual disease frequency.
+- **Expected Outcome:** A fully calibrated system aims to achieve a highly reliable Brier Score and Expected Calibration Error (ECE), confirming that when the AI outputs a 90% risk probability, approximately 90% of those fetuses will actually be diagnosed with acidemia post-delivery.
 
-## Chapter 9: Edge Deployment & XAI Plans
+## Chapter 9: Baseline Evaluation & Metrics
+
+Before calculating the final empirical performance of the proposed Tri-Modal architecture, it is computationally necessary to establish rigorous baselines. This proves that the added complexity of fusing FHR, UC, and Tabular data is mathematically justified over simpler, unimodal approaches.
+
+**9.1 The Base Research Paper Benchmark (Mendis et al.)**
+This project explicitly extends and aims to surpass the state-of-the-art established by Mendis et al. (2023). 
+- **Their Approach:** Architected a dual-branch network fusing a 1D-ResNet (for FHR) with a Dense Network (for Tabular traits).
+- **Reported Ceiling:** Achieved an impressive **0.84 AUC**.
+- **Identified Limitations:** Their model was evaluated on a proprietary dataset (making it unreproducible for the global scientific community) and critically omitted the Uterine Contraction (UC) signal, rendering it blind to the physiological timing of late decelerations.
+
+**9.2 Internal Empirical Baselines (on CTU-UHB)**
+To guarantee a fair comparison, we programmed and evaluated three standard baseline models locally against the open-access CTU-UHB database using Stratified 5-Fold Cross-Validation:
+1. **Unimodal Deep Learning (1D-CNN):** Evaluating pure FHR sequences. This model collapsed to **~0.564 AUC**, proving that deep neural networks cannot extract accurate diagnostic meaning from heart rates without the synchronized phase-timing of Uterine Contractions.
+2. **Classical Linear ML (Logistic Regression):** Evaluating 16 extracted tabular features. It achieved **0.676 AUC**, proving that linear boundaries cannot map the complex dynamics of fetal distress.
+3. **Classical Non-Linear ML (Random Forest):** Evaluating the same tabular features. It established a very strong baseline of **0.837 AUC**. However, because tabular variables are merely statistical summaries (mean, variance), the model hits a ceiling as it cannot "see" the raw morphological sequence of a crashing heart rate.
+
+**9.3 The Tri-Modal Target Advantage**
+The primary objective of Phase 2 is to empirically demonstrate that the Tri-Modal AttentionFusionResNet breaks the 0.84 AUC literature ceiling by unifying raw morphology (CNN) with synchronized clinical context (Tabular + CSP). 
+
+| Model Identifier | Data Modalities | Architecture Type | Mean AUC |
+| :--- | :--- | :--- | :--- |
+| Baseline 1 (Spilka formulation) | FHR Only (1D) | Unimodal 1D-CNN | 0.564 |
+| Baseline 2 (Classical Linear) | Tabular Only (16 Var) | Logistic Regression | 0.676 |
+| Baseline 3 (Classical Non-Linear) | Tabular Only (16 Var) | Random Forest | 0.837 |
+| Base Paper Benchmark (Mendis) | FHR + Tabular | Dual-Branch Deep Fusion | 0.840 |
+| **Target: NeuroFetal AI (V5.0)** | **FHR + UC + Tabular + CSP** | **Tri-Modal Stacking Ensemble** | **> 0.860 (Aim)** |
+
+## Chapter 10: Edge Deployment & XAI Plans
 
 **9.1 "Lab to Village" Offline Execution**
 The highest incidence of intrapartum fetal mortality occurs in rural clinics across LMICs where high-end GPU servers and stable internet connections are entirely unavailable. Therefore, NeuroFetal AI must run "on edge."

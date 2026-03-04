@@ -1,10 +1,10 @@
 # Master Comparison Matrix: State-of-the-Art vs. NeuroFetal AI
 
-**Objective:** This document consolidates the analysis of 7 key research papers to position **NeuroFetal AI** within the current state-of-the-art. It highlights gaps in existing literature that NeuroFetal AI fills, essential for the research defense.
+**Objective:** This document consolidates the analysis of 10 key research papers to position **NeuroFetal AI** within the current state-of-the-art. It highlights gaps in existing literature that NeuroFetal AI fills, essential for the research defense.
 
 ---
 
-## 1. The Landscape: Research Papers 1-7
+## 1. The Landscape: Research Papers 1-10
 
 | # | Paper / Author | Year | Methodology | Inputs | Key Finding / Performance | Critical Flaw / Limitation | Relevance to NeuroFetal |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -15,6 +15,9 @@
 | **5** | **Fetal Health Class.** (Stage 2) | 2023 | **Random Forest** | 11 Features | **Stage 2 Labor** (Pushing) is chemically different. Split models needed. | **Data Leakage** (SMOTE before split). Inflated Metrcs. | **Physiology:** Treat "Last 30 mins" differently. |
 | **6** | **Instantaneous Freq** (Alqahtani) | 2025 | **CSP + SVM** | FHR + UC (Time-Freq) | Claims **100% Accuracy**. Uses EEG technique (CSP). | **SEVERE Data Leakage.** Physiologically impossible results. | **Counter-Example:** "How NOT to validate". |
 | **7** | **Fusion ResNet** (Mendis et al.) | 2023 | **Multimodal DL** | FHR (1Hz) + Clinical | **Fusion (Mult)** works best. AUC 0.84 (SOTA). **SHAP + Grad-CAM**. | Ignores UC signal completely. | **The Blueprint:** Validates your exact architecture. |
+| **8** | **Cross-Database Eval** (Lopes et al.) | 2025 | **1D-CNNs / RNNs** | FHR Only | Longer segments (≥30 mins) & retaining gaps improves robustness. | Unimodal (FHR only). | **Segment Selection:** Benchmark 20-min window choice & missingness. |
+| **9** | **Event Detection** (Sadeghi et al.) | 2024 | **Multimodal DL** | FHR + UC | Automates morphological detection of specific FIGO events. | Focuses on events rather than global pH. | **Explainability:** Map Grad-CAM heatmaps to specific events. |
+| **10** | **Mobile Partograph** (EAJHS) | 2025 | **Mobile Deep Learning** | FHR + UC | Integrates AI into mobile partograph for edge deployment. | Lacks Uncertainty Quantification (UQ). | **Deployment:** Validates edge focus; highlights our 1.9MB TFLite + UQ. |
 
 ---
 
@@ -46,6 +49,8 @@ Use this narrative to structure your defense presentation.
     *   *"Recent papers (2023-2025) have claimed perfect 100% accuracy. Our analysis of Paper 6 reveals this is due to data leakage (SMOTE). NeuroFetal AI rejects these inflated metrics in favor of clinical realism."*
 4.  **The "Multimodal Solution" (Paper 7 & NeuroFetal):**
     *   *"The real ceiling breaker isn't a better CNN—it's **Context**. Paper 7 (2023) finally broke the barrier (AUC 0.84) by helping the model 'see' the patient (Clinical Data). **NeuroFetal AI is built on this SOTA foundation**, extending it with Edge deployment and UC integration."*
+5.  **The "Edge & Practicality" Era (Papers 8, 9, 10):**
+    *   *"Recent studies emphasize real-world use: segment robustness (Paper 8), event detection (Paper 9), and mobile deployment (Paper 10). NeuroFetal AI unifies these concepts with a highly compressed 1.9MB edge model that not only deploys effectively but crucially quantifies its own uncertainty (unlike Paper 10) and bridges the interpretation gap with Grad-CAM (unlike Paper 9)."*
 
 ---
 
@@ -57,3 +62,6 @@ Use this narrative to structure your defense presentation.
 *"Why not use Transformers/Attention?"* | **Paper 2** | *"Transformers (Paper 2) require massive pre-training to converge. For a focused clinical task, ResNet (Paper 3, 7) is more data-efficient and deployable on Edge devices."*
 *"Your accuracy isn't 99%."* | **Paper 6** | *"Ideally, it shouldn't be. Paper 6 achieved 100% via data leakage. Physiological prediction has a theoretical ceiling; my results (~84%) align with the rigorous SOTA in Paper 7."*
 *"Why add clinical data?"* | **Paper 7** | *"A flat FHR line is bad for a healthy fetus but 'normal' for a premie. Paper 7 showed that adding clinical context (Fusion) is the only reliable way to disambiguate these cases."*
+*"Why a 20-minute sliding window instead of 60?"* | **Paper 8** | *"Lopes (2025) suggests 30-60 mins, but we use 20 to maximize dataset size while remaining clinically relevant for standard obstetric review epochs."*
+*"Your model predicts pH, not specific decelerations. How do you bridge the clinical interpretation gap?"* | **Paper 9** | *"Unlike event detectors (Sadeghi 2024), we directly predict acidemia (pH) but bridge the trust gap using Grad-CAM to naturally illuminate those specific deceleration events as the reason for the risk."*
+*"How does your edge system compare to mobile partographs?"* | **Paper 10** | *"While mobile partographs (EAJHS 2025) digitize labor charts with AI, our innovation is using a Tri-Modal Stacking Ensemble with vital Uncertainty Quantification (MC Dropout) for safe edge AI."*

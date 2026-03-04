@@ -11,7 +11,7 @@
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{enumitem}
-\usepackage{xcolor}
+\usepackage[table]{xcolor}
 \usepackage{caption}
 \usepackage{parskip}
 \usepackage{setspace}
@@ -20,6 +20,9 @@
 \usepackage{float}
 \usepackage{fix-cm}
 \usepackage{array}
+\usepackage{microtype}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, shadows.blur}
 
 % ------------------------------------------------------------
 % --- FONT AND SPACING ---
@@ -36,7 +39,7 @@
 \fancyhead[L]{NeuroFetal AI: Tri-Modal Deep Learning}
 \fancyhead[R]{\thepage}
 \fancyfoot[C]{\small Department of IT, IIIT Allahabad}
-\setlength{\headheight}{14pt}
+\setlength{\headheight}{14.5pt}
 \setlength{\footskip}{20pt}
 
 % ------------------------------------------------------------
@@ -78,22 +81,21 @@
 \begin{titlepage}
   \centering
   \vspace*{-1cm}
-  % \includegraphics[width=3cm]{Logo.png}\\[1em]
-  \includegraphics[width=3cm]{Logo.png}\\[1em]
+  \includegraphics[width=4cm]{Logo.png}\\[1.5em]
   
-  {\Large \textbf{Indian Institute of Information Technology, Allahabad}}\\[0.25em]
-  {\large Prayagraj, India}\\[3em]
+  {\Large \textbf{Indian Institute of Information Technology, Allahabad}}\\[0.5em]
+  {\large Prayagraj, India}\\[3.5em]
   
-  {\Huge \bfseries NeuroFetal-AI: A Tri-Modal Architecture with Cross-Modal Attention for Cardiotocography Classification}\\[0.75em]
-  {\LARGE \textbf{Mid-Semester Project Report}}\\[1.5em]
-  \rule{\textwidth}{1pt}\\[2em]
-  
-  {\Large \textbf{Group: B10}}\\[1em]
+  {\Huge \bfseries NeuroFetal-AI: A Tri-Modal\\[0.3em] Architecture\\[0.8em]}
+  {\LARGE \bfseries with Cross-Modal Attention for\\[0.3em] Cardiotocography Classification\\[0.8em]}
+  {\Large \textbf{Mid-Semester Project Report}}\\[0.8em]
+  {\large (6th Semester, B.Tech. IT)}\\[2em]
+  \rule{0.9\textwidth}{1pt}\\[2em]
   
   {\large \textbf{Team Members:}}\\[1.2em]
   \begin{itemize}[label=\textbullet, leftmargin=2.5cm]
       \item Krishna Sikheriya (IIT2023139)
-      \item Bodkhe Yash Sanjay (IIT2023180)
+      \item Yash Bodkhe (IIT2023180)
       \item Lokesh Bawariya (IIT2023138)
   \end{itemize}
 
@@ -109,7 +111,7 @@
 \chapter*{CERTIFICATE}
 \addcontentsline{toc}{chapter}{Certificate}
 \vspace{1em}
-This is to certify that the project report entitled \textbf{"NeuroFetal-AI: A Tri-Modal Architecture with Cross-Modal Attention for Cardiotocography Classification"} submitted by \textbf{Group B10} in partial fulfillment of the requirements for the evaluation of the Mid-Semester Project is a record of bonafide work carried out by them under my supervision.
+This is to certify that the project report entitled \textbf{"NeuroFetal-AI: A Tri-Modal Architecture with Cross-Modal Attention for Cardiotocography Classification"} submitted by \textbf{Yash Bodkhe, Krishna Sikheriya, and Lokesh Bawariya} in partial fulfillment of the requirements for the evaluation of the Mid-Semester Project is a record of bonafide work carried out by them under my supervision.
 
 \vspace{4cm}
 \begin{flushright}
@@ -126,17 +128,42 @@ This is to certify that the project report entitled \textbf{"NeuroFetal-AI: A Tr
 \chapter*{CANDIDATE DECLARATION}
 \addcontentsline{toc}{chapter}{Candidate Declaration}
 \vspace{1em}
-We hereby declare that the work presented in this report entitled \textbf{"NeuroFetal-AI: A Tri-Modal Architecture with Cross-Modal Attention for Cardiotocography Classification"} is our original work and has not been submitted elsewhere for the award of any degree or diploma. We fully understand that in case of any plagiarism, we will be wholly responsible, and the institute has the right to take appropriate disciplinary action against us.
+We, Yash Bodkhe, Krishna Sikheriya and Lokesh Bawariya, hereby certify that this project work titled \textbf{"NeuroFetal AI: Real-Time Multimodal Fetal Distress Detection Using Deep Learning"} is submitted by us towards the partial fulfillment of the requirements for the Degree of Bachelor of Technology in the Department of Information Technology.
 
-\vspace{3cm}
+We understand that plagiarism includes:
+\begin{enumerate}
+    \item Reproducing someone else's work (fully or partially) or ideas and claiming it as one's own.
+    \item Reproducing someone else's work (verbatim or paraphrased) without proper citation or acknowledgment.
+    \item Committing literary theft, including imitation of unique intellectual or creative constructs.
+\end{enumerate}
 
-\begin{tabular}{@{}p{0.5\textwidth}p{0.5\textwidth}@{}}
-  \rule{5cm}{0.4pt} & \rule{5cm}{0.4pt} \\
-  Krishna Sikheriya (IIT2023139) & Bodkhe Yash Sanjay (IIT2023180) \\[2cm]
-  \rule{5cm}{0.4pt} & \\
-  Lokesh Bawariya (IIT2023138) & \\
-\end{tabular}
+We affirm that due credit has been given to all original authors and sources through appropriate referencing.
 
+\vspace{2cm}
+\textbf{Date:}
+
+\vspace{1cm}
+\begin{flushleft}
+Yash Bodkhe (IIT2023180) \\
+Krishna Sikheriya (IIT2023139) \\
+Lokesh Bawariya (IIT2023138)
+\end{flushleft}
+
+\vspace{1cm}
+\begin{flushleft}
+\textbf{Department of Information Technology} \\
+\textbf{Indian Institute of Information Technology, Allahabad} \\
+\textbf{Prayagraj, India}
+\end{flushleft}
+\clearpage
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+The early and accurate identification of intrapartum fetal compromise is critical for preventing severe neurodevelopmental deficits and stillbirths. The current clinical standard relies on visual interpretation of Cardiotocography (CTG), which suffers from notoriously high inter-observer variability and rampant false-positive rates. NeuroFetal AI addresses this limitation by abandoning basic unimodal analysis in favor of a highly modular Tri-Modal Stacking Ensemble. This system mathematically fuses the high-frequency temporal morphology of Fetal Heart Rate (FHR), synchronized Uterine Contraction (UC) signals, and discrete clinical metadata through a Cross-Modal Attention mechanism. 
+
+To overcome the extreme class imbalance inherent in real-world clinical datasets (e.g., the open-access CTU-UHB database), we employ a Time-Series Generative Adversarial Network (TimeGAN) to synthesize physiologically sequence-preserving pathological training traces. Furthermore, recognizing that deterministic models are unsafe for deployment in dynamic labor environments, NeuroFetal AI integrates Monte Carlo (MC) Dropout and Platt Scaling to provide reliable, calibrated epistemic uncertainty quantification alongside risk predictions. 
+
+Finally, this project targets seamless real-world adoption in low-resource clinic settings by compressing the complex backend ensemble into an ultra-lightweight ($<2$ MB) Int8-quantized TFLite payload, ensuring high-speed, offline execution on standard mobile edge devices with integrated Grad-CAM explainability for ultimate clinical transparency.
 \clearpage
 
 \tableofcontents
@@ -145,7 +172,7 @@ We hereby declare that the work presented in this report entitled \textbf{"Neuro
 
 \chapter{Introduction \& Clinical Motivation}
 \section{The Global Burden of Stillbirths}
-Every year, approximately 2.6 million babies are stillborn globally, and millions more suffer from intrapartum-related hypoxia, leading to severe neurodevelopmental deficits such as cerebral palsy. The overwhelming burden of these tragedies falls on low- and middle-income countries (LMICs) and under-resourced rural clinics, where expectant mothers severely lack access to dedicated, highly trained obstetric specialists. A significant proportion of these adverse outcomes are directly attributable to undetected or late-detected intrapartum fetal compromise---a condition characterized by progressive fetal hypoxia and metabolic acidosis during the mechanical stress of labor.
+Every year, approximately 2.6 million babies are stillborn globally \cite{who}, and millions more suffer from intrapartum-related hypoxia, leading to severe neurodevelopmental deficits such as cerebral palsy. The overwhelming burden of these tragedies falls on low- and middle-income countries (LMICs) and under-resourced rural clinics, where expectant mothers severely lack access to dedicated, highly trained obstetric specialists. A significant proportion of these adverse outcomes are directly attributable to undetected or late-detected intrapartum fetal compromise---a condition characterized by progressive fetal hypoxia and metabolic acidosis during the mechanical stress of labor.
 
 \section{The Physiology of Fetal Compromise}
 During active labor, uterine contractions momentarily compress the placental blood vessels and the umbilical cord, temporarily restricting oxygen flow to the fetus. A healthy fetus with adequate physiological reserves easily tolerates this transient hypoxia. However, if the placenta is failing, or if the umbilical cord becomes persistently compressed, the fetus exhausts its oxygen reserves. This shifts its metabolism from aerobic to anaerobic, rapidly generating lactic acid. If the resulting metabolic acidemia ($\text{pH} < 7.15$) is not identified swiftly, the sustained acidic environment destroys fetal brain cells. Catching this early is essential because it gives obstetricians a brief therapeutic window to intervene---whether through an emergency cesarean section or instrumental vaginal delivery.
@@ -160,7 +187,7 @@ Since its widespread adoption in the 1970s, continuous Electronic Fetal Monitori
 \section{Limitations of the Status Quo}
 Despite fifty years of clinical use, extracting accurate diagnostic meaning from CTG traces remains notoriously difficult and highly subjective. 
 \begin{itemize}
-    \item \textbf{High Inter-Observer Variance:} While the International Federation of Gynecology and Obstetrics (FIGO) provides standardized rubrics for visual interpretation (categorizing traces as Normal, Suspicious, or Pathological), human evaluation is heavily flawed. Studies repeatedly demonstrate that when multiple expert obstetricians evaluate the exact same trace, they disagree roughly 30\% to 40\% of the time.
+    \item \textbf{High Inter-Observer Variance:} While the International Federation of Gynecology and Obstetrics (FIGO) provides standardized rubrics for visual interpretation (categorizing traces as Normal, Suspicious, or Pathological) \cite{figo}, human evaluation is heavily flawed. Studies repeatedly demonstrate that when multiple expert obstetricians evaluate the exact same trace, they disagree roughly 30\% to 40\% of the time \cite{bernardes}.
     \item \textbf{The "Defender's Bias" (False Positives):} To avoid the catastrophic outcome of a stillbirth, clinicians naturally lean toward being overly cautious. This rampant over-diagnosis of fetal distress has directly contributed to a staggering global surge in unnecessary emergency Cesarean sections, which carry significant surgical risks for the mother. 
     \item \textbf{The Need for Automation:} The profound lack of expert consensus, coupled with the sheer exhaustion of monitoring traces at 3:00 AM in busy labor wards, necessitates an objective, automated, AI-driven "second opinion" system that evaluates data mathematically rather than visually.
 \end{itemize}
@@ -183,21 +210,53 @@ To solve this multifaceted problem, this project has mapped out the following sp
 
 \chapter{Literature Survey \& Gap Analysis}
 \section{Scope of Review: The Evolution of CTG Analysis}
-In preparation for the NeuroFetal AI architecture, we conducted a comprehensive review of over 20 foundational and state-of-the-art research papers regarding automated fetal monitoring. The ongoing quest to mathematically automate CTG reading has experienced two profound generational shifts:
+In preparation for the NeuroFetal AI architecture, we conducted a comprehensive review of over 10 foundational and state-of-the-art research papers regarding automated fetal monitoring. The ongoing quest to mathematically automate CTG reading has experienced two profound generational shifts:
 \begin{itemize}
-    \item \textit{First Generation (Classical Machine Learning):} Foundational work (e.g., Spilka et al., 2012, 2014; Fergus et al., 2013) focused entirely on computationally extracting morphological FIGO features (baseline, STV, LTV, number of decelerations) and routing these highly condensed matrices through standard classifiers like Support Vector Machines (SVMs) or Random Forests. Because these methods threw away the raw shape of the time-series curves, performance hit a hard plateau, yielding a ceiling of roughly 0.70 to 0.76 AUC on public datasets.
-    \item \textit{Second Generation (Deep Sequence Models):} Eventually, isolated Deep Learning systems (e.g., Petrozziello et al., 2019; Zhao et al., 2019) attempted to process the 1D FHR time-series directly using Convolutional Neural Networks (CNNs) and LSTMs. While this allowed the network to ``see'' the shape of decelerations, these unimodal models still peaked around 0.80 AUC.
+    \item \textit{First Generation (Classical Machine Learning):} Foundational work (e.g., Spilka et al., 2012, 2014 \cite{spilka1, spilka2}; Fergus et al., 2013 \cite{fergus}) focused entirely on computationally extracting morphological FIGO features (baseline, STV, LTV, number of decelerations) and routing these highly condensed matrices through standard classifiers like Support Vector Machines (SVMs) or Random Forests. Because these methods threw away the raw shape of the time-series curves, performance hit a hard plateau, yielding a ceiling of roughly 0.70 to 0.76 AUC on public datasets.
+    \item \textit{Second Generation (Deep Sequence Models):} Eventually, isolated Deep Learning systems (e.g., Petrozziello et al., 2019 \cite{petrozziello}; Zhao et al., 2019 \cite{zhao}) attempted to process the 1D FHR time-series directly using Convolutional Neural Networks (CNNs) and LSTMs. While this allowed the network to ``see'' the shape of decelerations, these unimodal models still peaked around 0.80 AUC.
 \end{itemize}
 
+\begin{figure}[H]
+\centering
+\resizebox{0.9\textwidth}{!}{%
+\begin{tikzpicture}[
+  node distance=1.5cm and 1.5cm,
+  era/.style={rectangle, draw=blue!60, fill=blue!5, thick, minimum width=3.5cm, minimum height=1.2cm, align=center, rounded corners=4pt, blur shadow},
+  desc/.style={rectangle, draw=black!40, fill=white, minimum width=3.5cm, minimum height=1cm, align=center, font=\small},
+  arrow/.style={->, >=Stealth, thick}
+]
+
+\node[era] (gen1) {\textbf{Generation 1} \\ (Pre-2018)};
+\node[desc, below=0.3cm of gen1] (d1) {Classical ML \\ (SVM, RF) \\ Static Features Only};
+
+\node[era, right=of gen1] (gen2) {\textbf{Generation 2} \\ (2018-2022)};
+\node[desc, below=0.3cm of gen2] (d2) {Unimodal Deep Learning \\ (1D-CNN, LSTM) \\ FHR Sequences Only};
+
+\node[era, right=of gen2] (gen3) {\textbf{Generation 3} \\ (2023-Present)};
+\node[desc, below=0.3cm of gen3] (d3) {Multimodal Fusion \\ (ResNet + MLP) \\ FHR + Clinical Context};
+
+\node[era, draw=green!60!black, fill=green!10, right=of gen3] (neuro) {\textbf{NeuroFetal AI} \\ (Proposed)};
+\node[desc, below=0.3cm of neuro] (d4) {Tri-Modal Stacking \\ (FHR + UC + Clinical) \\ Edge Quantized + UQ};
+
+\draw[arrow] (gen1) -- (gen2);
+\draw[arrow] (gen2) -- (gen3);
+\draw[arrow] (gen3) -- (neuro);
+
+\end{tikzpicture}
+}
+\caption{The Architectural Evolution of Automated CTG Analysis.}
+\label{fig:evolution_path}
+\end{figure}
+
 \section{The State-of-the-Art Baseline (Mendis et al., 2023)}
-The absolute current forefront of CTG research was established by Mendis et al. (2023), who pioneered a multimodal approach. They architected a dual-branch network combining a 1D-ResNet to process the raw FHR timeseries, in parallel with a Dense Neural Network processing tabular maternal features. This fusion pushed their reported performance to an impressive 0.84 AUC. However, our critical review of this architecture identified three massive physiological and computational gaps:
+The absolute current forefront of CTG research was established by Mendis et al. (2023) \cite{mendis}, who pioneered a multimodal approach. They architected a dual-branch network combining a 1D-ResNet to process the raw FHR timeseries, in parallel with a Dense Neural Network processing tabular maternal features. This fusion pushed their reported performance to an impressive 0.84 AUC. However, our critical review of this architecture identified three massive physiological and computational gaps:
 \begin{enumerate}
     \item \textbf{The UC Signal Omission:} Mendis completely discarded the Uterine Contraction channel. Physiologically, distinguishing a benign ``Early Deceleration'' (head compression) from a highly dangerous ``Late Deceleration'' (placental failure) depends \textit{entirely} on the temporal phase delay between the contraction peak and the FHR nadir. Deleting the UC signal makes distinguishing these visually identical drops computationally impossible.
     \item \textbf{Deterministic Risk Profiling:} Their models provided standard, overconfident deterministic softmax predictions. In a medical context, when an AI encounters a highly noisy or entirely out-of-distribution trace, returning a 99\% confident ``Normal'' prediction is exceptionally dangerous. The lack of Epistemic Uncertainty Quantification remains a glaring omission.
     \item \textbf{Validation on Private Black-Box Datasets:} The Mendis 0.84 AUC was validated on an enormous, closed dataset of 9,887 proprietary hospital cases. The community cannot reproduce, verify, or benchmark against this data, deeply hindering scientific progress.
 \end{enumerate}
 
-\section{Empirical Internal Validation of the Gaps}
+\section{Empirical Internal Validation of the Gaps (Baselines)}
 To rigorously justify our proposed architecture, we did not merely cite the subjective limitations of previous works---we \textbf{actively coded, implemented, and benchmarked them} directly against the public CTU-UHB database using Stratified 5-Fold Cross-Validation. 
 \begin{itemize}
     \item \textit{Testing Unimodal Deep Learning (Spilka formulation):} We built and trained a 1D-CNN exclusively on the raw FHR signal. It yielded a profoundly weak \textbf{0.564 AUC}. This definitively proved mathematically what doctors know clinically: Deep neural networks cannot distinguish pathological deceleration shapes from ambient sensor noise without the temporal context of Uterine Contractions.
@@ -207,9 +266,29 @@ To rigorously justify our proposed architecture, we did not merely cite the subj
 \section{NeuroFetal AI's Niche and Contribution}
 NeuroFetal AI is positioned directly to obliterate these gaps. It strictly enforces the inclusion of the UC signal via Cross-Modal Attention and CSP arrays (solving the 1D-CNN contextual failure); it implements a sophisticated Stacking Ensemble combining XGBoost with deep networks (beating the Tabular Random Forest ceiling); it enforces strict MC Dropout uncertainty bounds; and most importantly, it establishes its state-of-the-art results (0.989 AUC inference / 0.864 AUC CV) transparently on a standardized public benchmark.
 
+\begin{table}[H]
+\centering
+\caption{Literature Summary Matrix: Identifying State-of-the-Art Limitations}
+\label{tab:lit_matrix}
+\renewcommand{\arraystretch}{1.6}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}p{3.5cm}p{1.5cm}p{3.5cm}p{3cm}p{4cm}@{}}
+\toprule
+\textbf{Research Focus} & \textbf{Year} & \textbf{Methodology} & \textbf{Input Data} & \textbf{Critical Limitation Identified} \\ \midrule
+Spilka et al. & 2014 & Classical (RF/SVM) & FHR Features & Loses sequential morphology of fetal physiological deterioration. \\
+Lopes et al. & 2025 & 1D-CNN / LSTM & FHR Sequence & Unimodal. Lacks clinical context and Uterine Contraction timing. \\
+Alqahtani et al. & 2025 & CSP + SVM & FHR + UC & Methodological data leakage leading to physiologically impossible 100\% metric claims. \\
+Mendis et al. & 2024 & Transformer (SSL) & FHR & Computationally heavy model completely ignoring clinical tabular arrays. \\
+Base Paper (Mendis) & 2023 & Multimodal Fusion & FHR + Clinical & State-of-the-Art (0.84 AUC), but entirely omits the UC signal and uses a closed dataset. \\ \midrule
+\rowcolor{green!10}
+\textbf{NeuroFetal AI} & \textbf{2026} & \textbf{Tri-Modal Ensemble} & \textbf{FHR + UC + Tab} & \textbf{Solves UC omission, quantifies uncertainty, runs offline on Edge computing.} \\ \bottomrule
+\end{tabular}%
+}
+\end{table}
+
 \chapter{Dataset Description}
 \section{Source of Data}
-The primary data source for this research is the open-access \textbf{CTU-UHB Intrapartum Cardiotocography Database}, hosted by PhysioNet. It was collected at the University Hospital of Brno (UHB) in the Czech Republic. The dataset was selected because it is one of the very few publicly available, rigorously annotated, and peer-reviewed CTG datasets that includes both Fetal Heart Rate (FHR) and Uterine Contraction (UC) continuous signals, alongside detailed post-delivery biochemical metrics.
+The primary data source for this research is the open-access \textbf{CTU-UHB Intrapartum Cardiotocography Database} \cite{ctu}, hosted by PhysioNet \cite{physionet}. It was collected at the University Hospital of Brno (UHB) in the Czech Republic. The dataset was selected because it is one of the very few publicly available, rigorously annotated, and peer-reviewed CTG datasets that includes both Fetal Heart Rate (FHR) and Uterine Contraction (UC) continuous signals, alongside detailed post-delivery biochemical metrics.
 
 \section{Dataset Statistics}
 The original dataset comprises 552 high-quality intrapartum recordings. Each recording captures the final hours of labor leading up to delivery. Following curation:
@@ -226,6 +305,14 @@ The dataset exhibits a severe, real-world class imbalance reflecting the clinica
     \item \textbf{Normal (Healthy):} $\sim$512 cases (92.75\%)
     \item \textbf{Pathological (Compromised):} $\sim$40 cases (7.25\%)
 \end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.45\textwidth]{Figures/dataset_imbalance_piechart.png}
+    \caption{Extreme Class Imbalance characterizing the original CTU-UHB dataset.}
+    \label{fig:class_imbalance}
+\end{figure}
+
 This extreme skew presents a massive computational challenge, as standard deep learning models naturally bias toward the majority class, necessitating advanced augmentation strategies like TimeGAN.
 
 \section{Label Definition}
@@ -241,6 +328,13 @@ Unlike subjective clinical labels (e.g., Apgar scores or visual trace classifica
     \item \textbf{Uterine Contractions (UC):} Captured via a tocodynamometer. These appear as smooth, low-frequency bell curves representing the pressure exerted on the fetus.
 \end{itemize}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Figures/raw_ctg_signal_plot.png}
+    \caption{Visual representation of the dual-sensor Cardiotocography log, illustrating the volatile FHR sequence aligned with the low-frequency Uterine Contraction waves.}
+    \label{fig:raw_ctg}
+\end{figure}
+
 \section{Preprocessing Workflow}
 Raw CTG signals contain substantial noise and artifacts. Our pipeline includes:
 \begin{enumerate}
@@ -250,6 +344,35 @@ Raw CTG signals contain substantial noise and artifacts. Our pipeline includes:
     \item \textbf{Downsampling:} Signals are downsampled from 4 Hz to 1 Hz to reduce computational overhead without losing critical frequency components (Nyquist theorem).
     \item \textbf{Normalization:} Z-score standardization (or MinMax scaling) is applied mapping values to an optimal neural network input range.
 \end{enumerate}
+
+\begin{figure}[H]
+\centering
+\resizebox{0.5\textwidth}{!}{%
+\begin{tikzpicture}[
+  node distance=0.8cm and 2.0cm,
+  process/.style={rectangle, draw=blue!60, fill=blue!5, thick, minimum width=6cm, minimum height=1.2cm, align=center, rounded corners=2pt, blur shadow},
+  data/.style={rectangle, draw=orange!80, fill=orange!10, thick, minimum width=6cm, minimum height=1.2cm, align=center, rounded corners=4pt, blur shadow},
+  arrow/.style={->, >=Stealth, thick}
+]
+
+\node[data] (raw) {\textbf{Raw CTG Log} \\ (Last 60 mins @ 4Hz)};
+\node[process, below=of raw] (missing) {\textbf{Gap Interpolation} \\ (Linear fill for $<15$s drops)};
+\node[process, below=of missing] (noise) {\textbf{Noise Filtering} \\ (Median Subtraction, Norm.)};
+\node[process, below=of noise] (down) {\textbf{Temporal Downsampling} \\ (4Hz $\rightarrow$ 1Hz)};
+\node[process, below=of down] (window) {\textbf{Sliding Window Expansion} \\ (20m Window, 10m Stride)};
+\node[data, below=of window] (final) {\textbf{Model Inputs} \\ ($2,546 \times 1200 \times 2$ Matrices)};
+
+\draw[arrow] (raw) -- (missing);
+\draw[arrow] (missing) -- (noise);
+\draw[arrow] (noise) -- (down);
+\draw[arrow] (down) -- (window);
+\draw[arrow] (window) -- (final);
+
+\end{tikzpicture}
+}
+\caption{End-to-End Signal Preprocessing and Windowing Workflow.}
+\label{fig:preprocessing_flow}
+\end{figure}
 
 \section{Sliding Window Expansion}
 To exponentially increase our training volume and allow the model to learn localized temporal features, we apply a sliding window technique:
@@ -266,6 +389,40 @@ NeuroFetal AI is a tri-modal system processing three parallel datastreams per wi
     \item \textbf{Tabular Metadata:} 18 distinct features, combining static maternal demographics (Age, Parity, Gestation, etc.) with hand-crafted signal statistics (Baseline, STV, LTV, UC Frequency, FHR-UC correlation lag).
     \item \textbf{Common Spatial Patterns (CSP):} 19 spatial variables extracted by treating FHR and UC as multi-channel EEG-like arrays, maximizing the variance disparity between Normal and Pathological classes.
 \end{enumerate}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  node distance=1.3cm and 1.5cm,
+  source/.style={rectangle, draw=purple!60, fill=purple!5, thick, minimum width=3cm, minimum height=1cm, align=center, rounded corners=2pt, blur shadow},
+  extract/.style={rectangle, draw=blue!60, fill=blue!5, thick, minimum width=3cm, minimum height=1cm, align=center, rounded corners=2pt, blur shadow},
+  feature/.style={rectangle, draw=green!60!black, fill=green!5, thick, minimum width=3.5cm, minimum height=1cm, align=center, rounded corners=4pt, blur shadow},
+  arrow/.style={->, >=Stealth, thick}
+]
+
+\node[source] (ctg) {Preprocessed Window \\ $1200 \times 2$};
+
+\node[extract, below left=1.0cm and 2.5cm of ctg] (split1) {Direct Array Transfer};
+\node[extract, below=1.0cm of ctg] (split2) {Statistical \& Entropy \\ Extractors};
+\node[extract, below right=1.0cm and 2.5cm of ctg] (split3) {Spatial Covariance \\ Matrix Solver};
+
+\node[feature, below=1cm of split1] (f1) {Raw Sequence $\mathbf{X}_{\text{FHR}}$ \\ (1200, 1)};
+\node[feature, below=1cm of split2] (f2) {Tabular Metadata $\mathbf{X}_{\text{tab}}$ \\ (18 Variables)};
+\node[feature, below=1cm of split3] (f3) {Spatial Patterns $\mathbf{X}_{\text{CSP}}$ \\ (19 Variables)};
+
+\draw[arrow] (ctg) -| (split1);
+\draw[arrow] (ctg) -- (split2);
+\draw[arrow] (ctg) -| (split3);
+\draw[arrow] (split1) -- (f1);
+\draw[arrow] (split2) -- (f2);
+\draw[arrow] (split3) -- (f3);
+
+\end{tikzpicture}
+}
+\caption{Tri-Modal Feature Extraction Pipeline separating physiological noise into distinct mathematical domains.}
+\label{fig:feature_extraction}
+\end{figure}
 
 \section{Why CTU-UHB is Suitable}
 CTU-UHB is the optimal choice for this research because:
@@ -286,13 +443,13 @@ Despite its robust annotations, the dataset carries inherent limitations:
 \chapter{Advanced Feature Engineering}
 Because deep neural networks scale poorly on entirely unstructured physiological noise, NeuroFetal AI transforms the raw CTG sequence into three mathematically distinct feature modalities, totaling over 35 unique variables per window.
 
-\section{Modality 1: The Raw Fetal Heart Rate Sequence ($X_{FHR}$)}
+\section{Modality 1: The Raw Fetal Heart Rate Sequence (\texorpdfstring{$X_{FHR}$}{X\_FHR})}
 \begin{itemize}
     \item \textbf{Shape:} (1200, 1) matrix per 20-minute window.
     \item \textbf{Purpose:} This high-frequency (1 Hz) localized time-series contains the pure autonomic nervous system response of the fetus. It is directly fed into the 1D-Convolutional/ResNet branches of the ensemble, forcing the deep networks to automatically extract temporal deceleration morphologies without human bias.
 \end{itemize}
 
-\section{Modality 2: Tabular Clinical Context ($X_{tab}$)}
+\section{Modality 2: Tabular Clinical Context (\texorpdfstring{$X_{tab}$}{X\_tab})}
 \begin{itemize}
     \item \textbf{Shape:} (18,) vector per window.
     \item \textbf{Purpose:} Deep networks lack "common sense." A heart rate drop in a 30-week premature fetus means something entirely different than the same drop in a 41-week post-term fetus. We manually programmed rigorous physiological feature extractors to compute 18 distinct contextual variables:
@@ -303,7 +460,7 @@ Because deep neural networks scale poorly on entirely unstructured physiological
     \end{itemize}
 \end{itemize}
 
-\section{Modality 3: Common Spatial Patterns ($X_{CSP}$)}
+\section{Modality 3: Common Spatial Patterns (\texorpdfstring{$X_{CSP}$}{X\_CSP})}
 \begin{itemize}
     \item \textbf{Shape:} (19,) vector per window.
     \item \textbf{Purpose:} Borrowed from Brain-Computer Interface (EEG) research, Common Spatial Patterns (CSP) is a mathematical filtering technique. We treat the FHR and UC traces as a 2-channel matrix, constructing spatial covariance matrices for the "Normal" vs. "Pathological" classes. By solving a generalized eigenvalue problem, CSP projects the raw signals into a new geometric plane that computationally maximizes the variance of pathological cases while minimizing the variance of healthy cases. This explicitly forces the XGBoost tree models to "see" the exact mathematical relationship between a contraction peak and a heart rate drop.
@@ -313,30 +470,125 @@ Because deep neural networks scale poorly on entirely unstructured physiological
 The fundamental bottleneck of the CTU-UHB dataset is the extreme lack of True Positive cases (only 40 pathological recordings out of 552). Training a millions-parameter ResNet on this distribution immediately results in catastrophic ``majority-class collapse''---where the AI achieves 92\% accuracy simply by hard-coding a ``Normal'' prediction for every single patient, utterly failing its entire medical purpose.
 
 \section{The Failure of Legacy Oversampling (SMOTE)}
-In NeuroFetal V3.0, we utilized the industry-standard Synthetic Minority Over-sampling Technique (SMOTE). SMOTE draws geometric lines between minority nearest-neighbors in tabular feature-space. While this balances the dataset mathematically, it catastrophically destroys the \textit{sequential time-series structure} of the CTG wave. Generating data this way removes the intricate, physiologically necessary delay between a uterine contraction and a biological fetal deceleration.
+In NeuroFetal V3.0, we utilized the industry-standard Synthetic Minority Over-sampling Technique (SMOTE) \cite{smote}. SMOTE draws geometric lines between minority nearest-neighbors in tabular feature-space. While this balances the dataset mathematically, it catastrophically destroys the \textit{sequential time-series structure} of the CTG wave. Generating data this way removes the intricate, physiologically necessary delay between a uterine contraction and a biological fetal deceleration.
 
 \section{TimeGAN: Generative Adversarial Networks for Time-Series}
-To resolve this in V4.0, we architected a Time-Series Generative Adversarial Network (TimeGAN). Unlike standard image GANs, TimeGAN incorporates an explicit recurrent/autoregressive mechanism that forces the generator to respect step-by-step temporal transitions. 
+To resolve this in V4.0, we architected a Time-Series Generative Adversarial Network (TimeGAN) \cite{timegan}. Unlike standard image GANs, TimeGAN incorporates an explicit recurrent/autoregressive mechanism that forces the generator to respect step-by-step temporal transitions. 
 \begin{itemize}
     \item We built the Discriminator and Generator using 1D Transposed Convolutions and deep GRU (Gated Recurrent Unit) cells.
     \item The network was trained exclusively on authentic, isolated Pathological FHR+UC sequences.
     \item We utilized a Wasserstein-GAN with a Gradient Penalty (WGAN-GP, $\lambda=10$) objective function. This prevents "Mode Collapse" (where the generator memorizes and outputs the exact same fake trace repeatedly) and ensures stable gradient flows during the massive 10,000-epoch training cycles.
 \end{itemize}
 
+\begin{figure}[H]
+\centering
+\resizebox{0.9\textwidth}{!}{%
+\begin{tikzpicture}[
+  node distance=1.5cm and 2.0cm,
+  data/.style={rectangle, draw=orange!80, fill=orange!10, thick, minimum width=3cm, minimum height=1.2cm, align=center, rounded corners=4pt, blur shadow},
+  net/.style={rectangle, draw=blue!60, fill=blue!5, thick, minimum width=4cm, minimum height=1.2cm, align=center, rounded corners=2pt, blur shadow},
+  loss/.style={rectangle, draw=red!60, fill=red!5, thick, minimum width=3cm, minimum height=1.2cm, align=center, rounded corners=4pt, blur shadow},
+  arrow/.style={->, >=Stealth, thick}
+]
+
+\node[data] (real) {Real Pathological Sequence \\ $\mathbf{X} \sim p_{\text{data}}$};
+\node[data, left=3cm of real] (noise) {Random Walk Vector \\ $\mathbf{Z} \sim \mathcal{N}(0, 1)$};
+\node[net, below=1.2cm of noise] (gen) {Generator (GRU + Conv1D) \\ $G(\mathbf{Z})$};
+\node[data, below=1.2cm of gen] (fake) {Synthetic Sequence \\ $\tilde{\mathbf{X}} = G(\mathbf{Z})$};
+\node[net, below=2.5cm of real] (disc) {Discriminator (GRU/Conv1D) \\ $D(\mathbf{X})$};
+\node[loss, right=1.5cm of disc] (critic) {Wasserstein Distance \\ + Gradient Penalty};
+
+\draw[arrow] (noise) -- (gen);
+\draw[arrow] (gen) -- (fake);
+\draw[arrow] (real) -- (disc);
+\draw[arrow] (fake) -| (disc.south);
+\draw[arrow] (disc) -- (critic);
+
+\end{tikzpicture}
+}
+\caption{TimeGAN (WGAN-GP) network architecture mapping random walks into synthetic pathological sequences.}
+\label{fig:timegan_flow}
+\end{figure}
+
 \section{Synthetic Clinical Yield}
 The TimeGAN successfully generated 1,410 physiologically realistic synthetic minority-class traces. It fundamentally learned that a deep downward curve in the FHR channel must be phase-locked to a rising pressure peak in the UC channel. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Figures/gan_training_diagnostics.png}
+    \caption{TimeGAN Training Diagnostics (Discriminator vs. Generator Loss) across epochs.}
+    \label{fig:gan_diagnostics}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Figures/timegan_final_comparison.png}
+    \caption{Visual Comparison of Authentic Pathological Traces vs. TimeGAN Synthesized Traces.}
+    \label{fig:timegan_compare}
+\end{figure}
 
 \chapter{Proposed Architecture}
 NeuroFetal AI (V5.0) abandons the unimodal ``black-box'' approach in favor of a highly modular Tri-Modal Stacking Ensemble. This ensures that features are processed by the specific algorithmic architecture best suited for that mathematical modality.
 
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  node distance=1.5cm and 2.0cm,
+  data_box/.style={rectangle, draw=blue!60, fill=blue!5, thick, minimum width=3cm, minimum height=1cm, align=center, rounded corners=2pt, blur shadow},
+  encoder_box/.style={rectangle, draw=orange!80, fill=orange!10, thick, minimum width=3.5cm, minimum height=1cm, align=center, rounded corners=2pt, blur shadow},
+  fusion_box/.style={rectangle, draw=green!60!black, fill=green!5, thick, minimum width=4cm, minimum height=1.5cm, align=center, rounded corners=4pt, blur shadow},
+  output_box/.style={rectangle, draw=red!60, fill=red!5, thick, minimum width=3cm, minimum height=1cm, align=center, rounded corners=2pt, blur shadow},
+  arrow/.style={->, >=Stealth, thick}
+]
+
+% Inputs
+\node[data_box] (fhr) {FHR Time-Series \\ $\mathbf{X}_{\text{FHR}} \in \mathbb{R}^{1200 \times 1}$};
+\node[data_box, below=1cm of fhr] (csp) {FHR-UC Patterns \\ $\mathbf{X}_{\text{CSP}} \in \mathbb{R}^{19}$};
+\node[data_box, below=1cm of csp] (tab) {Clinical Context \\ $\mathbf{X}_{\text{tab}} \in \mathbb{R}^{16}$};
+
+% Encoders
+\node[encoder_box, right=of fhr] (res) {1D ResNet + SE \\ Global Avg Pooling};
+\node[encoder_box, right=of csp] (mlp_csp) {Dense MLP \\ ($p=0.3$ Dropout)};
+\node[encoder_box, right=of tab] (mlp_tab) {Dense MLP \\ ($p=0.3$ Dropout)};
+
+% Embeddings
+\node[right=0.7cm of res] (v_fhr) {$\mathbf{v}_{\text{FHR}}$};
+\node[right=0.7cm of mlp_csp] (v_csp) {$\mathbf{v}_{\text{CSP}}$};
+\node[right=0.7cm of mlp_tab] (v_tab) {$\mathbf{v}_{\text{tab}}$};
+
+% Fusion Module
+\node[fusion_box, right=2.0cm of mlp_csp] (cmaf) {\textbf{Cross-Modal} \\ \textbf{Attention Fusion} \\ $\mathbf{v}_{\text{FHR}} \odot \text{Attention}$};
+
+% Classifier
+\node[output_box, right=1.5cm of cmaf] (class) {MC Dropout Classifier \\ $\hat{p} \pm \sigma^2$};
+
+% Arrows
+\draw[arrow] (fhr) -- (res);
+\draw[arrow] (csp) -- (mlp_csp);
+\draw[arrow] (tab) -- (mlp_tab);
+\draw[arrow] (res) -- (v_fhr);
+\draw[arrow] (mlp_csp) -- (v_csp);
+\draw[arrow] (mlp_tab) -- (v_tab);
+\draw[arrow] (v_fhr.east) -| ([xshift=-1cm]cmaf.north);
+\draw[arrow] (v_csp.east) -- (cmaf.west);
+\draw[arrow] (v_tab.east) -| ([xshift=-1cm]cmaf.south);
+\draw[arrow] (cmaf) -- (class);
+
+\end{tikzpicture}
+}
+\caption{Overall flow of the Tri-Modal AttentionFusionResNet Architecture. Raw FHR sequences are processed via 1D ResNet, while CSP variance and clinical metadata act as key/value patterns and gating contexts, respectively, converging at the Cross-Modal Attention Fusion (CMAF) layer.}
+\label{fig:arch}
+\end{figure}
+
 \section{Model 1: AttentionFusionResNet (The Deep Branch)}
-To process the raw 1D temporal waves (FHR and UC), we built a heavy 1-Dimensional Residual Network (ResNet). To prevent the network from "forgetting" features across the massive 1200-timestep sequence, we injected Squeeze-and-Excitation (SE) recalibration blocks, capped off with a computationally intensive Multi-Head Self-Attention routing layer to capture global, long-range dependencies (e.g., repeating deceleration loops spanning 20 full minutes).
+To process the raw 1D temporal waves (FHR and UC), we built a heavy 1-Dimensional Residual Network (ResNet). To prevent the network from "forgetting" features across the massive 1200-timestep sequence, we injected Squeeze-and-Excitation (SE) recalibration blocks \cite{senet}, capped off with a computationally intensive Multi-Head Self-Attention routing layer to capture global, long-range dependencies (e.g., repeating deceleration loops spanning 20 full minutes).
 
 \section{Cross-Modal Attention Fusion (CMAF)}
 The most critical architectural innovation is the CMAF layer. Standard multimodal networks simply ``concatenate'' tabular data to the end of a CNN. Instead, NeuroFetal AI dynamically fuses the learned embeddings from the FHR sequence ($v_{FHR}$), the 18 Tabular traits ($v_{tab}$), and the 19 CSP vectors ($v_{CSP}$) using a dynamic Q-K-V cross-attention block. This acts as a biological ``gating mechanism.'' If the Tabular input signals the AI that the mother is severely premature (e.g., 28 weeks gestation), the Attention layer mathematically shifts the neural weights on-the-fly, forgiving faster baseline heart rates while hyper-sensitizing the network to minor decelerations.
 
 \section{Component 2: The Multi-Scale 1D-InceptionNet}
-To act as a secondary deep learner, we constructed a 1D-InceptionNet. Unlike ResNet which uses fixed kernel sizes, Inception modules route the 1D signal through three parallel convolutional scales simultaneously (kernels 3, 5, and 7). This allows the network to trap rapid, micro-second STV shifts (small kernels) while simultaneously evaluating massive 3-minute LTV baseline arcs (large kernels).
+To act as a secondary deep learner, we constructed a 1D-InceptionNet \cite{szegedy}. Unlike ResNet which uses fixed kernel sizes, Inception modules route the 1D signal through three parallel convolutional scales simultaneously (kernels 3, 5, and 7). This allows the network to trap rapid, micro-second STV shifts (small kernels) while simultaneously evaluating massive 3-minute LTV baseline arcs (large kernels).
 
 \section{Component 3: Gradient Boosted XGBoost}
 While neural networks excel at raw sequential shapes, they are notoriously inefficient at analyzing structured tabular data. Therefore, the third branch of the ensemble is a deterministic XGBoost algorithm operating exclusively on the exact 35 extracted Tabular and CSP features, acting as a high-precision classical anchor to the ensemble.
@@ -348,20 +600,68 @@ During the 5-Fold Cross-Validation, out-of-fold (OOF) predictions are collated f
 A raw probability score of 85\% outputted by a standard neural network does not mean there is an 85\% chance of fetal hypoxia; it merely reflects the geometric distance of the mathematical embedding from the decision boundary. For NeuroFetal AI to be ethically deployed in a labor ward, it must know when it is "unsure" about a prediction.
 
 \section{Monte Carlo (MC) Dropout (Epistemic Uncertainty)}
-To quantify "model doubt," we integrated Monte Carlo (MC) Dropout. Dropout is traditionally only used during training to prevent overfitting. However, we deliberately leave the target dropout layers ($p=0.3$ dropout rate) active during live clinical inference. 
+To quantify "model doubt," we plan to integrate Monte Carlo (MC) Dropout \cite{mcdropout1}. Dropout is traditionally only used during training to prevent overfitting. However, we will deliberately leave the target dropout layers ($p=0.3$ dropout rate) active during live clinical inference.
 \begin{itemize}
-    \item For every new patient window, the system runs $T=20$ randomized forward passes. 
-    \item Because neurons are randomly dropped during each pass, the network outputs 20 slightly different predictions.
-    \item The statistical \textbf{Standard Deviation/Variance ($\sigma^2$)} across these 20 predictions serves as our Epistemic Uncertainty metric. 
-    \item If $\sigma^2 > 0.05$, the trace is highly chaotic or out-of-distribution. Instead of making a dangerous diagnostic guess, the dashboard explicitly overrides the prediction and flags: "CONFIDENCE LOW: REQUIRES HUMAN REVIEW."
+    \item For every new patient window, the system will run $T=20$ randomized forward passes. 
+    \item Because neurons are randomly dropped during each pass, the network will output 20 slightly different predictions.
+    \item The statistical \textbf{Standard Deviation/Variance ($\sigma^2$)} across these 20 predictions will serve as our Epistemic Uncertainty metric. 
+    \item If $\sigma^2 > 0.05$, indicating the trace is highly chaotic or out-of-distribution, the dashboard will explicitly override the prediction and flag: "CONFIDENCE LOW: REQUIRES HUMAN REVIEW."
 \end{itemize}
 
 \section{Platt Scaling Calibration}
-To ensure the final ensemble probability output is clinically trustworthy, we implemented Platt Scaling. We wrapped the entire Stacking Ensemble inside a \texttt{CalibratedClassifierCV} (utilizing 5-Fold isotonic/sigmoid cross-validation). This shifts uncalibrated model logits into trustworthy probability bins aligned with actual disease frequency.
+To ensure the final ensemble probability output is clinically trustworthy, we propose implementing Platt Scaling \cite{platt} in the final deployment phase. We will wrap the entire Stacking Ensemble inside a \texttt{CalibratedClassifierCV} (utilizing 5-Fold isotonic/sigmoid cross-validation). This will shift uncalibrated model logits into trustworthy probability bins aligned with actual disease frequency.
 \begin{itemize}
-    \item \textbf{Results:} The fully calibrated system achieves a highly reliable Brier Score of 0.046 and an Expected Calibration Error (ECE) of 0.0543, confirming that when the AI outputs a 90\% risk probability, approximately 90\% of those fetuses will actually be diagnosed with acidemia post-delivery.
+    \item \textbf{Expected Outcome:} A fully calibrated system aims to achieve a highly reliable Brier Score and Expected Calibration Error (ECE), confirming that when the AI outputs a 90\% risk probability, approximately 90\% of those fetuses will actually be diagnosed with acidemia post-delivery.
 \end{itemize}
 
+
+\chapter{Baseline Evaluation \& Metrics}
+Before calculating the final empirical performance of the proposed Tri-Modal architecture, it is computationally necessary to establish rigorous baselines. This proves that the added complexity of fusing FHR, UC, and Tabular data is mathematically justified over simpler, unimodal approaches.
+
+\section{The Base Research Paper Benchmark (Mendis et al.)}
+This project explicitly extends and aims to surpass the state-of-the-art established by Mendis et al. (2023) \cite{mendis}. 
+\begin{itemize}
+    \item \textbf{Their Approach:} Architected a dual-branch network fusing a 1D-ResNet (for FHR) with a Dense Network (for Tabular traits).
+    \item \textbf{Reported Ceiling:} Achieved an impressive \textbf{0.84 AUC}.
+    \item \textbf{Identified Limitations:} Their model was evaluated on a proprietary dataset (making it unreproducible for the global scientific community) and critically omitted the Uterine Contraction (UC) signal, rendering it blind to the physiological timing of late decelerations.
+\end{itemize}
+
+\section{Internal Empirical Baselines (on CTU-UHB)}
+To guarantee a fair comparison, we programmed and evaluated three standard baseline models locally against the open-access CTU-UHB database using Stratified 5-Fold Cross-Validation:
+\begin{enumerate}
+    \item \textbf{Unimodal Deep Learning (1D-CNN):} Evaluating pure FHR sequences. This model collapsed to \textbf{$\sim$0.564 AUC}, proving that deep neural networks cannot extract accurate diagnostic meaning from heart rates without the synchronized phase-timing of Uterine Contractions.
+    \item \textbf{Classical Linear ML (Logistic Regression):} Evaluating 16 extracted tabular features. It achieved \textbf{0.676 AUC}, proving that linear boundaries cannot map the complex dynamics of fetal distress.
+    \item \textbf{Classical Non-Linear ML (Random Forest):} Evaluating the same tabular features. It established a very strong baseline of \textbf{0.837 AUC}. However, because tabular variables are merely statistical summaries (mean, variance), the model hits a ceiling as it cannot "see" the raw morphological sequence of a crashing heart rate.
+\end{enumerate}
+
+\section{The Tri-Modal Target Advantage}
+The primary objective of Phase 2 is to empirically demonstrate that the Tri-Modal AttentionFusionResNet breaks the 0.84 AUC literature ceiling by unifying raw morphology (CNN) with synchronized clinical context (Tabular + CSP). 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Figures/baseline_auc_comparison.png}
+    \caption{Comparison of the established AUC-ROC baselines that NeuroFetal AI aims to surpass.}
+    \label{fig:baseline_auc}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Baseline Performance Matrix vs. Proposed Target}
+\label{tab:baselines}
+\renewcommand{\arraystretch}{1.3}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lllc@{}}
+\toprule
+\textbf{Model Identifier} & \textbf{Data Modalities} & \textbf{Architecture Type} & \textbf{Mean AUC} \\ \midrule
+Baseline 1 (Spilka formulation) & FHR Only (1D) & Unimodal 1D-CNN & 0.564 \\
+Baseline 2 (Classical Linear) & Tabular Only (16 Var) & Logistic Regression & 0.676 \\
+Baseline 3 (Classical Non-Linear) & Tabular Only (16 Var) & Random Forest & 0.837 \\
+Base Paper Benchmark (Mendis) & FHR + Tabular & Dual-Branch Deep Fusion & 0.840 \\ \midrule
+\rowcolor{blue!10} 
+\textbf{Target: NeuroFetal AI (V5.0)} & \textbf{FHR + UC + Tabular + CSP} & \textbf{Tri-Modal Stacking Ensemble} & \textbf{> 0.860 (Aim)} \\ \bottomrule
+\end{tabular}%
+}
+\end{table}
 
 \chapter{Edge Deployment \& XAI Plans}
 \section{"Lab to Village" Offline Execution}
@@ -373,7 +673,7 @@ The highest incidence of intrapartum fetal mortality occurs in rural clinics acr
 \end{itemize}
 
 \section{Explainable AI (XAI) via Grad-CAM}
-Obstetricians cannot blindly trust "black-box" alerts, especially when contemplating an invasive emergency C-section. To guarantee clinical transparency, Phase 2 implements Gradient-weighted Class Activation Mapping (Grad-CAM). 
+Obstetricians cannot blindly trust "black-box" alerts, especially when contemplating an invasive emergency C-section. To guarantee clinical transparency, Phase 2 implements Gradient-weighted Class Activation Mapping (Grad-CAM) \cite{gradcam1}. 
 \begin{itemize}
     \item We will map the deepest ResNet convolutional gradients back onto the original 1D spatial input sequence.
     \item This will visually highlight on the UI monitor \textit{exactly which} segment of the heart-rate trace (e.g., a specific late deceleration drop occurring 4 minutes after a contraction) triggered the 'Pathological' warning natively explaining the model's logic to the attending physician.
@@ -390,12 +690,12 @@ At the midpoint of this research project, all core data engineering, generative 
 \end{enumerate}
 
 \section{Roadmap to End-Semester Evaluation (Phase 2)}
-For the final project submission, the following integration and deployment phases will be executed on cloud infrastructure (Google Colab / Azure):
+For the final project submission, the following integration and deployment phases will be deployed on Streamlit Community Cloud servers (accessible via \url{https://neurofetal-ai.streamlit.app/}):
 \begin{enumerate}
     \item \textbf{Full Sub-System Training Loop:} Dynamically binding the TimeGAN outputs live into the Stratified 5-Fold evaluation loops to massively augment the exact training folds without leaking into the validation holdouts.
     \item \textbf{Execution \& Metric Validation:} Running the massive parallelized hyperparameter grid sweep across cloud GPUs to formally establish our final Accuracy, F1-Score, AUPRC, and AUC-ROC metrics against the literature baseline.
     \item \textbf{Platt \& MC Implementation:} Wrapping the finalized model weights in the Platt Scaling calibration logic and actively verifying the Monte Carlo epistemic confidence interval scatter plots.
-    \item \textbf{Clinical UI/UX Deployment:} Programming the final \texttt{Streamlit} Python dashboard, loading the Int8 quantized \texttt{.tflite} edge executions, and running live trace simulations to mimic a genuine labor ward environment for the final presentation.
+    \item \textbf{Clinical UI/UX Deployment:} Finalizing the \texttt{Streamlit} Python dashboard, loading the Int8 quantized \texttt{.tflite} edge executions, and running live trace simulations to mimic a genuine labor ward environment for the final presentation.
 \end{enumerate}
 
 \renewcommand{\bibname}{References}
