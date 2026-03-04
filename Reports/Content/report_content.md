@@ -44,20 +44,64 @@ To rigorously justify our proposed architecture, we did not merely cite the limi
 **NeuroFetal AI's Niche**
 NeuroFetal AI is positioned directly to address these gaps: it embraces the UC signal to solve the 1D-CNN contextual failure, uses a Stacking Ensemble to beat the Tabular Random Forest ceiling, implements strict uncertainty thresholds, and sets a powerful new public baseline.
 
-## Chapter 4: Dataset and Preprocessing
-**Database Specifications**
-*Source*: CTU-UHB Intrapartum Cardiotocography Database (PhysioNet).
-*Cohort*: 552 high-quality intrapartum recordings.
-*Label*: Binary classification based on umbilical cord arterial blood pH measured immediately post-delivery. pH < 7.05 represents True (Compromised), pH >= 7.05 represents False (Normal).
-*Imbalance*: Severe skew, with only 40 pathological traces (~7.25%).
+## Chapter 4: Dataset Description
 
-**Preprocessing Pipeline**
-1. **Signal Extraction**: Last 60 minutes defining the most informative intrapartum segment extracted.
-2. **Gap Interpolation**: Zero-valued samples < 15 seconds linearly interpolated. Larger gaps maintained as zero to prevent unphysiological artifacts.
-3. **Uterine Contraction Filtering**: Median baseline subtraction and amplitude normalization.
-4. **Downsampling**: Signals resampled from 4 Hz to 1 Hz.
-5. **Normalization**: MinMax scaling [0, 1] computed on a per-recording basis.
-6. **Windowing Segmentation**: 20-minute sliding windows with a 10-minute stride. This creates ~5 windows per recording, expanding the 552 records into ~2,760 independent training samples.
+**4.1 Source of Data**
+The primary data source for this research is the open-access **CTU-UHB Intrapartum Cardiotocography Database**, hosted by PhysioNet. It was collected at the University Hospital of Brno (UHB) in the Czech Republic. The dataset was selected because it is one of the very few publicly available, rigorously annotated, and peer-reviewed CTG datasets that includes both Fetal Heart Rate (FHR) and Uterine Contraction (UC) continuous signals, alongside detailed post-delivery biochemical metrics.
+
+**4.2 Dataset Statistics**
+The original dataset comprises 552 high-quality intrapartum recordings. Each recording captures the final hours of labor leading up to delivery. Following curation:
+- **Total Patients:** 552
+- **Sampling Rate:** 4 Hz (raw data)
+- **Signal Duration:** Varies per patient, but guaranteed to contain at least the final 60 minutes prior to delivery.
+- **Data Modalities:** FHR timeseries, UC timeseries, and maternal/fetal tabular metadata (e.g., Maternal Age, Parity, Gestational Age, Base Deficit).
+
+**4.3 Class Distribution (Imbalance)**
+The dataset exhibits a severe, real-world class imbalance reflecting the clinical reality of labor:
+- **Normal (Healthy):** ~512 cases (92.75%)
+- **Pathological (Compromised):** ~40 cases (7.25%)
+This extreme skew presents a massive computational challenge, as standard deep learning models naturally bias toward the majority class, necessitating advanced augmentation strategies like TimeGAN.
+
+**4.4 Label Definition**
+Unlike subjective clinical labels (e.g., Apgar scores or visual trace classifications), the CTU-UHB dataset provides objective biochemical ground truth. The binary target label is defined by the **umbilical cord arterial blood pH**, measured immediately post-delivery:
+- **Pathological (True / 1):** $\text{pH} < 7.15$ (indicative of significant fetal acidemia and hypoxia).
+- **Normal (False / 0):** $\text{pH} \geq 7.15$.
+
+**4.5 Signal Characteristics**
+- **Fetal Heart Rate (FHR):** Captured via Doppler ultrasound. It is a highly non-stationary signal characterized by a baseline drifting between 110–160 bpm, punctuated by rapid short-term variability (STV), long-term variability (LTV), accelerations (spikes >15 bpm), and decelerations (drops >15 bpm).
+- **Uterine Contractions (UC):** Captured via a tocodynamometer. These appear as smooth, low-frequency bell curves representing the pressure exerted on the fetus.
+
+**4.6 Preprocessing Workflow**
+Raw CTG signals contain substantial noise and artifacts. Our pipeline includes:
+1. **Extraction:** Isolating the final 60 minutes (the most physiologically stressful and predictive phase of labor).
+2. **Gap Interpolation:** Probe disconnections result in zero-valued dropouts. Gaps `< 15` seconds are completed using linear interpolation. Gaps `> 15` seconds are left as zero to prevent interpolating unphysiological artifacts.
+3. **Filtering:** UC signals undergo median baseline subtraction and amplitude normalization to isolate the contraction peaks.
+4. **Downsampling:** Signals are downsampled from 4 Hz to 1 Hz to reduce computational overhead without losing critical frequency components (Nyquist theorem).
+5. **Normalization:** Z-score standardization (or MinMax scaling) is applied mapping values to an optimal neural network input range.
+
+**4.7 Sliding Window Expansion**
+To exponentially increase our training volume and allow the model to learn localized temporal features, we apply a sliding window technique:
+- **Window Size:** 20 minutes (1200 timesteps at 1 Hz).
+- **Stride:** 10 minutes (50% overlap).
+This expands the original 552 60-minute recordings into approximately **2,546 independent training windows**. A recording labeled as "Pathological" passes that label to all its constituent windows.
+
+**4.8 Feature Modalities**
+NeuroFetal AI is a tri-modal system processing three parallel datastreams per window:
+1. **Raw Temporal Signals:** The 1D arrays of FHR and UC.
+2. **Tabular Metadata:** 18 distinct features, combining static maternal demographics (Age, Parity, Gestation, etc.) with hand-crafted signal statistics (Baseline, STV, LTV, UC Frequency, FHR-UC correlation lag).
+3. **Common Spatial Patterns (CSP):** 19 spatial variables extracted by treating FHR and UC as multi-channel EEG-like arrays, maximizing the variance disparity between Normal and Pathological classes.
+
+**4.9 Why CTU-UHB is Suitable**
+CTU-UHB is the optimal choice for this research because:
+1. **Objective Ground Truth:** pH values eliminate the inter-observer bias plaguing other visual-based datasets.
+2. **Dual-Signal Completeness:** It retains synchronized UC signals, which are utterly mandatory for diagnosing late decelerations (the hallmark of placental insufficiency).
+3. **Reproducibility:** Being public, it allows our state-of-the-art V5.0 results (AUC 0.989 / 0.864 CV) to be legitimately verified against existing literature baselines.
+
+**4.10 Limitations of the Dataset**
+Despite its robust annotations, the dataset carries inherent limitations:
+1. **Volume Restriction:** 552 cases are relatively small for training deep 1D-ResNets, forcing reliance on sliding windows and TimeGAN augmentation.
+2. **Demographic Homogeneity:** Collected exclusively at a single hospital in Brno, Czech Republic, limiting the guarantee of global demographic generalization.
+3. **Missing Data:** Many traces contain large segments of missing FHR data (probe loss) during the chaotic final moments of labor, requiring robust masking mechanisms inside the network architecture.
 
 ## Chapter 5: Advanced Feature Engineering
 Our model processes three distinct modalities comprising over 35 distinct features.
