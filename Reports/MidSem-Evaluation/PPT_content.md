@@ -243,7 +243,19 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ---
 
-### **Slide 19: Baseline Validation**
+### **Slide 19: Platt Scaling Calibration**
+*(Visual: Add `calibration_plot.tex` here, showing a standard reliability curve plotting Predicted vs. True Probability.)*
+* **Heading:** Platt Scaling Calibration
+* **The Calibration Problem:** A raw output of '85%' from a neural network is often just a geometric distance from a decision boundary, not a true clinical probability.
+* **Our Implementation:** We wrap the final Stacking Ensemble inside a `CalibratedClassifierCV` mapped to a Sigmoid function (Platt Scaling).
+* **Expected Outcome:** Achieving a highly optimized Brier Score, ensuring that when the AI predicts "90% Risk," exactly 90% of those real-world patients genuinely belong to the True Pathological class.
+
+**🗣️ Speaker 3 Notes:**  
+"Even with uncertainty bounds, standard deep learning models are notoriously overconfident. An output of 85% risk rarely means an 85% real-world chance of disease. To fix this, we implement Platt Scaling Calibration as our final architectural layer. By applying a Sigmoid mapping to our ensemble logits, we force the AI's mathematical outputs to align perfectly with true, real-world population disease frequencies (Pathological vs Normal)."
+
+---
+
+### **Slide 20: Baseline Validation**
 *(Visual: A clean table showing the three evaluated comparative baseline metrics.)*
 * **Heading:** Baseline Validation
 * To prove the necessity of the Tri-Modal structure, we actively implemented unimodal and classical architectures directly against the exact dataset:
@@ -259,7 +271,7 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ---
 
-### **Slide 20: Deployment Optimization**
+### **Slide 21: Deployment Optimization**
 *(Visual: A flowchart of a Keras file transitioning via Int8 Quantization to a TFLite mobile phone icon.)*
 * **Heading:** Deployment Optimization
 * **The Bottleneck:** Massive Keras TensorFlow networks require GPUs; rural wards lack internet and servers.
@@ -271,7 +283,19 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ---
 
-### **Slide 21: Technology Stack**
+### **Slide 22: Key Novelties (Aim to Achieve)**
+*(Visual: A stark comparison graphic contrasting "Traditional SOTA" vs "NeuroFetal-AI Achievements".)*
+* **Heading:** Key Novelties (Aim to Achieve)
+* **1. Tri-Modal Deep Fusion:** Moving beyond raw FHR-only models by mathematically fusing FHR sequences, Uterine Contractions, and Maternal Tabular Data simultaneously.
+* **2. TimeGAN Synthesis:** Successfully bypassing the destructive interpolation of SMOTE by generating 1,410 physiologically accurate synthetic pathological traces perfectly preserving phase-delay.
+* **3. Epistemic Safety & Edge AI:** Achieving high Accuracy without the "black box" side effects, enforcing explicit Uncertainty bounds (MC Dropout/Platt Scaling) all within a 1.9 MB deployable Edge payload.
+
+**🗣️ Speaker 3 Notes:**  
+"To summarize our core technical aims: First, we broke past the unimodal performance ceiling by engineering true Tri-Modal fusion. Second, we solved extreme clinical data starvation by applying generative TimeGANs instead of destructive tabular synthesizers like SMOTE. Finally, we achieved all of this while enforcing strict mathematical uncertainty bounds, effectively packaging a complex, safe decision support system into a 1.9 megabyte Edge payload."
+
+---
+
+### **Slide 23: Technology Stack**
 *(Visual: High quality logos arranged in their respective operational stacks.)*
 * **Heading:** Technology Stack
 * **Deep Learning Core:** Python 3.13 | TensorFlow 2.14 | Keras (Functional API)
@@ -284,7 +308,7 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ---
 
-### **Slide 22: Conclusion & Roadmap**
+### **Slide 24: Conclusion & Roadmap**
 *(Visual: Checkmarks vs rocket icons outlining a brief roadmap list.)*
 * **Heading:** Conclusion & Roadmap
 * ✅ **Completed Engineering:** Full dataset ingestion, Tri-Modal feature extraction (CSP/Tabular), and TimeGAN Generative synthesis stability.
@@ -301,14 +325,14 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ## Appendices
 
-### **Slide 23: References (1/3) - Obstetrical & Baseline Concepts**
+### **Slide 25: References (1/3) - Obstetrical & Baseline Concepts**
 * **Heading:** References
 * **[1]** Petrozziello, A., et al. (2019). "Deep learning for continuous fetal heart rate monitoring in labor." *IEEE CBMS.* [DOI: 10.1109/CBMS.2019.00115](https://ieeexplore.ieee.org/document/8787383)
 * **[2]** Goldberger, A., et al. (2000). "PhysioBank, PhysioToolkit, and PhysioNet: Components of a new research resource for complex physiologic signals." *Circulation*. [DOI: 10.1161/01.cir.101.23.e215](https://physionet.org/content/ctu-uhb-ctgdb/1.0.0/)
 * **[3]** Ayres-de-Campos, D., et al. (2015). "FIGO consensus guidelines on intrapartum fetal monitoring: Cardiotocography." *Int J Gynaecol Obstet.* [DOI: 10.1016/j.ijgo.2015.06.020](https://pubmed.ncbi.nlm.nih.gov/26433401/)
 * **[4]** Spilka, J., et al. (2016). "Cross-database evaluation of fetal heart rate analysis for automated detection of fetal compromise." *Comput. Biol. Med.*
 
-### **Slide 24: References (2/3) - SOTA & Generative Augmentation**
+### **Slide 26: References (2/3) - SOTA & Generative Augmentation**
 * **Heading:** References
 * **[5]** Mendis, et al. (2023). "Fusing Tabular Features and Deep Learning for FHR Analysis: A Clinically Interpretable Model for Fetal Compromise Detection." *IEEE Access.*
 * **[6]** Alqahtani, et al. (2025). "Fetal Hypoxia Classification from Cardiotocography Signals Using Instantaneous Frequency and Common Spatial Pattern." 
@@ -316,7 +340,7 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 * **[8]** Arjovsky, M., Chintala, S., & Bottou, L. (2017). "Wasserstein Generative Adversarial Networks." *ICML.* [Link: arXiv:1701.07875](https://arxiv.org/abs/1701.07875)
 * **[9]** Chawla, N. V., et al. (2002). "SMOTE: Synthetic Minority Over-sampling Technique." *JAIR.* [DOI: 10.1613/jair.953](https://arxiv.org/abs/1106.1813)
 
-### **Slide 25: References (3/3) - Architectures & Optimization**
+### **Slide 27: References (3/3) - Architectures & Optimization**
 * **Heading:** References
 * **[10]** He, K., et al. (2016). "Deep Residual Learning for Image Recognition." *CVPR.* [Link: arXiv:1512.03385](https://arxiv.org/abs/1512.03385)
 * **[11]** Vaswani, A., et al. (2017). "Attention Is All You Need." *NeurIPS.* [Link: arXiv:1706.03762](https://arxiv.org/abs/1706.03762)
@@ -325,7 +349,7 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ---
 
-### **Slide 26: Thank You / Q&A**
+### **Slide 28: Thank You / Q&A**
 *(Visual: Clean, minimal closing slide with the project abstract logo or title centered.)*
 * **Heading:** Thank You
 * **Sub-Heading:** "From Concept to Clinical Code: Engineering NeuroFetal-AI"
