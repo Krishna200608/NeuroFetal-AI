@@ -112,7 +112,7 @@ This ensures the AI acts as a safe decision **support** tool, not an autonomous 
 ## Slide 6: Literature Review
 
 **Q14. How many papers did you review? What was your review methodology?**  
-**A.** We reviewed **over 20 foundational and state-of-the-art papers** spanning:
+**A.** We reviewed **over 10 foundational and state-of-the-art papers** spanning:
 - Classical ML approaches (Fergus 2013, Georgoulas 2006, Spilka 2012/2014)
 - Deep Learning approaches (Petrozziello 2019, Zhao 2019, Xue 2021)
 - SOTA multimodal fusion (Mendis 2023)
@@ -301,7 +301,11 @@ WGAN-GP (Wasserstein GAN with Gradient Penalty, λ=10) solves both by:
 
 ## Slide 15: Core Architecture (AttentionFusionResNet)
 
-**Q37. Why use a 1D-ResNet instead of an LSTM/RNN for time-series?**  
+**Q37. Is AttentionFusionResNet a pre-existing open-source model that you just downloaded and fine-tuned?**  
+**A.** **Absolutely not.** It is a custom-engineered architecture designed specifically by our team from scratch using the Keras Functional API.
+While it incorporates established *concepts* like 1D residual skip connections (from He et al.) and Squeeze-and-Excitation blocks (from Hu et al.), the specific network layout, the number of blocks, the Temporal Attention heads, and specifically the **Tri-Modal Cross-Modal Attention Fusion (CMAF) layer** are unique architectural innovations developed explicitly for this project to process synchronized physiological signals and clinical metadata. You will not find "AttentionFusionResNet" in any standard open-source library.
+
+**Q38. Why use a 1D-ResNet instead of an LSTM/RNN for time-series?**  
 **A.** Three reasons:
 1. **Parallelization:** ResNets process the entire sequence in parallel via convolutions, while LSTMs process sequentially (much slower).
 2. **Long-range dependencies:** RNNs suffer from vanishing gradients over 1200 timesteps. ResNets use skip connections to maintain gradient flow.
@@ -309,7 +313,7 @@ WGAN-GP (Wasserstein GAN with Gradient Penalty, λ=10) solves both by:
 
 We added **Squeeze-and-Excitation (SE) blocks** for channel recalibration and **Multi-Head Temporal Attention** for capturing global patterns, making it more powerful than a vanilla ResNet.
 
-**Q38. What are Squeeze-and-Excitation (SE) Blocks?**  
+**Q39. What are Squeeze-and-Excitation (SE) Blocks?**  
 **A.** SE blocks are channel attention mechanisms (Hu et al., CVPR 2018) that:
 1. **Squeeze:** Global average pool across the temporal dimension → per-channel summary.
 2. **Excite:** Two FC layers learn to recalibrate channel importance → sigmoid activation.
@@ -317,14 +321,14 @@ We added **Squeeze-and-Excitation (SE) blocks** for channel recalibration and **
 
 This allows the ResNet to automatically learn which convolutional filters are most important for detection — effectively performing feature selection within the network.
 
-**Q39. How many parameters does the model have?**  
+**Q40. How many parameters does the model have?**  
 **A.** Each full AttentionFusionResNet (with all three input branches and head) is approximately **27 MB** in float32 format. After Int8 quantization via TFLite, it compresses to approximately **1.9 MB**.
 
 ---
 
 ## Slide 16: Cross-Modal Attention (CMAF)
 
-**Q40. How is CMAF different from simple concatenation?**  
+**Q41. How is CMAF different from simple concatenation?**  
 **A.** In standard multimodal networks, different data streams are simply **concatenated** into a long vector before the final classifier. This treats all features equally regardless of clinical context.
 
 CMAF performs **dynamic, context-aware fusion:**
@@ -334,7 +338,7 @@ CMAF performs **dynamic, context-aware fusion:**
 
 **Example:** For a 28-week premature fetus (from tabular data), CMAF shifts attention weights to be hypersensitive to minor heart rate drops that would be normal at 40 weeks.
 
-**Q41. How does the gating mechanism work mathematically?**  
+**Q42. How does the gating mechanism work mathematically?**  
 **A.** The tabular features ($v_{tab}$) are passed through a sigmoid-activated dense layer producing a gate vector $g \in [0,1]^{128}$. This gate is element-wise multiplied with the attention output:
 $$\text{output} = g \odot \text{Attention}(Q=v_{FHR}, K=v_{CSP}, V=v_{CSP})$$
 When $g_i \approx 0$, the $i$-th attention dimension is suppressed. When $g_i \approx 1$, it is fully passed through. The gate values are learned end-to-end from the clinical context.
@@ -343,7 +347,7 @@ When $g_i \approx 0$, the $i$-th attention dimension is suppressed. When $g_i \a
 
 ## Slide 17: Ensemble Strategy
 
-**Q42. Why use three different models instead of a single deep model?**  
+**Q43. Why use three different models instead of a single deep model?**  
 **A.** No single algorithmic architecture reliably generalizes across chaotic clinical noise. Each model captures different aspects:
 
 | Model | Strength | Weakness |
@@ -354,7 +358,7 @@ When $g_i \approx 0$, the $i$-th attention dimension is suppressed. When $g_i \a
 
 By stacking them, the meta-learner learns which model to trust for different types of traces.
 
-**Q43. What is "stacking" and how does the meta-learner work?**  
+**Q44. What is "stacking" and how does the meta-learner work?**  
 **A.** Stacking is an ensemble technique where:
 1. During 5-Fold CV, each model produces **Out-of-Fold (OOF) predictions** — predictions on data the model never saw during training.
 2. These OOF predictions from all 3 models are collected into a matrix of shape `(N, 3)`.
@@ -362,7 +366,7 @@ By stacking them, the meta-learner learns which model to trust for different typ
 
 This is superior to simple majority voting or averaging because the meta-learner adaptively learns model-specific trustworthiness.
 
-**Q44. What is "rank averaging" and why do you use it?**  
+**Q45. What is "rank averaging" and why do you use it?**  
 **A.** Raw probability outputs from different folds/models have different calibration scales (fold 1 might output probabilities in [0.2, 0.8] while fold 2 outputs [0.1, 0.9]). **Rank averaging** normalizes predictions by:
 1. Ranking all predictions within each fold from 0 to 1.
 2. Averaging the ranks (not the raw probabilities) across folds.
@@ -373,7 +377,7 @@ This eliminates inter-fold calibration bias and produces more stable, reliable e
 
 ## Slide 18: Uncertainty Quantification (MC Dropout)
 
-**Q45. How does MC Dropout work in practice?**  
+**Q46. How does MC Dropout work in practice?**  
 **A.** During standard training, Dropout (p=0.4) is used to prevent overfitting. In MC Dropout, we **keep dropout active during inference**:
 1. For each patient's 20-minute window, the model runs **T=20 forward passes**.
 2. Each pass randomly drops different neurons, producing slightly different predictions.
@@ -383,13 +387,13 @@ This eliminates inter-fold calibration bias and produces more stable, reliable e
 
 This is mathematically equivalent to **approximate Bayesian inference** (Gal & Ghahramani, 2016).
 
-**Q46. Why 20 passes? Is that computationally expensive?**  
+**Q47. Why 20 passes? Is that computationally expensive?**  
 **A.** 20 passes is the empirically validated sweet spot:
 - Fewer passes (e.g., 5) produce unstable uncertainty estimates.
 - More passes (e.g., 100) add computational cost with diminishing returns.
 - With 20 passes on the Keras model, inference takes ~1 second total per sample — acceptable for our clinical use case (decision is made over minutes, not milliseconds).
 
-**Q47. What happens when the model is "uncertain"?**  
+**Q48. What happens when the model is "uncertain"?**  
 **A.** When σ² > 0.05:
 - The dashboard displays an **amber "CONFIDENCE LOW: REQUIRES HUMAN REVIEW"** banner.
 - The numerical probability is still shown but accompanied by the uncertainty range (e.g., "75% ± 12%").
@@ -400,17 +404,17 @@ This is mathematically equivalent to **approximate Bayesian inference** (Gal & G
 
 ## Slide 19: Platt Scaling Calibration
 
-**Q48. What is the difference between model confidence and calibrated probability?**  
+**Q49. What is the difference between model confidence and calibrated probability?**  
 **A.** A raw neural network output of "85%" is merely a geometric distance from a learned decision boundary — it does **not** mean 85 out of 100 similar patients are truly pathological. Platt Scaling applies a sigmoid mapping to these raw logits:
 $$P_{\text{calibrated}} = \frac{1}{1 + e^{-(Aw + B)}}$$
 where $A$ and $B$ are learned parameters that align model outputs with true class frequencies. After calibration, "85%" genuinely means ~85% of patients with that score are truly pathological.
 
-**Q49. What is the Brier Score and ECE?**  
+**Q50. What is the Brier Score and ECE?**  
 **A.**
 - **Brier Score (0.0460):** Mean squared error between predicted probabilities and actual binary outcomes. Lower is better (0 = perfect, 1 = worst). Our 0.046 indicates near-ideal probability estimates.
 - **Expected Calibration Error / ECE (0.0543):** Measures the average gap between predicted probabilities and observed frequencies across probability bins. Our 0.0543 indicates <6% average calibration error — meaning our probability estimates are highly trustworthy.
 
-**Q50. How is Platt Scaling implemented?**  
+**Q51. How is Platt Scaling implemented?**  
 **A.** We wrap the entire Stacking Ensemble inside scikit-learn's `CalibratedClassifierCV` with:
 - **Method:** `sigmoid` (Platt Scaling)
 - **Cross-Validation:** 5-Fold (ensuring the calibration mapping doesn't overfit)
@@ -420,13 +424,13 @@ where $A$ and $B$ are learned parameters that align model outputs with true clas
 
 ## Slide 20: Baseline Validation
 
-**Q51. Why are baselines important? Can't you just show your final model's results?**  
+**Q52. Why are baselines important? Can't you just show your final model's results?**  
 **A.** Baselines are scientifically essential because they:
 1. **Justify architectural complexity:** We prove that simpler approaches fail, validating the need for Tri-Modal fusion.
 2. **Establish a fair benchmark:** All baselines use the **exact same dataset, splits, and CV strategy**, ensuring an apples-to-apples comparison.
 3. **Frame the contribution:** Our improvement from 0.564 (FHR-only) to 0.8639 (Tri-Modal) demonstrates the precise value each modality adds.
 
-**Q52. Why does the 1D-CNN (FHR Only) perform so poorly at 0.564 AUC?**  
+**Q53. Why does the 1D-CNN (FHR Only) perform so poorly at 0.564 AUC?**  
 **A.** 0.564 AUC is barely better than random (0.50). The 1D-CNN fails because:
 - Without UC signals, it cannot detect **late decelerations** (the most dangerous pattern).
 - Many FHR deceleration shapes look identical without contraction timing context.
@@ -438,18 +442,18 @@ This definitively proves FHR-only models are **clinically insufficient** and jus
 
 ## Slide 21: Deployment Optimization (TFLite)
 
-**Q53. What is TFLite Int8 quantization?**  
+**Q54. What is TFLite Int8 quantization?**  
 **A.** TFLite Int8 quantization converts model weights from **32-bit floating point (FP32)** to **8-bit integers (Int8)**:
 - Each weight goes from 4 bytes → 1 byte (4× compression).
 - A **representative dataset** (300 calibration samples) determines the optimal int8 scaling factors.
 - The I/O pipeline uses Int8 throughout for maximum performance on ARM CPUs and NPU/DSP accelerators.
 
-**Q54. How much does quantization affect accuracy?**  
+**Q55. How much does quantization affect accuracy?**  
 **A.** Int8 quantization retains **~99% of original float32 AUC**. The slight accuracy drop is clinically negligible because:
 - We use a carefully selected representative dataset (300 training samples) to minimize quantization error.
 - The ensemble's robustness (3 diverse models) absorbs minor individual model perturbations.
 
-**Q55. What are the exact deployment specifications?**  
+**Q56. What are the exact deployment specifications?**  
 **A.**
 
 | Specification | Value |
@@ -464,18 +468,18 @@ This definitively proves FHR-only models are **clinically insufficient** and jus
 
 ## Slides 22–24: Key Novelties, Tech Stack & Conclusion
 
-**Q56. What are the three key novelties of NeuroFetal AI?**  
+**Q57. What are the three key novelties of NeuroFetal AI?**  
 **A.**
 1. **Tri-Modal Deep Fusion:** First system to fuse FHR + UC + Tabular + CSP via Cross-Modal Attention (CMAF), breaking past the unimodal performance ceiling.
 2. **TimeGAN Synthesis:** Replaced SMOTE with a temporal GAN that preserves phase-delay dynamics, generating 1,410 physiologically realistic pathological traces.
 3. **Epistemic Safety + Edge AI:** Combined MC Dropout uncertainty quantification + Platt Scaling calibration within a 1.9 MB deployable edge payload — trustworthy AI that runs offline.
 
-**Q57. What is completed at mid-semester vs. what remains?**  
+**Q58. What is completed at mid-semester vs. what remains?**  
 **A.**
 - ✅ **Completed:** Full data pipeline, Tri-Modal feature extraction (CSP/Tabular), TimeGAN synthesis (1,410 traces), core AttentionFusionResNet + CMAF coded, baseline validation.
 - 🚀 **Remaining (End-Semester):** Final 5-Fold evaluation loops with TimeGAN, Brier-Score calibration verification, Grad-CAM XAI integration in Streamlit dashboard, live trace simulation demo.
 
-**Q58. What technology stack are you using?**  
+**Q59. What technology stack are you using?**  
 **A.**
 - **Deep Learning Core:** Python 3.13, TensorFlow 2.14, Keras (Functional API)
 - **Ensemble/Statistical:** Scikit-Learn 1.8.0, XGBoost 3.2.0
@@ -490,21 +494,21 @@ This definitively proves FHR-only models are **clinically insufficient** and jus
 
 ## Chapter 1: Introduction & Clinical Motivation
 
-**Q59. What is the difference between intrapartum and antepartum monitoring?**  
+**Q60. What is the difference between intrapartum and antepartum monitoring?**  
 **A.**
 - **Antepartum:** Monitoring before the onset of labor (weeks before delivery). Uses non-stress tests (NST), biophysical profiles.
 - **Intrapartum:** Monitoring **during active labor and delivery**. This is our focus because contractions create acute mechanical stress that can unmask previously hidden fetal compromise.
 
 Our system specifically targets the intrapartum window because this is when fetal hypoxia most rapidly progresses to irreversible damage.
 
-**Q60. What is the difference between aerobic and anaerobic metabolism in the fetus?**  
+**Q61. What is the difference between aerobic and anaerobic metabolism in the fetus?**  
 **A.**
 - **Aerobic metabolism (normal):** The fetus uses oxygen from placental blood to produce ATP (energy) efficiently. Produces CO₂ and water as byproducts.
 - **Anaerobic metabolism (compromised):** When oxygen is depleted, the fetus switches to glucose-only metabolism. This produces **lactic acid**, causing blood pH to drop (acidemia). It is also far less efficient (2 ATP vs. 36 ATP per glucose molecule), so the fetus exhausts energy reserves rapidly.
 
 The pH < 7.15 threshold directly measures the severity of this anaerobic acid accumulation.
 
-**Q61. What are the FIGO guidelines for CTG interpretation?**  
+**Q62. What are the FIGO guidelines for CTG interpretation?**  
 **A.** FIGO (International Federation of Gynecology and Obstetrics) provides standardized rubrics classifying CTG traces into:
 1. **Normal:** Baseline 110–160 bpm, moderate variability, accelerations present, no significant decelerations → Continue monitoring.
 2. **Suspicious:** Lacking at least one normal feature → Closer observation, possible additional testing.
@@ -512,17 +516,17 @@ The pH < 7.15 threshold directly measures the severity of this anaerobic acid ac
 
 Despite these guidelines, inter-observer agreement remains only 60–70%, which is why automated systems like ours are needed.
 
-**Q62. What is "Defender's Bias" in obstetrics?**  
+**Q63. What is "Defender's Bias" in obstetrics?**  
 **A.** Defender's Bias is the clinical tendency toward **false-positive over-diagnosis** of fetal distress. Because the consequences of missing a genuine case are catastrophic (stillbirth), clinicians err heavily on the side of caution. This has directly contributed to a global surge in **unnecessary emergency cesarean sections**, which carry surgical risks for the mother (hemorrhage, infection, future pregnancy complications).
 
 ---
 
 ## Chapter 2: Problem Statement & Objectives
 
-**Q63. Can you state your project's problem definition concisely?**  
+**Q64. Can you state your project's problem definition concisely?**  
 **A.** *"How can a multi-modal deep learning system integrate volatile FHR time-series, synchronized UC signals, and static maternal clinical features to accurately detect intrapartum fetal compromise, given severe class imbalance (7.25% pathological), while providing uncertainty estimates, model explainability, and an offline edge-deployable footprint?"*
 
-**Q64. How does Objective 5 (SOTA Validation) ensure scientific rigor?**  
+**Q65. How does Objective 5 (SOTA Validation) ensure scientific rigor?**  
 **A.** Objective 5 mandates:
 1. **Public dataset only** (CTU-UHB, 552 records) — anyone can reproduce and verify.
 2. **Stratified 5-Fold CV** — no cherry-picked train/test splits.
@@ -534,14 +538,14 @@ Despite these guidelines, inter-observer agreement remains only 60–70%, which 
 
 ## Chapter 3: Literature Survey & Gap Analysis
 
-**Q65. What are the two "generational shifts" in automated CTG analysis?**  
+**Q66. What are the two "generational shifts" in automated CTG analysis?**  
 **A.**
 1. **First Generation (Classical ML, ~2006–2015):** Extracted morphological FIGO features (baseline, STV, LTV, deceleration counts) → fed to SVM, RF, LR. Discarded raw signal shape. **Ceiling: ~0.70–0.76 AUC.**
 2. **Second Generation (Deep Sequence Models, ~2016–present):** Directly processed raw 1D FHR via CNNs, LSTMs. Captured signal morphology but ignored clinical context. **Ceiling: ~0.80 AUC.** Mendis (2023) pushed to 0.84 by adding tabular features.
 
 NeuroFetal AI represents a **Third Generation** — Tri-Modal fusion with CSP, uncertainty quantification, and edge deployment.
 
-**Q66. How did you validate the gaps you identified in the literature?**  
+**Q67. How did you validate the gaps you identified in the literature?**  
 **A.** We didn't just cite weaknesses — we **actively implemented and benchmarked** the competing approaches:
 - Built a 1D-CNN on FHR-only → 0.564 AUC (proving UC omission is catastrophic)
 - Built LR on tabular → 0.676 AUC (proving linear models are insufficient)
@@ -553,20 +557,20 @@ This empirical validation on the same dataset (CTU-UHB, same splits, same CV) pr
 
 ## Chapter 4: Dataset Description
 
-**Q67. Why is pH < 7.15 used instead of pH < 7.05 or pH < 7.20?**  
+**Q68. Why is pH < 7.15 used instead of pH < 7.05 or pH < 7.20?**  
 **A.** The pH < 7.15 threshold represents **clinically significant fetal acidemia** — the point where neonatal morbidity risk substantially increases. It is the most widely used research threshold in the CTG classification literature. Note:
 - pH < 7.20: Some studies use this more conservative threshold but it captures too many borderline cases.
 - pH < 7.05: Used in some of our documentation (explain.md) — represents **severe** acidemia. Different documents may reference slightly different thresholds depending on the severity level being discussed.
 - pH < 7.00: Represents critical/near-fatal acidemia.
 
-**Q68. What is a tocodynamometer and how accurate is it?**  
+**Q69. What is a tocodynamometer and how accurate is it?**  
 **A.** A tocodynamometer is a pressure sensor placed on the maternal abdomen (uterine fundus) that measures the **relative intensity** of uterine contractions. Important limitations:
 - It measures relative pressure, not absolute intrauterine pressure (unlike an intrauterine pressure catheter/IUPC).
 - Readings are **position-dependent** — if the sensor shifts, amplitude changes.
 - It reliably captures **contraction timing and frequency** (which is what our model primarily uses) but amplitude measurements can be noisy.
 - Our preprocessing applies median baseline subtraction and amplitude normalization to mitigate these artifacts.
 
-**Q69. How do you handle missing FHR data during probe disconnection?**  
+**Q70. How do you handle missing FHR data during probe disconnection?**  
 **A.** Two-tiered approach:
 1. **Gaps < 15 seconds:** Linearly interpolated (the physiological reality is that FHR doesn't change dramatically in 15 seconds, so interpolation is safe).
 2. **Gaps ≥ 15 seconds:** Preserved as zero values. These represent genuine signal loss that we don't want to fabricate. The model learns during training that zero-valued segments carry no diagnostic information and should be ignored.
@@ -575,18 +579,18 @@ This empirical validation on the same dataset (CTU-UHB, same splits, same CV) pr
 
 ## Chapter 5: Advanced Feature Engineering
 
-**Q70. What is Short-Term Variability (STV) and why is it important?**  
+**Q71. What is Short-Term Variability (STV) and why is it important?**  
 **A.** STV measures the **beat-to-beat fluctuations** in FHR (millisecond-scale differences between consecutive heartbeats). It reflects the integrity of the fetal autonomic nervous system:
 - **Normal STV:** Indicates healthy neurological function and adequate oxygenation.
 - **Reduced STV:** One of the earliest warning signs of fetal hypoxia — the autonomic nervous system is being suppressed.
 - Clinically, reduced STV is a stronger predictor of acidemia than deceleration patterns alone.
 
-**Q71. What is Long-Term Variability (LTV)?**  
+**Q72. What is Long-Term Variability (LTV)?**  
 **A.** LTV measures the **macroscopic oscillations** in FHR baseline over 3–5 minute periods (cycling between 110–160 bpm). It reflects the balance between the sympathetic and parasympathetic nervous systems:
 - **Normal LTV:** 5–25 bpm oscillations → healthy neurological cycling.
 - **Reduced LTV (< 5 bpm) or Sinusoidal pattern:** May indicate severe fetal anemia or terminal hypoxia.
 
-**Q72. What is Approximate Entropy (ApEn) and why is it used?**  
+**Q73. What is Approximate Entropy (ApEn) and why is it used?**  
 **A.** ApEn is a **non-linear complexity measure** that quantifies the regularity/predictability of a time-series:
 - **High ApEn:** Signal is complex and unpredictable → usually indicates a healthy, responsive fetal cardiovascular system.
 - **Low ApEn:** Signal is regular and predictable → may indicate a failing autonomic system unable to dynamically respond to stress.
@@ -597,7 +601,7 @@ We include both ApEn and Sample Entropy (SampEn) as features because they captur
 
 ## Chapter 6: Addressing Imbalance (TimeGAN)
 
-**Q73. What is "majority-class collapse" and how does it manifest?**  
+**Q74. What is "majority-class collapse" and how does it manifest?**  
 **A.** When 92.75% of training samples are "Normal," a neural network can achieve **92.75% accuracy** by simply predicting "Normal" for every single patient. This trivial strategy:
 - Has 100% sensitivity for Normal class and 0% sensitivity for Pathological.
 - Is clinically **useless** — it never detects the cases we actually care about.
@@ -605,7 +609,7 @@ We include both ApEn and Sample Entropy (SampEn) as features because they captur
 
 We combat this via: TimeGAN augmentation (3× minority class), Focal Loss (α=0.75, γ=2.5, pos_weight=5.0), and label smoothing (0.1).
 
-**Q74. How does Focal Loss address class imbalance?**  
+**Q75. How does Focal Loss address class imbalance?**  
 **A.** Focal Loss (Lin et al., 2017) modifies standard cross-entropy by adding a **modulating factor**:
 $$FL(p_t) = -\alpha_t \cdot (1 - p_t)^\gamma \cdot \log(p_t)$$
 - When the model is **confident and correct** (easy examples): $(1-p_t)^\gamma$ approaches 0, reducing the loss contribution → model stops wasting gradient on already-learned cases.
@@ -614,7 +618,7 @@ $$FL(p_t) = -\alpha_t \cdot (1 - p_t)^\gamma \cdot \log(p_t)$$
 - **γ = 2.5:** Aggressively down-weights easy negatives.
 - **pos_weight = 5.0:** Additional 5× multiplier for positive class samples.
 
-**Q75. What is Mode Collapse in GANs and how does WGAN-GP prevent it?**  
+**Q76. What is Mode Collapse in GANs and how does WGAN-GP prevent it?**  
 **A.** Mode Collapse occurs when the GAN generator "collapses" to producing only one or a few outputs that fool the discriminator, ignoring the diversity of the training data. For us, this would mean generating 1,410 nearly identical synthetic traces.
 
 WGAN-GP prevents this by:
@@ -626,7 +630,7 @@ WGAN-GP prevents this by:
 
 ## Chapter 7: Proposed Architecture
 
-**Q76. What is a Residual Block and why does it prevent vanishing gradients?**  
+**Q77. What is a Residual Block and why does it prevent vanishing gradients?**  
 **A.** A Residual Block adds a **skip connection** (identity mapping) that bypasses one or more layers:
 $$\text{output} = F(x) + x$$
 Instead of learning the full mapping $H(x) = F(x)$, the network only needs to learn the **residual** $F(x) = H(x) - x$. This:
@@ -634,7 +638,7 @@ Instead of learning the full mapping $H(x) = F(x)$, the network only needs to le
 2. Makes it easy to learn identity mappings (just set F(x) = 0) — deeper layers cannot hurt performance.
 3. Enables training of very deep networks (our 6-block architecture spans 1200 timesteps).
 
-**Q77. How does the Multi-Head Temporal Attention work?**  
+**Q78. How does the Multi-Head Temporal Attention work?**  
 **A.** After the 6 ResBlocks compress the 1200-timestep FHR signal into a feature map, **4-Head Temporal Attention** (Vaswani et al., 2017) is applied:
 1. **Q, K, V** are all derived from the same feature map (self-attention).
 2. **4 parallel attention heads** learn different temporal relationships simultaneously.
@@ -643,7 +647,7 @@ Instead of learning the full mapping $H(x) = F(x)$, the network only needs to le
 
 This captures **global long-range dependencies** — e.g., recognizing that a deceleration at minute 3 and another at minute 17 constitute a recurring pathological pattern.
 
-**Q78. How does the 1D-InceptionNet differ from the ResNet?**  
+**Q79. How does the 1D-InceptionNet differ from the ResNet?**  
 **A.** While ResNet uses fixed-size convolutional kernels, InceptionNet applies **three parallel kernel sizes simultaneously** (3, 5, 7):
 - **Kernel 3:** Captures rapid, microsecond-scale STV beat-to-beat variations.
 - **Kernel 5:** Captures medium-scale deceleration morphology.
@@ -655,7 +659,7 @@ The outputs of all three scales are concatenated, giving the model a multi-resol
 
 ## Chapter 8: Uncertainty & Calibration (V5.0)
 
-**Q79. How is MC Dropout mathematically equivalent to Bayesian inference?**  
+**Q80. How is MC Dropout mathematically equivalent to Bayesian inference?**  
 **A.** Gal & Ghahramani (2016) proved that training a neural network with Dropout and performing T stochastic forward passes at inference is equivalent to **Variational Inference with Bernoulli approximate distributions** over the network weights:
 - Each forward pass with different dropped neurons effectively samples from an approximate posterior distribution $q(W)$.
 - The mean prediction $\bar{y} = \frac{1}{T}\sum_{t=1}^{T}f^{W_t}(x)$ approximates the predictive mean.
@@ -663,7 +667,7 @@ The outputs of all three scales are concatenated, giving the model a multi-resol
 
 This gives us Bayesian uncertainty quantification without the computational cost of true Bayesian neural networks.
 
-**Q80. What are the Info-Theory metrics (Predictive Entropy, Mutual Information)?**  
+**Q81. What are the Info-Theory metrics (Predictive Entropy, Mutual Information)?**  
 **A.**
 - **Predictive Entropy:** $H[\bar{y}] = -\bar{y}\log\bar{y} - (1-\bar{y})\log(1-\bar{y})$  
   Captures **total uncertainty** (epistemic + aleatoric). High entropy = high overall uncertainty.
@@ -676,10 +680,10 @@ By reporting both, clinicians can distinguish between "this trace is genuinely a
 
 ## Chapter 9: Baseline Evaluation & Metrics
 
-**Q81. Why report AUC-ROC instead of Accuracy?**  
+**Q82. Why report AUC-ROC instead of Accuracy?**  
 **A.** With 92.75% class imbalance, a model that predicts "Normal" for every patient achieves 92.75% accuracy — while being clinically useless. **AUC-ROC** is threshold-independent and measures the model's ability to **rank** pathological cases higher than normal cases across all possible thresholds. An AUC of 0.5 = random, 1.0 = perfect discrimination.
 
-**Q82. What does the jump from 0.564 (1D-CNN) to 0.8639 (Ensemble) tell us?**  
+**Q83. What does the jump from 0.564 (1D-CNN) to 0.8639 (Ensemble) tell us?**  
 **A.** The improvement quantifies the exact contribution of each architectural component:
 - **0.564 → 0.837 (+0.273 AUC):** Adding tabular features via Random Forest adds massive clinical context.
 - **0.837 → 0.8639 (+0.027 AUC):** Adding deep sequential processing (ResNet) + CSP + CMAF fusion breaks past the tabular ceiling.
@@ -689,7 +693,7 @@ By reporting both, clinicians can distinguish between "this trace is genuinely a
 
 ## Chapter 10: Edge Deployment & XAI Plans
 
-**Q83. What is Grad-CAM and how does it work for 1D signals?**  
+**Q84. What is Grad-CAM and how does it work for 1D signals?**  
 **A.** Grad-CAM (Gradient-weighted Class Activation Mapping, Selvaraju et al., ICCV 2017) generates visual explanations by:
 1. Computing the gradient of the predicted class score with respect to the **last convolutional layer** activations.
 2. Global-average-pooling these gradients to obtain per-channel importance weights.
@@ -697,7 +701,7 @@ By reporting both, clinicians can distinguish between "this trace is genuinely a
 
 For 1D FHR signals, this produces a heatmap overlay showing **exactly which temporal segment** (e.g., minutes 12–14 where a late deceleration occurs) most influenced the "Pathological" prediction. Clinicians can visually verify: "Yes, that's exactly the late deceleration I was also concerned about."
 
-**Q84. Why is offline deployment critical for this project's impact?**  
+**Q85. Why is offline deployment critical for this project's impact?**  
 **A.** The highest burden of intrapartum fetal mortality is in rural LMICs where:
 - There is **no internet connectivity** (eliminates cloud-based AI)
 - There are **no GPU servers** (eliminates heavy Keras models)
@@ -710,7 +714,7 @@ Our 1.9 MB TFLite model runs entirely offline, requires no cloud connection, exe
 
 ## Chapter 11: Current Status & End-Semester Roadmap
 
-**Q85. What exactly has been completed at mid-semester?**  
+**Q86. What exactly has been completed at mid-semester?**  
 **A.** All foundational engineering and architectural work:
 1. ✅ **Data Pipeline:** 552 CTU-UHB recordings → 2,546 windowed training matrices
 2. ✅ **Feature Engineering:** 18 tabular features + 19 CSP vectors fully extracted
@@ -719,7 +723,7 @@ Our 1.9 MB TFLite model runs entirely offline, requires no cloud connection, exe
 5. ✅ **Baselines:** 3 empirical baselines established (1D-CNN: 0.564, LR: 0.676, RF: 0.837)
 6. ✅ **Streamlit Dashboard:** Working clinical UI with prediction + uncertainty visualization
 
-**Q86. What is planned for the end-semester evaluation?**  
+**Q87. What is planned for the end-semester evaluation?**  
 **A.** Phase 2 focuses on integration, validation, and deployment:
 1. 🚀 **Full Training Loop:** Bind TimeGAN outputs live into 5-Fold CV (per-fold synthesis preventing data leakage)
 2. 🚀 **Hyperparameter Optimization:** Cloud GPU sweep for final metrics
@@ -733,20 +737,20 @@ Our 1.9 MB TFLite model runs entirely offline, requires no cloud connection, exe
 
 ---
 
-**Q87. What is the clinical significance of your 0.8639 AUC?**  
+**Q88. What is the clinical significance of your 0.8639 AUC?**  
 **A.** An AUC of 0.8639 means that if we randomly select one pathological fetus and one normal fetus, the model correctly ranks the pathological case as higher risk **86.39% of the time**. In clinical context:
 - This surpasses the SOTA (Mendis: 0.84 AUC) using only 552 public samples (vs. their 9,887 private samples).
 - Combined with our 96.34% overall accuracy and 95.22% F1-score, the system provides highly reliable assistance.
 - The Brier Score of 0.046 confirms the predicted probabilities accurately reflect real-world risk.
 
-**Q88. Is this a diagnostic tool or a decision support system?**  
+**Q89. Is this a diagnostic tool or a decision support system?**  
 **A.** Strictly a **Clinical Decision Support System (CDSS)** — not a diagnostic device. Key distinctions:
 - **No autonomous decisions:** All predictions are presented as advisory information.
 - **Always defers to clinicians:** Especially when uncertainty is high.
 - **No regulatory clearance:** Not CE/FDA/CDSCO approved. Research prototype only.
 - **Cannot replace obstetricians:** Designed to augment, not replace, clinical judgment.
 
-**Q89. What are the known limitations of your system?**  
+**Q90. What are the known limitations of your system?**  
 **A.**
 1. **Small dataset:** 552 records (single hospital, Czech Republic) — demographic generalization unvalidated.
 2. **No prospective validation:** All evaluation is retrospective. Real-world performance may differ.
@@ -754,7 +758,7 @@ Our 1.9 MB TFLite model runs entirely offline, requires no cloud connection, exe
 4. **pH threshold ambiguity:** Borderline pH cases (7.00–7.15) are inherently diagnostically ambiguous.
 5. **Not regulatory-cleared:** Would require prospective clinical trials and ISO/IEC certification for real clinical use.
 
-**Q90. How does your project compare to existing commercial CTG analysis systems?**  
+**Q91. How does your project compare to existing commercial CTG analysis systems?**  
 **A.** Commercial systems (e.g., K2 Guardian, GE Maternal-Infant Care) typically:
 - Use rule-based FIGO feature extraction (not deep learning)
 - Analyze FHR only (no UC signal fusion)
@@ -764,13 +768,13 @@ Our 1.9 MB TFLite model runs entirely offline, requires no cloud connection, exe
 
 NeuroFetal AI advances beyond these by offering tri-modal deep fusion, calibrated probabilities, uncertainty awareness, explainability via Grad-CAM, and runs on ₹5,000 phones offline.
 
-**Q91. What is the role of each team member?**  
+**Q92. What is the role of each team member?**  
 **A.**
 - **Krishna Sikheriya (IIT2023139):** Lead Developer & AI Architect — model architecture design, training pipeline, ensemble integration.
 - **Bodkhe Yash Sanjay (IIT2023180):** Data Engineering & Backend — data ingestion, feature extraction, TimeGAN implementation.
 - **Lokesh Bawariya (IIT2023138):** Frontend & Visualization — Streamlit dashboard, Grad-CAM visualization, deployment pipeline.
 
-**Q92. What would you do differently if you had more time or resources?**  
+**Q93. What would you do differently if you had more time or resources?**  
 **A.**
 1. **Multi-center validation:** Test on Oxford/Edinburgh CTG databases to assess demographic generalization.
 2. **Prospective clinical pilot:** Deploy in a controlled hospital setting with concurrent expert evaluation.
@@ -778,14 +782,14 @@ NeuroFetal AI advances beyond these by offering tri-modal deep fusion, calibrate
 4. **Evidential Deep Learning:** Explore single-pass uncertainty (Dirichlet prior) as a faster alternative to MC Dropout.
 5. **Federated Learning:** Train across hospitals without sharing patient data.
 
-**Q93. Why not use a Transformer / Foundation Model directly?**  
+**Q94. Why not use a Transformer / Foundation Model directly?**  
 **A.** We considered this but concluded:
 1. **Data volume:** 2,546 samples is insufficient for training a Transformer from scratch (they need orders of magnitude more data).
 2. **Inductive bias:** 1D-ResNets with convolutions have strong inductive bias for local pattern detection (decelerations), which is appropriate for physiological signals.
 3. **We do use attention:** Our Multi-Head Temporal Attention and CMAF layers incorporate the Transformer's core mechanism (Q-K-V attention) within a CNN backbone, getting the best of both worlds.
 4. **Computational cost:** Full Transformers would be too heavy for our 1.9 MB edge deployment target.
 
-**Q94. How do you ensure there is no data leakage in your pipeline?**  
+**Q95. How do you ensure there is no data leakage in your pipeline?**  
 **A.** Multiple safeguards:
 1. **Stratified 5-Fold CV:** Each fold is split at the **patient level** (not window level) — all windows from one patient are in the same fold.
 2. **TimeGAN augmentation:** Applied **only to training folds**, never to validation.
@@ -793,7 +797,7 @@ NeuroFetal AI advances beyond these by offering tri-modal deep fusion, calibrate
 4. **Feature extraction:** Tabular features are extracted independently per window before splitting.
 5. **OOF predictions:** Every sample is predicted by a model that never saw it during training.
 
-**Q95. What is the reproducibility guarantee of your results?**  
+**Q96. What is the reproducibility guarantee of your results?**  
 **A.** Our results are fully reproducible:
 - **Fixed random seed:** 42 across all stochastic operations (Python, NumPy, TensorFlow, scikit-learn)
 - **Public dataset:** CTU-UHB is freely available on PhysioNet
