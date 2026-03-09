@@ -219,34 +219,34 @@ The primary objective of Phase 2 is to empirically demonstrate that the Tri-Moda
 
 ## Chapter 10: Edge Deployment & XAI Plans
 
-**9.1 "Lab to Village" Offline Execution**
+**10.1 "Lab to Village" Offline Execution**
 The highest incidence of intrapartum fetal mortality occurs in rural clinics across LMICs where high-end GPU servers and stable internet connections are entirely unavailable. Therefore, NeuroFetal AI must run "on edge."
 - In our upcoming phase, we will apply **TensorFlow Lite Full Integer (Int8) Quantization**.
 - Using a representative CTU-UHB calibration set, the massive Floating-Point 32 (FP32) Keras weight matrices will be mathematically collapsed into 8-bit integers.
 - This quantization is projected to compress the heavy 27 MB ensemble into an incredibly lightweight **~1.9 MB deployable `.tflite` payload**, intended to execute purely on standard Android mobile CPUs within ~30 milliseconds, consuming negligible battery power.
 
-**9.2 Explainable AI (XAI) via Grad-CAM**
+**10.2 Explainable AI (XAI) via Grad-CAM**
 Obstetricians cannot blindly trust "black-box" alerts, especially when contemplating an invasive emergency C-section. To guarantee clinical transparency, Phase 2 implements Gradient-weighted Class Activation Mapping (Grad-CAM). 
 - We will map the deepest ResNet convolutional gradients back onto the original 1D spatial input sequence.
 - This will visually highlight on the UI monitor *exactly which* segment of the heart-rate trace (e.g., a specific late deceleration drop occurring 4 minutes after a contraction) triggered the 'Pathological' warning natively explaining the model's logic to the attending physician.
 
-## Chapter 10: Current Status & End-Semester Roadmap
+## Chapter 11: Current Status & End-Semester Roadmap
 
-**10.1 Completed Milestones (Mid-Semester Status: V5.0 Achieved)**
+**11.1 Completed Milestones (Mid-Semester Status: V5.0 Achieved)**
 At the midpoint of this research project, all core data engineering, generative augmentation, and architectural structuring milestones have been successfully completed:
 1. **Data Pipeline Optimization:** Successfully extracted, noise-filtered, and window-segmented the massive 552-patient CTU-UHB dataset into 2,546 localized training matrices.
 2. **Tri-Modal Engineering:** Completed heavy programmatic extraction for the 18 Tabular clinical metrics and computed the highly complex 19-vector physiological CSP arrays.
 3. **Synthetic Generative Augmentation:** Successfully coded and trained the TimeGAN WGAN-GP network across 10,000 deep recursive epochs. It now successfully synthesizes minority class pathological occurrences without losing physical sequence integrity.
 4. **Architectural Blueprinting:** The massive `AttentionFusionResNet`, the mathematical Cross-Modal Attention fusing layer, and the core scripts governing the Stacking Meta-Learner have all been coded and locally verified.
 
-**10.2 Roadmap to End-Semester Evaluation (Phase 2)**
+**11.2 Roadmap to End-Semester Evaluation (Phase 2)**
 For the final project submission, the following integration and deployment phases will be executed on cloud infrastructure (Google Colab / Azure):
 1. **Full Sub-System Training Loop:** Dynamically binding the TimeGAN outputs live into the Stratified 5-Fold evaluation loops to massively augment the exact training folds without leaking into the validation holdouts.
 2. **Execution & Metric Validation:** Running the massive parallelized hyperparameter grid sweep across cloud GPUs to formally establish our final Accuracy, F1-Score, AUPRC, and AUC-ROC metrics against the literature baseline.
 3. **Platt & MC Implementation:** Wrapping the finalized model weights in the Platt Scaling calibration logic and actively verifying the Monte Carlo epistemic confidence interval scatter plots.
 4. **Clinical UI/UX Deployment:** Programming the final `Streamlit` Python dashboard, loading the Int8 quantized `.tflite` edge executions, and running live trace simulations to mimic a genuine labor ward environment for the final presentation.
 
-## Chapter 11: References
+## Chapter 12: References
 1. World Health Organization, "Stillbirths," *WHO Fact Sheets*, 2020. [Online]. Available: https://www.who.int/news-room/fact-sheets/detail/stillbirth
 2. A. Ayres-de-Campos, C. Spong, and C. Chandraharan, "FIGO consensus guidelines on intrapartum fetal monitoring: Cardiotocography," *Int. J. Gynaecol. Obstet.*, vol. 131, no. 1, pp. 13–24, 2015.
 3. J. Bernardes. et al., "Evaluation of interobserver agreement of cardiotocograms," *Int. J. Gynaecol. Obstet.*, vol. 57, no. 1, pp. 33–37, 1997.

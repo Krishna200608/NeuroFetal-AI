@@ -353,5 +353,5 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 *(Visual: Clean, minimal closing slide with the project abstract logo or title centered.)*
 * **Heading:** Thank You
 * **Sub-Heading:** "From Concept to Clinical Code: Engineering NeuroFetal-AI"
-* **Presenters:** [Speaker 1 Name], Yashvardhan Singh, Lokesh
+* **Presenters:** Krishna Sikheriya | Yash Sanjay Bodkhe | Lokesh Bawariya
 * **Prompt:** We welcome your questions regarding our Generative Architecture, the Tri-Modal Fusion Pipeline, or our Phase 2 Clinical Deployment strategy.

@@ -1,232 +1,150 @@
-# Project Justification & Architecture Briefing (Final Version)
+# NeuroFetal AI — Frequently Asked Questions (FAQs)
 
-**For:** Professor / Research Guide  
-**From:** Research Team (NeuroFetal AI)  
-**Subject:** Rationale Behind Our "Tri-Modal" Architecture & Research Novelty (Phase 6 SOTA — AUC 0.87)
+Prepared for the Mid-Semester / End-Semester Panel Evaluation. Updated to **V5.0** (March 2026).
 
 ---
 
-## 1. How We Designed the Architecture (The "Doctor's Brain" Analogy)
+## General / Clinical Questions
 
-We didn't just pick a neural network at random. We designed the architecture to **mimic exactly how a real obstetrician thinks**.
+**Q1: What exactly does NeuroFetal AI do?**
+It is a Clinical Decision Support System that monitors fetal health **during active labor** (intrapartum). It analyzes Cardiotocography (CTG) signals — specifically the Fetal Heart Rate (FHR) and Uterine Contractions (UC) — alongside maternal clinical data, to predict whether the fetus is in compromise (hypoxia/acidemia). It acts as an automated "second opinion" for the attending obstetrician.
 
-### The Problem with Current AI
-Most existing research papers (like Papers 1, 3, 5) treat the problem as a "Signal Processing" task. They throw the raw heart rate line into a model and ask "Is this bad?".
-*   **Why this fails:** A flat heart rate line (low variability) is **critical** for a full-term baby (40 weeks) but **normal** for a premature baby (28 weeks). Without knowing the "Context" (Age, Weeks), the AI guesses wrong.
+**Q2: When is this model used? During the whole pregnancy?**
+No. It is used specifically **during labor (intrapartum monitoring)**. Labor is the most dangerous time for the baby because strong uterine contractions can compress the umbilical cord or placenta, cutting off oxygen. Our AI acts as a 24/7 safety alarm that never gets tired — watching the CTG screen continuously to alert the doctor the second a dangerous pattern appears.
 
-### Our Solution: The "Tri-Modal" Approach
-We realized we needed **three** pieces of information, processed simultaneously, just like a doctor:
-1.  **The Heart Rate (Input 1):** "How is the baby beating?"
-2.  **The Contractions (Input 2):** "Is the baby under stress right now?"
-3.  **The Clinical Context (Input 3):** "Is this baby premature? Is the mother older?"
+**Q3: What dataset do you use?**
+The **CTU-UHB Intrapartum Cardiotocography Database** from PhysioNet — 552 publicly available, de-identified recordings from the University Hospital of Brno, Czech Republic. Labels are based on objective post-delivery umbilical cord blood pH (pH < 7.15 = Pathological).
 
-**Why this stands out:**
-Almost no other paper fuses all three. Most ignore the Clinical Context completely. We built a system that "sees" the patient, not just the graph.
+**Q4: Why not use a private hospital dataset?**
+Reproducibility. The base paper benchmark (Mendis et al., 2023, AUC 0.84) used 9,887 proprietary hospital cases that no one can access. By using a public dataset, our results (AUC 0.8639) can be independently verified and benchmarked by the global research community.
 
 ---
 
-## 2. What Novelty Are We Bringing?
+## Architecture & Model Questions
 
-We are not just replicating old papers. We have introduced **three specific novelties** that you can highlight in your defense:
+**Q5: Which models are you using exactly?**
+A **Stacking Ensemble** of three architecturally diverse models:
+1. **Model A — AttentionFusionResNet:** A 1D ResNet for FHR + Dense networks for 18 tabular features and 19 CSP features, fused via Cross-Modal Attention.
+2. **Model B — 1D-InceptionNet:** Multi-scale temporal convolutions (kernel sizes 3, 5, 7) processing the same 3 inputs.
+3. **Model C — XGBoost:** Gradient-boosted trees on hand-crafted tabular + CSP + FHR statistical features.
 
-1.  **"Spatial" Thinking for Time-Series (CSP)**
-    *   **Innovation:** We borrowed a technique called **Common Spatial Patterns (CSP)** from Brain-Computer Interface (EEG) research.
-    *   **Simple Explaination:** Usually, CSP is used to find which part of the brain lights up. We adapted it to find which "frequency bands" of the heart rate light up during distress. This has rarely been applied to Fetal ECG before.
+A Logistic Regression **Meta-Learner** stacks their out-of-fold predictions to produce the final AUC of **0.8639**.
 
-2.  **Uncertainty Quantification (The "Safety Valve")**
-    *   **Innovation:** Our model doesn’t just say "Pathological". It gives a "Confidence Score" and a reliability curve.
-    *   **Why:** If the AI is only 51% sure, a doctor needs to know. Standard black-box models effectively lie by hiding this uncertainty. We expose it via **Monte Carlo Dropout** and **Calibration Plots**. (Completed in Phase 2/Week 3).
+**Q6: Why three different models instead of one big one?**
+Each model captures different patterns. ResNet sees raw sequential morphology, InceptionNet captures multi-scale temporal features, and XGBoost excels at structured tabular data. The meta-learner learns which model to trust under what conditions. This diversity is mathematically proven to be more robust than any single model.
 
-3.  **Rank-Normalized Ensembling & Stacking**
-    *   **Innovation:** Medical data varies wildly between patients. We use Rank Averaging to normalize predictions across folds, then a **Stacking Meta-Learner** (Logistic Regression) to combine out-of-fold predictions from 3 diverse models (AttentionFusionResNet, 1D-InceptionNet, XGBoost). This architecture pushed AUC from 0.74 → **0.87**.
+**Q7: Why include Uterine Contractions (UC) when most papers only use FHR?**
+The FHR is the **reaction**; the UC is the **action**. A heart rate drop alone is ambiguous — but a heart rate drop **after** a contraction peak is a "Late Deceleration," indicating placental failure. Without UC data, the AI cannot distinguish dangerous late decelerations from harmless early ones. Our unimodal baseline (FHR only) collapsed to 0.564 AUC, empirically proving UC is essential.
 
----
+**Q8: What is Cross-Modal Attention Fusion (CMAF)?**
+Instead of blindly concatenating tabular data at the end of a CNN, CMAF uses the clinical variables as an active mathematical **gate**. The clinical context (e.g., gestational age = 28 weeks) dynamically shifts the attention weights — just like an obstetrician changes their alert threshold for a premature baby. Think of it as a "spotlight" that highlights dangerous signal patterns relevant to *that specific mother*.
 
-## 3. Why Uterine Contractions (UC)? And The Pipeline Explained.
+**Q9: What is CSP? Explain it simply.**
+**Common Spatial Patterns** is borrowed from Brain-Computer Interface (EEG) research. Imagine you're at a noisy party and want to hear only your friend. CSP is a mathematical filter that **maximizes the volume** of pathological patterns while **muting** healthy ones. We treat FHR and UC as a 2-channel matrix, and CSP projects it into a new space where the "distress" patterns are shouting and the noise is whispering. It produces 19 discriminative variance features per window.
 
-### Why add UC data?
-The Fetal Heart Rate (FHR) is the **reaction**. The Uterine Contraction (UC) is the **action**.
-*   **Scenario:** If the heart rate drops, is it bad?
-    *   *Without UC data:* "Maybe. I don't know."
-    *   *With UC data:* "The heart dropped **after** the contraction peaked. That is a Late Deceleration. That means oxygen is cut off. **Emergency.**"
-    
-By adding UC, we give the model the **"Cause and Effect"** context.
+**Q10: So you don't use a CNN for Contractions?**
+We process UC signals **before** the model using the CSP algorithm to extract 19 spatial features, then feed those into Dense Networks (in the deep learning models) or directly into XGBoost. This is more efficient than a raw CNN for this specific cross-signal relationship.
 
-### The Pipeline (Are they trained separate?)
-**No.** We do **not** train separate models (like Model A for FHR -> Model B for UC). That would be weak because the models wouldn't talk to each other.
-
-**We use an End-to-End "Parallel" Pipeline:**
-Imagine three separate pipes flowing into one big mixer *at the same time*.
-
-1.  **Branch 1 (The Eye):** A **1D ResNet (Residual Network)** watches the **Heart Rate** (1200-sample windows).
-2.  **Branch 2 (The Sensor):** A **Dense Network (MLP)** analyzes the **Contractions** (via 19 CSP features).
-3.  **Branch 3 (The Brain):** A **Dense Network (MLP)** reads the **Clinical File** (16 features: 3 demographic + 13 signal-derived).
-
-**Phase 6 Evolution — Stacking Ensemble:**
-In the final phase, we added two more models trained on the same data:
-4.  **Model B (1D-InceptionNet):** Multi-scale temporal convolutions at 3 different kernel sizes.
-5.  **Model C (XGBoost):** Gradient-boosted trees on tabular + CSP + FHR statistics.
-A **Stacking Meta-Learner** (Logistic Regression) fuses their out-of-fold predictions → **AUC 0.87**.
-
-**Crucially:** We train them **all together** at the exact same time.
-*   This allows "Backpropagation" (learning) to flow across all branches.
-*   The Clinical branch actually *teaches* the FHR branch what to look for! (e.g., "This baby is premature, so ignore the low variability").
+**Q11: What is a Dense Network and why do you use it?**
+A standard neural network (Multi-Layer Perceptron) where every neuron connects to the next layer. We use it for tabular/CSP data because:
+- **ResNet** is designed for **signals** where temporal order matters.
+- **Dense Network** is designed for **spreadsheets** — lists of numbers (Age: 30, CSP: 0.5) without a time sequence.
 
 ---
 
-## 4. How "Fusion" Works (Simple Concept)
+## Data Processing Questions
 
-We use a technique called **Cross-Modal Attention**.
+**Q12: Walk me through the data processing pipeline.**
+1. **Extraction:** Take the last 60 minutes of FHR and UC signals (the most critical period).
+2. **Cleaning:** Interpolate small FHR gaps (<15s); remove UC flatlines and non-physiological spikes.
+3. **Normalization:** Scale everything to [0, 1].
+4. **Downsampling:** 4 Hz → 1 Hz (Nyquist-safe).
+5. **Windowing:** 20-minute windows with 10-minute overlap → 552 recordings become **~2,546 training samples**.
+6. **Feature Extraction:** Compute 18 tabular features + 19 CSP features per window.
 
-**The Logic:**
-Instead of just glueing the data together (Concatenation), we use a "Query" system.
-*   **Query:** The Clinical Data (e.g., "Term Baby").
-*   **Key/Value:** The Signal Data (FHR).
-
-**Analogy:**
-Imagine you are looking at a messy room (The Signal).
-*   If I tell you "Look for keys" (Context A), your brain filters out the clothes and books.
-*   If I tell you "Look for dirty clothes" (Context B), your brain filters out the keys.
-
-**Our Fusion:**
-The **Clinical Branch** tells the **Signal Branch** what features to focus on. It acts like a **Spotlight**, highlighting the dangerous patterns relevant *to that specific mother*.
+**Q13: Where does UC data come from? The .dat or .hea file?**
+Both. The `.dat` file contains the raw signal data (FHR in Channel 1, UC in Channel 2). The `.hea` file contains the metadata/instructions telling the parser which column is which. Think of `.dat` as the music file and `.hea` as the track listing.
 
 ---
 
-## Summary for Sir
-*"Sir, while existing methods treat this as a simple signal processing task, we built a system that **thinks like a clinician**.*
+## Imbalance & Augmentation Questions
 
-*Instead of looking at the heart rate in isolation, our model simultaneously analyzes:*
-1.  ***The Cause:** Uterine Contractions (via 19 CSP features).*
-2.  ***The Effect:** Fetal Heart Rate patterns.*
-3.  ***The Context:** 16 clinical & signal-derived features.*
+**Q14: How do you handle the extreme class imbalance (only 7.25% pathological)?**
+Three strategies:
+1. **TimeGAN (V4.0):** A WGAN-GP time-series GAN that generates 1,410 synthetic pathological traces preserving temporal dynamics (phase-locked late decelerations).
+2. **Weighted Focal Loss:** Down-weights easy negatives ($\gamma=2.5$) and applies 5× positive class weight.
+3. **Sliding Window Expansion:** Increases training volume 5× from 552 to ~2,546 samples.
 
-*By training a **Stacking Ensemble** of 3 architecturally diverse models (ResNet, InceptionNet, XGBoost) with a meta-learner, we achieve **AUC 0.87** on public data — exceeding the previous SOTA of 0.84 which used 10k+ private samples."*
-
----
-
-## 5. "Lab to Bedside": Mobile Edge Deployment (TFLite)
-
-We didn’t just build a model in Python; we built a **deployable medical device**.
-
-### The Engineering Challenge
-Deep Learning models (like ResNets) are heavy and slow. You can't put a Research Server in a rural clinic.
-
-### Our Solution: TFLite Quantization
-We implemented an automated "Compression Pipeline" that converts our trained Keras model into **TensorFlow Lite (TFLite)** format.
-
-1.  **Size Reduction:** Int8 quantization achieves significant compression.
-2.  **Optimized Instructions:** We used **Quantization** (converting 32-bit floats to 8-bit integers) without losing accuracy.
-3.  **Result:** The model can now run on a **5000 Rs. Android Smartphone** or a Raspberry Pi.
-
-### Why this matters (The "Why" for your Defense):
-*   **Privacy:** Processing happens *on the device*. No patient data is sent to the Cloud.
-*   **Internet-Free:** Works in rural villages with zero connectivity.
-*   **Real-Time:** Doctors get an alert in milliseconds, not seconds.
+**Q15: Why TimeGAN instead of SMOTE?**
+SMOTE draws geometric lines between tabular points — this **destroys** the sequential time-series structure. It averages out the critical phase-delay between contractions and decelerations, generating biologically impossible "Frankenstein" waves. TimeGAN uses recurrent GRU layers to respect step-by-step temporal transitions, producing physiologically realistic synthetic traces.
 
 ---
 
-## 6. Defense Cheat Sheet (Q&A)
+## Uncertainty & Calibration Questions
 
-**Q: "Which models are you using exactly?"**
+**Q16: What is Monte Carlo (MC) Dropout? Explain simply.**
+Like asking **20 slightly different doctors** for a diagnosis:
+- **Scenario A:** All 20 say "Pathological" → AI is **Certain** (High Confidence).
+- **Scenario B:** 10 say "Pathological", 10 say "Normal" → AI is **Uncertain** (Low Confidence, flagged for human review).
 
-You should answer:
-*"We use a **Stacking Ensemble** of three architecturally diverse models:"*
-1.  **Model A — AttentionFusionResNet:** A 1D ResNet for heart rate + Dense networks for 16 tabular features and 19 CSP features, fused via Cross-Modal Attention.
-2.  **Model B — 1D-InceptionNet:** Multi-scale temporal convolutions (kernel sizes 3/5/7) processing the same 3 inputs.
-3.  **Model C — XGBoost:** Gradient-boosted trees on hand-crafted tabular + CSP + FHR statistical features.
-*"A Logistic Regression Meta-Learner stacks their out-of-fold predictions to produce the final AUC of **0.87**."*
+Technically, we keep dropout layers ($p=0.3$) active during inference and run 20 stochastic forward passes. The standard deviation across predictions is the epistemic uncertainty metric.
 
-**Q: "So you don't use a CNN for Contractions?"**
-*"We process the Contractions PRE-model using the CSP algorithm to extract 19 features first, then feed those features into a Dense Network (in the deep learning models) or directly into XGBoost. This is more efficient than a raw CNN for this specific signal relationship."*
+**Q17: What is Platt Scaling Calibration?**
+A raw "85% confidence" from a neural network is often just a geometric distance from the decision boundary, not a true clinical probability. Platt Scaling wraps the ensemble inside `CalibratedClassifierCV` with a sigmoid function, shifting logits into probability bins aligned with real disease frequency. Our calibrated system achieves a **Brier Score of 0.046** and **ECE of 0.054** — meaning when the AI says "90% Risk," ~90% of those patients genuinely are pathological.
 
-**Q: "What is CSP algorithm? Explain it simply."**
+**Q18: What is a Calibration Curve?**
+It is a "truth detector." The curve plots model confidence vs. reality. If the model says "70% Risk," the curve shows whether it was actually right 70% of the time. Our curve closely follows the diagonal (perfect calibration), proving our risk scores are trustworthy.
 
-**The "Cocktail Party" Analogy:**
-Imagine you are at a noisy party (The Signal). You want to hear *only* your friend (The Distress Pattern) and ignore the background music (Normal Heart Rate).
-
-CSP is a mathematical "Filter" that does exactly this:
-1.  It looks at all the "Healthy" signals.
-2.  It looks at all the "Pathological" signals.
-3.  It designs a custom filter that **maximizes the volume** of the Pathological signals while **muting** the Healthy ones.
-
-So, instead of feeding the raw noisy signal to the model, we feed it the *filtered* version where the "Distress" patterns are shouting and the noise is whispering. This makes it much easier for the **Dense Network (Branch 2)** to classify.
-
-**Q: "What is a Dense Network and why do we use it?"**
-
-*   **What it is:** A standard neural network (Multi-Layer Perceptron) where every neuron is connected to every other neuron in the next layer. It's the "calculator" of Deep Learning.
-*   **Why we use it instead of another ResNet:**
-    *   **ResNet** is designed for **"Pictures" or "Signals"** where the *order* matters (Time).
-    *   **Dense Network** is designed for **"Spreadsheets"** (Tabular Data) where we just have a list of numbers (e.g., Age: 30, CSP Value: 0.5).
-    *   Since our Clinical Data and CSP Features are just lists of numbers without a time sequence, a Dense Network is the fastest and most accurate tool to process them.
-
-**Q: "What is Monte Carlo Dropout? Explain it simply."**
-
-**The "Second Opinion" Analogy:**
-*   **Standard AI:** Like asking **one** doctor for a diagnosis. They might be wrong, but they'll say it with 100% confidence.
-*   **MC Dropout:** Like asking **20 slightly different doctors** (or the same doctor in 20 different moods).
-    *   **Scenario A:** If all 20 say "Pathological", the AI is **Certain** (High Confidence).
-    *   **Scenario B:** If 10 say "Pathological" and 10 say "Healthy", the AI is **Uncertain** (Low Confidence).
-*   **Why we need it:** In medicine, we cannot afford to be "confidently wrong". If the AI is unsure (Scenario B), we flag it for a human expert instead of guessing.
-
-**Q: "Walk me through your Data Processing Pipeline. How do you handle the raw signals?"**
-
-**Step 1: Ingestion & Filtering (The "Quality Control" Phase)**
-*   **Raw Input:** We take the **last 60 minutes** of FHR (Fetal Heart Rate) and UC (Uterine Contraction) signals. This is the most critical period before birth.
-*   **Cleaning:**
-    *   **FHR:** We remove 0s (sensor loss) and interpolate small gaps (<15s).
-    *   **UC (New):** We use a **Rolling Standard Deviation** filter to detect "flatlines" (sensor disconnects) and remove non-physiological spikes.
-*   **Normalization:** We scale everything between 0 and 1 so the AI sees consistent patterns.
-
-**Step 2: Slicing (The "Windowing" Phase)**
-*   Instead of feeding the whole hour at once, we slice it into **20-minute windows** with a **10-minute overlap**.
-*   **The Math:** (60min - 20min) / 10min + 1 = **5 Slices per Patient**.
-*   **Result:** We turn **552 Raw Recordings** $\rightarrow$ **2,760 Training Samples**.
-*   **Why?** This gives us **5x more training data** (Data Augmentation) and helps the AI focus on short-term distress patterns without losing context.
-
-**Step 3: Tri-Stream Inputs**
-*   **Time-Series Stream:** The 20-min segments of FHR go into the **ResNet / InceptionNet**.
-*   **Tabular Stream:** 16 features (3 demographic + 13 signal-derived) go into the **Dense Network / XGBoost**.
-*   **CSP Stream:** 19 Common Spatial Patterns features extracted from FHR+UC go into the **Dense Network / XGBoost**.
-
-**Q: "Where are we getting this UC data from? The .dat or .hea file?"**
-
-*   **The Short Answer:** Both.
-*   **The .dat File:** Contains the **Actual Numbers** (The raw signal waves for both Heart Rate and Contractions).
-*   **The .hea File:** Contains the **Instructions** (It tells the computer "Column 1 is Heart Rate, Column 2 is Contractions").
-*   *Analogy:* The `.dat` file is the music file (.mp3), and the `.hea` file is the label that tells you the Artist and Song Name. You need both to play it correctly.
-
-**Q: "When is this model used? During the whole pregnancy?"**
-
-*   **No. It is used specifically during LABOR (Intrapartum Monitoring).**
-*   **Why then?**
-    *   Labor is the most dangerous time for the baby. The strong **Uterine Contractions** can act like a clamp, squeezing the umbilical cord or placenta.
-    *   If this happens too often, the baby runs out of oxygen (**Hypoxia**) within minutes, leading to brain damage or death.
-*   **Utility:**
-    *   Doctors get tired during long labors (12+ hours).
-    *   Our AI acts as a **"24/7 Safety Alarm"** that never gets tired. It watches the screen continuously to scream "Oxygen dropping!" the second a dangerous pattern appears, telling the doctor: *"You might need to do a C-Section NOW."*
+**Q19: What does the Uncertainty Histogram show?**
+It shows how "confused" the AI is for each prediction:
+- **Left Side:** AI is Certain (Low Variance).
+- **Right Side:** AI is Guessing (High Variance).
+If a patient appears on the far right (e.g., 50.5% reliability — a coin flip), the system flags: "I am uncertain, please verify manually." This is the "Safety Valve."
 
 ---
 
-## 7. Final Defense Q&A (Updated for Phase 6 SOTA)
+## Performance & Results Questions
 
-**Q: "Explain these new charts on the dashboard. What is a Calibration Curve?"**
-*"It is our truth detector. The **Red Line** shows our model's confidence vs. reality. If the model says '70% Risk', the red line shows if it was actually right 70% of the time. The fact that our line is close to the diagonal (Perfect Calibration) proves our risk scores are trustworthy, not just random numbers."*
+**Q20: What are your final performance numbers?**
+| Metric | Value |
+| :--- | :--- |
+| **Ensemble Accuracy** | 96.34% |
+| **AUC-ROC** | 0.8639 |
+| **F1-Score** | 95.22% |
+| **Brier Score** | 0.0460 |
+| **ECE** | 0.0543 |
 
-**Q: "What is that histogram showing? Why is patient 1001 on the right?"**
+**Q21: How did you go from AUC 0.74 to 0.8639?**
+Three key changes:
+1. **Feature Engineering:** Expanded from 3 tabular features to 18 (adding signal-derived features like baseline FHR, STV, LTV, entropy) + 19 CSP vectors.
+2. **Architectural Diversity:** Added an InceptionNet and XGBoost alongside the original ResNet.
+3. **Stacking Ensemble:** Trained a Logistic Regression meta-learner on out-of-fold predictions from all 3 models. Each model captures different patterns; the meta-learner combines their best insights.
 
-* "That is the **Uncertainty Histogram**. It shows how 'confused' the AI is.
-*   **Left Side:** The AI is Certain (Low Variance).
-*   **Right Side:** The AI is Guessing (High Variance).
-*   Patient 1001 is on the far right because the Reliability Score is 50.5% (a coin flip). This proves our 'Safety Valve' works: even though the model flagged 'High Risk', the histogram tells the doctor 'I am guessing, please verify manually'." *
+**Q22: How do your baselines prove the architecture is necessary?**
+| Baseline | Data | AUC | What it Proves |
+| :--- | :--- | :--- | :--- |
+| 1D-CNN (FHR Only) | Raw FHR | 0.564 | Deep learning **fails** without UC context |
+| Logistic Regression | 16 Tabular | 0.676 | Linear models can't capture physiological complexity |
+| Random Forest | 16 Tabular | 0.837 | Strong, but can't "see" raw deceleration morphology |
+| Mendis et al. (SOTA) | FHR + Tab | 0.840 | Best prior result, but on private data & ignores UC |
+| **NeuroFetal V5.0** | **FHR+UC+Tab+CSP** | **0.8639** | **Tri-Modal fusion breaks the 0.84 ceiling** |
 
-**Q: "You said you optimized for Edge devices. Show me proof."**
+---
 
-* "Certainly. We applied Int8 Quantization to the Keras model → TFLite.
-*   **Speed:** Inference drops from 200ms to <30ms.
-*   **Accuracy:** We maintained ~99% of the original AUC.
-*   **Impact:** This allows the AI to run offline on a $50 smartphone in a rural village, without internet."*
+## Deployment Questions
 
-**Q: "How did you go from AUC 0.74 to AUC 0.87?"**
+**Q23: How does the edge deployment work?**
+We apply **TFLite Int8 Quantization** — converting 32-bit floating-point weights to 8-bit integers:
+- **Size:** ~27 MB Keras model → **~1.9 MB** `.tflite` payload.
+- **Speed:** Inference drops from ~200ms to **<30ms** on mobile CPU.
+- **Accuracy:** Maintains ~99% of the original AUC.
+- **Result:** Runs offline on a ₹5,000 (~$60) Android smartphone without internet.
 
-*"Three key changes: (1) **Feature Engineering** — expanded from 3 tabular features to 16 (adding signal-derived features like baseline FHR, STV, LTV, accelerations, decelerations, entropy). (2) **Architectural Diversity** — added an InceptionNet and XGBoost alongside the original ResNet. (3) **Stacking** — trained a Logistic Regression meta-learner on out-of-fold predictions from all 3 models. The ensemble's diversity is the key: each model captures different patterns, and the meta-learner learns to combine their best insights."*
+**Q24: Why is edge deployment important?**
+Three reasons:
+1. **Privacy:** All processing happens on-device. No patient data is sent to the cloud.
+2. **Internet-Free:** Works in rural villages with zero connectivity.
+3. **Real-Time:** Doctors get alerts in milliseconds, not seconds.
+
+**Q25: What is Grad-CAM and why do you need it?**
+**Gradient-weighted Class Activation Mapping** highlights *exactly which segment* of the FHR trace triggered the "Pathological" alert. Obstetricians cannot blindly trust a black-box number — Grad-CAM shows them "the AI flagged this specific late deceleration at minute 12–14," building clinical trust and enabling informed decision-making.
