@@ -189,9 +189,29 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ---
 
+### **Slide 15: Final Data Composition (Post-Augmentation)**
+*(Visual: A clean side-by-side comparison box showing Test vs. Training split numbers.)*
+* **Heading:** Final Data Composition
+* The 5-Fold Cross Validation explicitly splits our 552 cases into strict 80% Train / 20% Test folds.
+* **Test Data (The 20% Holdout):**
+  * Strictly unmodified real patients (~110 recordings yielding ~510 matrices).
+  * **Composition:** ~92.7% Normal vs. ~7.3% Pathological (Matches true clinical reality).
+* **Training Data (The 80% Fold):**
+  * Base sliding windows: ~2,036 sequence matrices.
+  * TimeGAN Augmentation: **+1,410 synthetic pathological traces**.
+  * Time-Series Augmentation (Math Jitter/Warp): **2× multiplier**.
+  * **Final Training Volume:** ~6,894 localized sequence matrices per fold.
+  * **Final Training Composition:** ~55% Normal vs. ~45% Pathological.
+
+**🗣️ Speaker 2 Notes:**  
+"After all preprocessing, how does our data actually look inside a single fold? Our 20% Test set remains completely untouched, maintaining the brutal 92% to 7% real-world imbalance. But our 80% Training set receives the TimeGAN and statistical augmentations. We blow up the minority class from 147 matrices to over 3,100. The final training ground is a robust ~6,800 matrices with a 55-to-45 split—providing massive examples without completely losing the slight natural lean."
+
+
+---
+
 ## Part 3: Architecture, Baselines, & Edge (Speaker 3: Lokesh)
 
-### **Slide 15: Core Architecture**
+### **Slide 16: Core Architecture**
 *(Visual: Clean block diagram of the ResNet branch showing sequence processing.)*
 * **Heading:** Core Architecture
 * To process the massive 1200-timestep time series (1D sequences).
@@ -204,7 +224,7 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ---
 
-### **Slide 16: Cross-Modal Attention**
+### **Slide 17: Cross-Modal Attention**
 *(Visual: A glowing diagram showing 'Tabular Metadata' acting as a gate/key over a neural layer.)*
 * **Heading:** Cross-Modal Attention
 * **The Problem:** Standard multi-modal networks just blindly "concatenate" tabular data at the end of a CNN.
@@ -216,7 +236,7 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ---
 
-### **Slide 17: Ensemble Strategy**
+### **Slide 18: Ensemble Strategy**
 *(Visual: Insert the `architecture_flowchart.png` plot here, clearly showing the three models dropping into the Meta-Learner.)*
 * **Heading:** Ensemble Strategy
 * A single algorithmic architecture rarely generalizes across chaotic clinical noise.
@@ -230,7 +250,7 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ---
 
-### **Slide 18: Uncertainty Quantification**
+### **Slide 19: Uncertainty Quantification**
 *(Visual: A scatter plot mock or gauge showing a 'Doubt/Confidence' metric.)*
 * **Heading:** Uncertainty Quantification
 * Providing an 85% "Confident" prediction on unrecognizable noise is clinically dangerous.
@@ -243,7 +263,7 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ---
 
-### **Slide 19: Platt Scaling Calibration**
+### **Slide 20: Platt Scaling Calibration**
 *(Visual: Add `calibration_plot.tex` here, showing a standard reliability curve plotting Predicted vs. True Probability.)*
 * **Heading:** Platt Scaling Calibration
 * **The Calibration Problem:** A raw output of '85%' from a neural network is often just a geometric distance from a decision boundary, not a true clinical probability.
@@ -255,7 +275,7 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ---
 
-### **Slide 20: Baseline Validation**
+### **Slide 21: Baseline Validation**
 *(Visual: A clean table showing the three evaluated comparative baseline metrics.)*
 * **Heading:** Baseline Validation
 * To prove the necessity of the Tri-Modal structure, we actively implemented unimodal and classical architectures directly against the exact dataset:
@@ -271,7 +291,7 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ---
 
-### **Slide 21: Deployment Optimization**
+### **Slide 22: Deployment Optimization**
 *(Visual: A flowchart of a Keras file transitioning via Int8 Quantization to a TFLite mobile phone icon.)*
 * **Heading:** Deployment Optimization
 * **The Bottleneck:** Massive Keras TensorFlow networks require GPUs; rural wards lack internet and servers.
@@ -283,7 +303,7 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ---
 
-### **Slide 22: Key Novelties (Aim to Achieve)**
+### **Slide 23: Key Novelties (Aim to Achieve)**
 *(Visual: A stark comparison graphic contrasting "Traditional SOTA" vs "NeuroFetal-AI Achievements".)*
 * **Heading:** Key Novelties (Aim to Achieve)
 * **1. Tri-Modal Deep Fusion:** Moving beyond raw FHR-only models by mathematically fusing FHR sequences, Uterine Contractions, and Maternal Tabular Data simultaneously.
@@ -295,7 +315,7 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ---
 
-### **Slide 23: Technology Stack**
+### **Slide 24: Technology Stack**
 *(Visual: High quality logos arranged in their respective operational stacks.)*
 * **Heading:** Technology Stack
 * **Deep Learning Core:** Python 3.13 | TensorFlow 2.14 | Keras (Functional API)
@@ -308,7 +328,7 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ---
 
-### **Slide 24: Conclusion & Roadmap**
+### **Slide 25: Conclusion & Roadmap**
 *(Visual: Checkmarks vs rocket icons outlining a brief roadmap list.)*
 * **Heading:** Conclusion & Roadmap
 * ✅ **Completed Engineering:** Full dataset ingestion, Tri-Modal feature extraction (CSP/Tabular), and TimeGAN Generative synthesis stability.
@@ -325,14 +345,14 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ## Appendices
 
-### **Slide 25: References (1/3) - Obstetrical & Baseline Concepts**
+### **Slide 26: References (1/3) - Obstetrical & Baseline Concepts**
 * **Heading:** References
 * **[1]** Petrozziello, A., et al. (2019). "Deep learning for continuous fetal heart rate monitoring in labor." *IEEE CBMS.* [DOI: 10.1109/CBMS.2019.00115](https://ieeexplore.ieee.org/document/8787383)
 * **[2]** Goldberger, A., et al. (2000). "PhysioBank, PhysioToolkit, and PhysioNet: Components of a new research resource for complex physiologic signals." *Circulation*. [DOI: 10.1161/01.cir.101.23.e215](https://physionet.org/content/ctu-uhb-ctgdb/1.0.0/)
 * **[3]** Ayres-de-Campos, D., et al. (2015). "FIGO consensus guidelines on intrapartum fetal monitoring: Cardiotocography." *Int J Gynaecol Obstet.* [DOI: 10.1016/j.ijgo.2015.06.020](https://pubmed.ncbi.nlm.nih.gov/26433401/)
 * **[4]** Spilka, J., et al. (2016). "Cross-database evaluation of fetal heart rate analysis for automated detection of fetal compromise." *Comput. Biol. Med.*
 
-### **Slide 26: References (2/3) - SOTA & Generative Augmentation**
+### **Slide 27: References (2/3) - SOTA & Generative Augmentation**
 * **Heading:** References
 * **[5]** Mendis, et al. (2023). "Fusing Tabular Features and Deep Learning for FHR Analysis: A Clinically Interpretable Model for Fetal Compromise Detection." *IEEE Access.*
 * **[6]** Alqahtani, et al. (2025). "Fetal Hypoxia Classification from Cardiotocography Signals Using Instantaneous Frequency and Common Spatial Pattern." 
@@ -340,7 +360,7 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 * **[8]** Arjovsky, M., Chintala, S., & Bottou, L. (2017). "Wasserstein Generative Adversarial Networks." *ICML.* [Link: arXiv:1701.07875](https://arxiv.org/abs/1701.07875)
 * **[9]** Chawla, N. V., et al. (2002). "SMOTE: Synthetic Minority Over-sampling Technique." *JAIR.* [DOI: 10.1613/jair.953](https://arxiv.org/abs/1106.1813)
 
-### **Slide 27: References (3/3) - Architectures & Optimization**
+### **Slide 28: References (3/3) - Architectures & Optimization**
 * **Heading:** References
 * **[10]** He, K., et al. (2016). "Deep Residual Learning for Image Recognition." *CVPR.* [Link: arXiv:1512.03385](https://arxiv.org/abs/1512.03385)
 * **[11]** Vaswani, A., et al. (2017). "Attention Is All You Need." *NeurIPS.* [Link: arXiv:1706.03762](https://arxiv.org/abs/1706.03762)
@@ -349,7 +369,7 @@ The following outline provides comprehensive text and speaker notes for a **20-s
 
 ---
 
-### **Slide 28: Thank You / Q&A**
+### **Slide 29: Thank You / Q&A**
 *(Visual: Clean, minimal closing slide with the project abstract logo or title centered.)*
 * **Heading:** Thank You
 * **Sub-Heading:** "From Concept to Clinical Code: Engineering NeuroFetal-AI"
