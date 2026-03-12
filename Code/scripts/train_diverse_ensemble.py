@@ -328,7 +328,7 @@ def generate_oof_predictions(X_fhr, X_tabular, X_csp, y, n_folds=5):
 
         # V4.0: TimeGAN Augmentation (inject synthetic pathological traces)
         if USE_TIMEGAN_AUG:
-            from train import apply_timegan_augmentation
+            from timegan_utils import apply_per_fold_timegan_augmentation
             X_uc_for_aug = None
             # Try to load UC for augmentation shape matching
             uc_path = os.path.join(PROCESSED_DATA_DIR, "X_uc.npy")
@@ -339,15 +339,15 @@ def generate_oof_predictions(X_fhr, X_tabular, X_csp, y, n_folds=5):
                 X_uc_for_aug = X_uc_all[train_idx]
 
             n_before = len(y_train)
-            print(f"  Applying TimeGAN augmentation...")
+            print(f"  Applying Per-Fold TimeGAN augmentation...")
             print(f"    Before: {int(y_train.sum())} positives / {n_before} total")
-            X_fhr_train, X_tab_train, X_uc_for_aug, y_train = apply_timegan_augmentation(
-                X_fhr_train, X_tab_train, X_uc_for_aug, y_train, random_state=RANDOM_STATE
+            X_fhr_train, X_uc_for_aug, X_tab_train, y_train = apply_per_fold_timegan_augmentation(
+                X_fhr_train, X_uc_for_aug, X_tab_train, y_train, epochs=1500, batch_size=64
             )
             n_after = len(y_train)
             n_synthetic = n_after - n_before
             print(f"  TimeGAN Augmentation: {int(y_train[:n_before].sum())} → {int(y_train.sum())} positives / {n_after} total")
-            print(f"  Injected {n_synthetic} synthetic traces (from {1410} available)")
+            print(f"  Injected {n_synthetic} per-fold synthetic traces")
             print(f"    After:  {int(y_train.sum())} positives / {n_after} total")
 
             # Pad CSP features to match augmented sample count

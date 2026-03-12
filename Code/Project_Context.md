@@ -270,6 +270,20 @@ Quantitative validation of the 1,410 TimeGAN-generated synthetic pathological tr
 
 ---
 
+# PER_FOLD_TIMEGAN_INTEGRATION (v5.4)
+
+To ensure strict scientific validity and prevent **data leakage**, the TimeGAN integration has been refactored from a global operation to a **per-fold** operation.
+
+- **Previous Flaw (v4.0):** TimeGAN trained on *all* pathological samples. Synthetic data was loaded statically into each fold. Validation data leaked into the GAN.
+- **Current Fix (v5.4):** 
+  - The TimeGAN (WGAN-GP) architecture is now modularized in `Code/utils/timegan_utils.py`.
+  - Inside the 5-fold CV loop (`train.py`), the generator is trained **from scratch** on the pathological samples belonging *only* to the current training fold (1500 epochs, batch size 64).
+  - Synthetic FHR and UC traces are generated dynamically on-the-fly to balance that specific fold.
+- **Estimated Runtime:** ~2.5 hours on Colab T4 (due to 5x GAN training).
+- **Expected Impact:** While AUC might drop slightly compared to the leaked 0.86 result, the new metric represents the mathematically strict, definsible performance of the model suitable for publication.
+
+---
+
 # KNOWN_LIMITATIONS
 
 - **Small dataset:** 552 records; relies on windowing + TimeGAN for volume.
@@ -283,7 +297,7 @@ Quantitative validation of the 1,410 TimeGAN-generated synthetic pathological tr
 
 # FUTURE_WORK
 
-- [ ] Integrate TimeGAN augmentation live into 5-Fold training loops (per-fold synthesis).
+- [x] Integrate TimeGAN augmentation live into 5-Fold training loops (per-fold synthesis) to resolve data leakage.
 - [ ] Parallelized hyperparameter grid sweep on cloud GPUs.
 - [ ] End-to-end Platt Scaling + MC Dropout verification pipeline.
 - [ ] Finalize Streamlit dashboard with TFLite Int8 execution.
@@ -316,6 +330,7 @@ To ensure a perfectly fair comparison and address critique regarding dataset shi
 
 | Version | Date | Changes |
 | :--- | :--- | :--- |
+| v5.4 | 2026-03-12 | Integrated per-fold TimeGAN synthesis inside the 5-fold CV loop to fix data leakage. |
 | v5.3 | 2026-03-12 | Executed fair baseline reproduction (Mendis et al.) with 5-fold CV on 552 dataset (AUC 0.7983). |
 | v5.2 | 2026-03-12 | Added TimeGAN validation suite (MMD, t-SNE, TSTR, ACF, Ablation), .venv usage notes. |
 | v5.1 | 2026-03-09 | Full rewrite: LLM-optimized machine-readable format with YAML summary, 16 structured sections, command reference, and AI instructions. |

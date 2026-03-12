@@ -26,6 +26,7 @@ from attention_blocks import SEBlock, TemporalAttentionBlock, MultiScaleBlock, C
 from focal_loss import get_focal_loss
 from csp_features import MultimodalFeatureExtractor
 from augmentation import TimeSeriesAugmentor, apply_label_smoothing
+from timegan_utils import apply_per_fold_timegan_augmentation
 
 
 # ============================================================================
@@ -200,90 +201,7 @@ def apply_smote(X_fhr, X_tab, X_uc, y, random_state=42):
     return X_fhr_res, X_tab_res, X_uc_res, y_resampled
 
 
-def apply_timegan_augmentation(X_fhr, X_tab, X_uc, y, random_state=42):
-    """
-    V4.0 NOVEL: Replace SMOTE with TimeGAN-generated synthetic pathological traces.
-    
-    Loads pre-generated synthetic FHR/UC data from Datasets/synthetic/ and injects
-    them into the training fold to balance classes. Unlike SMOTE (which interpolates
-    in flattened feature space), TimeGAN generates physiologically plausible
-    waveforms that preserve FHR-UC cross-correlation.
-    
-    Args:
-        X_fhr: (N, 1200, 1) — FHR training data
-        X_tab: (N, 18) — Tabular features
-        X_uc:  (N, 1200, 1) or (N, 1200) — UC training data
-        y:     (N,) — Labels
-        
-    Returns:
-        Augmented X_fhr, X_tab, X_uc, y with balanced classes
-    """
-    np.random.seed(random_state)
-    
-    # Load pre-generated synthetic pathological data
-    syn_fhr_path = os.path.join(SYNTHETIC_DATA_DIR, "X_fhr_synthetic.npy")
-    syn_uc_path  = os.path.join(SYNTHETIC_DATA_DIR, "X_uc_synthetic.npy")
-    
-    if not os.path.exists(syn_fhr_path) or not os.path.exists(syn_uc_path):
-        print("  WARNING: Synthetic data not found! Falling back to SMOTE.")
-        return apply_smote(X_fhr, X_tab, X_uc, y, random_state)
-    
-    X_fhr_syn = np.load(syn_fhr_path)  # (M, 1200, 1)
-    X_uc_syn  = np.load(syn_uc_path)   # (M, 1200, 1)
-    
-    # Match dimensionality to training data
-    if X_fhr.ndim == 3 and X_fhr_syn.ndim == 2:
-        X_fhr_syn = np.expand_dims(X_fhr_syn, axis=-1)
-    if X_fhr.ndim == 2 and X_fhr_syn.ndim == 3:
-        X_fhr_syn = X_fhr_syn.squeeze(axis=-1)
-    if X_uc is not None:
-        if X_uc.ndim == 3 and X_uc_syn.ndim == 2:
-            X_uc_syn = np.expand_dims(X_uc_syn, axis=-1)
-        if X_uc.ndim == 2 and X_uc_syn.ndim == 3:
-            X_uc_syn = X_uc_syn.squeeze(axis=-1)
-    
-    # Calculate how many synthetic samples needed to reach 1:2 ratio (same as SMOTE)
-    n_positive = int(y.sum())
-    n_negative = len(y) - n_positive
-    target_positives = int(n_negative * 0.5)  # 1:2 ratio
-    n_needed = max(0, target_positives - n_positive)
-    
-    if n_needed == 0:
-        print("  TimeGAN: No augmentation needed (already balanced).")
-        return X_fhr, X_tab, X_uc, y
-    
-    # Sample from synthetic pool (with replacement if needed)
-    n_available = len(X_fhr_syn)
-    replace = n_needed > n_available
-    syn_indices = np.random.choice(n_available, size=n_needed, replace=replace)
-    
-    # Create synthetic tabular features by resampling from existing pathological
-    patho_idx = np.where(y == 1)[0]
-    tab_indices = np.random.choice(patho_idx, size=n_needed, replace=True)
-    X_tab_syn = X_tab[tab_indices]
-    
-    # Concatenate real + synthetic
-    X_fhr_aug = np.concatenate([X_fhr, X_fhr_syn[syn_indices]], axis=0)
-    X_tab_aug = np.concatenate([X_tab, X_tab_syn], axis=0)
-    y_aug     = np.concatenate([y, np.ones(n_needed)], axis=0)
-    
-    if X_uc is not None:
-        X_uc_aug = np.concatenate([X_uc, X_uc_syn[syn_indices]], axis=0)
-    else:
-        X_uc_aug = None
-    
-    # Shuffle
-    perm = np.random.permutation(len(y_aug))
-    X_fhr_aug = X_fhr_aug[perm]
-    X_tab_aug = X_tab_aug[perm]
-    y_aug     = y_aug[perm]
-    if X_uc_aug is not None:
-        X_uc_aug = X_uc_aug[perm]
-    
-    print(f"  TimeGAN Augmentation: {n_positive} → {int(y_aug.sum())} positives / {len(y_aug)} total")
-    print(f"  Injected {n_needed} synthetic traces (from {n_available} available)")
-    
-    return X_fhr_aug, X_tab_aug, X_uc_aug, y_aug
+
 
 
 def load_data():
@@ -694,10 +612,10 @@ def main():
             )
             print(f"  After SMOTE:  {np.sum(y_train)} positives / {len(y_train)} total")
         elif AUGMENTATION == "timegan":
-            print(f"\nApplying TimeGAN Augmentation to Fold {fold_num}...")
+            print(f"\nApplying Per-Fold TimeGAN Augmentation to Fold {fold_num}...")
             print(f"  Before: {np.sum(y_train)} positives / {len(y_train)} total")
-            X_fhr_train, X_tab_train, X_uc_train, y_train = apply_timegan_augmentation(
-                X_fhr_train, X_tab_train, X_uc_train, y_train
+            X_fhr_train, X_uc_train, X_tab_train, y_train = apply_per_fold_timegan_augmentation(
+                X_fhr_train, X_uc_train, X_tab_train, y_train, epochs=1500, batch_size=64
             )
             print(f"  After:  {np.sum(y_train)} positives / {len(y_train)} total")
         else:

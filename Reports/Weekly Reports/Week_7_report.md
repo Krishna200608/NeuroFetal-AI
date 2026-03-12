@@ -43,7 +43,12 @@
 *   **Results:** Under fair, identical dataset conditions on the CTU-UHB dataset, the Mendis architecture achieved a **Mean AUC of 0.7983 (±0.0633)**. 
 *   **Conclusion:** This validates that their initial reported 0.84 AUC heavily relied on their private, large-scale training set. Our full NeuroFetal TimeGAN+CSP+Focal Loss pipeline (AUC 0.8639) meaningfully and genuinely outperforms the baseline architecture given identical data boundaries.
 
-## 5. Next Steps
+## 5. Per-Fold TimeGAN Integration
+*   **Motivation:** The previous TimeGAN augmentation implementation generated synthetic data globally from all pathological samples, creating a potential data leakage vector within the cross-validation loop.
+*   **Action Taken:** We integrated the TimeGAN (WGAN-GP) training directly inside the 5-fold cross-validation loop. For each fold, the Generator is built from scratch and trained exclusively on that fold's pathological samples (for 1500 epochs), effectively eliminating validation set leakage into the synthetic generation process.
+*   **Expected Impact:** As a result of this methodological rigor, the subsequent re-calculated validation AUC represents the mathematically robust and defensible performance ceiling suitable for peer-reviewed publication. 
+
+## 6. Next Steps
 *   Begin paper drafting phase.
-*   Integrate per-fold TimeGAN synthesis into the 5-Fold training loop (currently pre-computed globally).
+*   Execute the new per-fold model on Google Colab T4 (using the pushed `feat/v4.0-timegan` branch).
 *   Explore using a Conditional GAN variant that generates waveform + tabular jointly for even stronger consistency guarantees.
