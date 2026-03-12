@@ -1,0 +1,57 @@
+{
+  "experiment": "Mendis et al. Fusion ResNet Reproduction",
+  "dataset": "CTU-UHB (552 records, 2546 windows)",
+  "architecture": "1D-ResNet (3 blocks) + 5-feat MLP + Multiply Fusion",
+  "augmentation": "None",
+  "loss": "Binary Cross-Entropy",
+  "cv_folds": 5,
+  "seed": 42,
+  "fold_results": [
+    {
+      "fold": 1,
+      "val_loss": 0.6019625663757324,
+      "val_auc": 0.8408091068267822,
+      "best_epoch": 69
+    },
+    {
+      "fold": 2,
+      "val_loss": 0.587459146976471,
+      "val_auc": 0.8155985474586487,
+      "best_epoch": 35
+    },
+    {
+      "fold": 3,
+      "val_loss": 0.5965341329574585,
+      "val_auc": 0.8271340131759644,
+      "best_epoch": 71
+    },
+    {
+      "fold": 4,
+      "val_loss": 0.45948296785354614,
+      "val_auc": 0.672904372215271,
+      "best_epoch": 7
+    },
+    {
+      "fold": 5,
+      "val_loss": 0.665375292301178,
+      "val_auc": 0.8351064324378967,
+      "best_epoch": 89
+    }
+  ],
+  "mean_auc": 0.7983104944229126,
+  "std_auc": 0.0632715427485197,
+  "tabular_features": [
+    "Parity",
+    "Age",
+    "Gestation",
+    "fhr_baseline (\u2248Beta_0)",
+    "fhr_stv (\u2248MAD_dtrd)"
+  ],
+  "tabular_indices": [
+    1,
+    0,
+    2,
+    5,
+    6
+  ]
+}
