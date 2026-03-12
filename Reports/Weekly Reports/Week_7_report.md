@@ -33,8 +33,17 @@
     
     3.  **Architectural consistency:** By generating waveforms and then computing tabular/CSP from them, we guarantee that all three modalities of a synthetic sample are internally consistent — exactly as they would be for a real patient.
 
-## 4. Next Steps
-*   Discuss TimeGAN validation results with Dr. Nikhilanand Arya.
+## 4. Mendis et al. Baseline Reproduction
+
+*   **Motivation:** During the mid-semester evaluation, a TA raised a concern about a potentially unfair comparison to the baseline model (Mendis et al., 2023). Mendis reported an AUC of 0.84, but their model was trained on a private dataset of nearly 10,000 samples, whereas our model (AUC 0.8639) was trained solely on the public 552-sample CTU-UHB dataset.
+*   **Action Taken:** To ensure an "apples-to-apples" comparison, we set up a targeted reproduction experiment:
+    *   We implemented the *exact* Mendis Fusion ResNet architecture natively.
+    *   We restricted its training data exclusively to our 552-sample CTU-UHB dataset.
+    *   We disabled all synthetic dataset augmentations (no TimeGAN) and trained using the identical 5-fold cross-validation scheme.
+*   **Results:** Under fair, identical dataset conditions on the CTU-UHB dataset, the Mendis architecture achieved a **Mean AUC of 0.7983 (±0.0633)**. 
+*   **Conclusion:** This validates that their initial reported 0.84 AUC heavily relied on their private, large-scale training set. Our full NeuroFetal TimeGAN+CSP+Focal Loss pipeline (AUC 0.8639) meaningfully and genuinely outperforms the baseline architecture given identical data boundaries.
+
+## 5. Next Steps
 *   Begin paper drafting phase.
 *   Integrate per-fold TimeGAN synthesis into the 5-Fold training loop (currently pre-computed globally).
 *   Explore using a Conditional GAN variant that generates waveform + tabular jointly for even stronger consistency guarantees.
