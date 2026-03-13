@@ -269,5 +269,5 @@ python Code/scripts/convert_to_tflite.py
 ---
 
 <div align="center">
-  <sub>Built for saving little lives.</sub>
+  <sub>Built for saving little lives. 💖</sub>
 </div>
