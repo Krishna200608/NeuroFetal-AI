@@ -125,13 +125,17 @@ Global estimates indicate that nearly \textbf{2.6 million stillbirths} happen an
 significant proportion of these adverse outcomes are attributable to
 undetected or late-detected intrapartum fetal compromise—a condition
 characterized by progressive fetal hypoxia and metabolic acidosis during labor,
-resulting from insufficient uteroplacental oxygen delivery. Catching fetal compromise early and accurately is essential because it gives doctors time to intervene—whether through an emergency cesarean section or instrumental delivery. Such timely actions are often the only way to prevent fetal death or permanent neonatal brain damage.
+resulting from insufficient uteroplacental oxygen delivery. Catching fetal
+compromise early and accurately is essential because it gives doctors time
+to intervene—whether through an emergency cesarean section or instrumental
+delivery. Such timely actions are often the only way to prevent fetal death
+or permanent neonatal brain damage.
 
 \subsection{Cardiotocography: The Clinical Standard and Its Limitations}
 
-As contractions intensify, maternity wards almost universally turn to \textbf{Cardiotocography (CTG)} to track fetal stability. This dual-sensor hardware concurrently records the Fetal
-Heart Rate (FHR) through a Doppler ultrasound belt, while simultaneously measuring Uterine 
-Contractions (UC) with a pressure tocodynamometer. 
+hardware concurrently records the Fetal Heart Rate (FHR) through a Doppler 
+ultrasound belt, while simultaneously measuring Uterine Contractions (UC) 
+with a pressure tocodynamometer. 
 
 Extracting meaning from the resulting paper strips requires doctors to quickly spot complex FHR behaviors---such as shifting baseline levels, short- and long-term variability (STV and LTV) fluctuations, and sudden accelerations or decelerations. Crucially, they must judge the exact timing of these heart rate dips compared to the peak of the uterine contractions. Based on these visual cues, the International Federation of Gynecology and Obstetrics (FIGO) provides a standardized rubric dictating whether a sequence sits in the Normal, Suspicious, or Pathological category \cite{figo2015}.
 
@@ -199,7 +203,10 @@ resource-limited obstetric settings?}
 
 The specific research objectives are:
 \begin{enumerate}
-    \item To architect a tri-modal fusion mechanism capable of extracting and combining the distinct, complementary patterns hidden within FHR waves, UC contraction cycles, and static bedside clinical features to better classify fetal compromise.
+    \item To architect a tri-modal fusion mechanism capable of extracting 
+    and combining the distinct, complementary patterns hidden within FHR 
+    waves, UC contraction cycles, and static bedside clinical features to 
+    better classify fetal compromise.
     \item To overcome documented class imbalance (7.25\% pathological) and
     limited dataset size (552 recordings) through a physiologically realistic
     time-series generative augmentation strategy (TimeGAN).
@@ -275,7 +282,7 @@ gated recurrent units (GRU) have been explored for FHR sequence modeling
 \cite{xue2021}, leveraging their capacity for long-range temporal dependency
 modeling. However, their sequential computation renders them significantly
 slower than convolutional approaches for deployment, and they did not
-consistently outperform well-regularized ResNets on the CTU-UHB benchmark.
+consistently outperform ResNets on the CTU-UHB benchmark.
 
 \textbf{Emerging Architectures}: Recent advancements have seen the application of
 \textbf{Foundation Models} to CTG. For instance, a 2024 study \cite{foundation2024}
@@ -393,8 +400,8 @@ the methods used in this study. Three primary gaps are addressed:
 \caption{Comparative Analysis of CTG Deep Learning Systems}
 \label{tab:sota_compare}
 \centering
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{p{2.3cm} p{1.0cm} p{0.8cm} p{0.8cm} p{0.8cm} p{0.8cm}}
+\resizebox{0.95\columnwidth}{!}{%
+\begin{tabular}{l c c c c c}
 \toprule
 \textbf{System} & \textbf{AUC} & \textbf{UC} & \textbf{Uncert.} & \textbf{XAI} & \textbf{Edge} \\
 \midrule
@@ -402,7 +409,7 @@ Spilka et al.\ \cite{spilka2012} (SVM)     & 0.76 & \xmark & \xmark & \xmark & \
 Zhao et al.\ \cite{zhao2019} (MCNN) & 0.81 & \xmark & \xmark & \xmark & \xmark \\
 Mendis et al.\ \cite{mendis2023}    & 0.84 & \xmark & \xmark & \cmark & \xmark \\
 Sadeghi et al.\ \cite{sadeghi2024} & N/A* & \cmark & \xmark & \cmark & \xmark \\
-\textbf{NeuroFetal AI v6.0 (Ours)} & \textbf{0.8566} & \textbf{\cmark} & \textbf{\cmark} & \textbf{\cmark} & \textbf{\cmark} \\
+\textbf{NeuroFetal AI v6.0} & \textbf{0.8566} & \textbf{\cmark} & \textbf{\cmark} & \textbf{\cmark} & \textbf{\cmark} \\
 \bottomrule
 \end{tabular}%
 }
@@ -422,7 +429,7 @@ or replace with \checkmark and $\times$.)}
 
 \section{Dataset}
 
-\subsection{Source: CTU-UHB Intrapartum Cardiotocography Database}
+\subsection{Source: CTU-UHB Intrapartum CTG Database}
 
 All experiments in this work were conducted exclusively on the
 \textbf{CTU-UHB Intrapartum Cardiotocography Database} \cite{chudacek2014},
@@ -485,7 +492,7 @@ Umbilical Artery pH & 7.23 (0.11)  & 7.25 (7.17--7.3) & 6.85 & 7.47 \\
 \midrule
 \textbf{Categorical Variables} & & \textbf{n (\%)} & & \\
 \midrule
-\multirow{4}{*}{Parity ($n$ previous births)} 
+\multirow{4}{*}{Parity ($n$ prev.\ births)} 
         & 0      & 376 (68.1\%) & & \\
         & 1      & 140 (25.4\%) & & \\
         & 2      & 29 (5.2\%) & & \\
@@ -628,7 +635,7 @@ cross-validation iteration to prevent data leakage.
 \caption{Processed Dataset Specifications for NeuroFetal AI Training}
 \label{tab:dataset_spec}
 \centering
-\resizebox{\columnwidth}{!}{%
+\resizebox{0.95\columnwidth}{!}{%
 \begin{tabular}{lp{1.6cm}p{3.5cm}}
 \toprule
 \textbf{Array File} & \textbf{Shape} & \textbf{Description} \\
@@ -996,9 +1003,6 @@ in \textit{Proc. IEEE CVPR}, 2018, pp. 7132--7141.
 \bibitem{lopes2025}
 R.~Lopes \textit{et al.}, ``Cross-Database Evaluation of Deep Learning Methods
 for Intrapartum Cardiotocography Classification,'' \textit{IEEE}, 2025.
-
-\bibitem{mendis2023}
-B.~Mendis, D.~A.~Medagoda, C.~L.~Mendis, W.~Perera, and J.~D.~Amarasinghe, `Fusing tabular features and deep learning for fetal heart rate analysis: A clinically interpretable model for fetal compromise detection,'' \textit{IEEE Access}, 2023.
 
 \bibitem{sadeghi2024}
 R.~Sadeghi \textit{et al.}, ``Multimodal Deep Learning-based Algorithm for
