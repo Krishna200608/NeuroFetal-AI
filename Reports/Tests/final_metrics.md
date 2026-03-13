@@ -1,6 +1,6 @@
 # NeuroFetal AI V5.0 — Full Dataset Inference Report
 
-**Date:** 2026-03-03 07:34
+**Date:** 2026-03-13 10:02
 **Pipeline:** Stacking Ensemble (AttentionFusionResNet + InceptionNet + XGBoost)
 **Calibration:** Temperature Scaling (T = 2.9088)
 **Uncertainty:** MC Dropout (T = 20 forward passes)
@@ -11,11 +11,11 @@
 
 | Metric | Score |
 | :--- | :--- |
-| **Accuracy** | **93.99%** |
-| **AUC-ROC** | **0.9891** |
-| **AUPRC** | **0.9556** |
-| **Brier Score** | **0.1931** |
-| **Threshold (Youden)** | **0.6404** |
+| **Accuracy** | **95.25%** |
+| **AUC-ROC** | **0.9882** |
+| **AUPRC** | **0.9568** |
+| **Brier Score** | **0.2090** |
+| **Threshold (Youden)** | **0.6502** |
 
 ---
 
@@ -23,11 +23,11 @@
 
 | Model | Configuration | AUC-ROC |
 | :--- | :--- | :--- |
-| AttentionFusionResNet | 5 folds | 0.9266 |
-| 1D-InceptionNet | 5 folds | 0.8969 |
-| XGBoost | 5 folds | 0.9991 |
-| **Stacking Ensemble** | **Meta-Learner** | **0.9891** |
-| **Calibrated Ensemble** | **+ Temp. Scaling** | **0.9891** |
+| AttentionFusionResNet | 5 folds | 0.9244 |
+| 1D-InceptionNet | 5 folds | 0.9074 |
+| XGBoost | 5 folds | 1.0000 |
+| **Stacking Ensemble** | **Meta-Learner** | **0.9882** |
+| **Calibrated Ensemble** | **+ Temp. Scaling** | **0.9882** |
 
 ---
 
@@ -35,8 +35,8 @@
 
 | Metric | Value |
 | :--- | :--- |
-| Mean Epistemic Variance | 0.027496 |
-| High-Uncertainty Windows (σ² > 0.05) | 16.2% |
+| Mean Epistemic Variance | 0.019785 |
+| High-Uncertainty Windows (σ² > 0.05) | 3.5% |
 
 ---
 
@@ -45,12 +45,12 @@
 ```text
               precision    recall  f1-score   support
 
-      Normal       0.99      0.94      0.96      2076
- Compromised       0.77      0.96      0.85       470
+      Normal       0.98      0.96      0.97      2076
+ Compromised       0.85      0.90      0.88       470
 
-    accuracy                           0.94      2546
-   macro avg       0.88      0.95      0.91      2546
-weighted avg       0.95      0.94      0.94      2546
+    accuracy                           0.95      2546
+   macro avg       0.91      0.93      0.92      2546
+weighted avg       0.95      0.95      0.95      2546
 
 ```
 
@@ -60,8 +60,8 @@ weighted avg       0.95      0.94      0.94      2546
 
 | Actual \ Predicted | Normal (0) | Compromised (1) |
 | :--- | :--- | :--- |
-| **Normal (0)** | 1944 | 132 |
-| **Compromised (1)** | 21 | 449 |
+| **Normal (0)** | 2001 | 75 |
+| **Compromised (1)** | 46 | 424 |
 
 ---
 
