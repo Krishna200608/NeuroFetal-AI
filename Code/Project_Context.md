@@ -279,8 +279,18 @@ To ensure strict scientific validity and prevent **data leakage**, the TimeGAN i
   - The TimeGAN (WGAN-GP) architecture is now modularized in `Code/utils/timegan_utils.py`.
   - Inside the 5-fold CV loop (`train.py`), the generator is trained **from scratch** on the pathological samples belonging *only* to the current training fold (1500 epochs, batch size 64).
   - Synthetic FHR and UC traces are generated dynamically on-the-fly to balance that specific fold.
-- **Estimated Runtime:** ~2.5 hours on Colab T4 (due to 5x GAN training).
-- **Expected Impact:** While AUC might drop slightly compared to the leaked 0.86 result, the new metric represents the mathematically strict, definsible performance of the model suitable for publication.
+- **Runtime:** ~2.5 hours on Colab T4 (5× GAN training).
+
+### Leak-Free Results (March 13, 2026)
+
+| Model | Fold 1 | Fold 2 | Fold 3 | Fold 4 | Fold 5 | Mean ± Std |
+|---|---|---|---|---|---|---|
+| AttentionFusionResNet | 0.8089 | 0.7268 | 0.8256 | 0.6602 | 0.7983 | **0.7640 ± 0.0619** |
+| InceptionNet (Model B) | 0.7707 | 0.7707 | 0.8264 | 0.7872 | 0.8240 | **0.7958 ± 0.0263** |
+| XGBoost (Model C) | 0.8354 | 0.8701 | 0.8788 | 0.8388 | 0.8328 | **0.8512 ± 0.0210** |
+| **Stacking Ensemble** | — | — | — | — | — | **0.8566** |
+
+> **Impact:** The base model AUC dropped from the leaked 0.8639 → 0.7640 (confirming leakage). The stacking ensemble with per-fold TimeGAN achieves a defensible **0.8566 AUC**, still outperforming the Mendis baseline (0.7983).
 
 ---
 
