@@ -10,9 +10,9 @@
   <a href="https://www.tensorflow.org/"><img src="https://img.shields.io/badge/TensorFlow-2.14-orange" alt="TensorFlow"></a>
   <a href="https://streamlit.io/"><img src="https://img.shields.io/badge/Streamlit-App-FF4B4B" alt="Streamlit"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"></a>
-  <img src="https://img.shields.io/badge/Status-V5.0%20Calibrated-success" alt="Status">
+  <img src="https://img.shields.io/badge/Status-V6.0%20Leak--Free-success" alt="Status">
   <img src="https://img.shields.io/badge/Edge%20AI-TFLite%20Int8-blueviolet" alt="Edge AI">
-  <img src="https://img.shields.io/badge/AUC-0.8639-brightgreen" alt="AUC">
+  <img src="https://img.shields.io/badge/AUC-0.8566-brightgreen" alt="AUC">
   <img src="https://img.shields.io/badge/Model%20Size-1.9%20MB-informational" alt="Model Size">
 </p>
 
@@ -35,13 +35,13 @@
 
 **NeuroFetal AI** is a **Clinical Decision Support System** that fuses three data streams — **Fetal Heart Rate (FHR)**, **Uterine Contractions (UC)**, and **Maternal Clinical Data** — to predict fetal compromise. It provides **uncertainty-aware predictions** with explainable AI, packaged in a **1.9 MB edge model** that runs offline on low-cost hardware.
 
-### Final Performance — V5.0 (Feb 2026)
-| Metric | Baseline (Mendis et al.) | V4.0 (TimeGAN) | **V5.0 (Calibrated Ensemble)** | Impact |
+### Final Performance — V6.0 (March 2026)
+| Metric | Mendis Reproduced | V4.0 (Leaked TimeGAN) | **V6.0 (Per-Fold TimeGAN, Leak-Free)** | Impact |
 | :--- | :--- | :--- | :--- | :--- |
-| **AUC** | 0.84 (w/ 10k Private Samples) | 0.8639 (Stacking Ensemble) | **0.8639 (96.34% Accuracy)** | **Highly Accurate** |
-| **Augmentation** | None | TimeGAN (1,410 synthetic traces) | **TimeGAN (1,410 synthetic traces)** | Temporal Fidelity |
-| **Architecture** | Single ResNet | 3-Model Stacking Ensemble | **3-Model Stacking Ensemble** | Same |
-| **Features** | FHR + 3 Clinical | FHR + UC + 16 Tab + 19 CSP | **FHR + UC + 16 Tab + 19 CSP** | Full Context |
+| **Ensemble AUC** | 0.7983 (on same data) | 0.8639 (data leakage) | **0.8566 (Strict No-Leak)** | **Defensible** |
+| **Base Model AUC** | — | 0.7910 ± 0.0322 | **0.7640 ± 0.0619** | Leak confirmed |
+| **TimeGAN** | None | Global (all samples) | **Per-Fold (train-only)** | No Leakage |
+| **Features** | FHR + 5 Clinical | FHR + UC + 16 Tab + 19 CSP | **FHR + UC + 18 Tab + 19 CSP** | Full Context |
 | **Confidence** | None | MC Dropout | **Platt Scaling & Entropy (Brier: 0.046)** | Trustworthy AI |
 | **Deployment** | PC Only | Mobile (TFLite) | **Mobile (TFLite) & Enhanced Streamlit** | **1.9 MB (Int8)** |
 
@@ -57,7 +57,8 @@ To rigorously justify our Tri-Modal architecture, we empirically evaluated class
 | **Unimodal Deep Learning** | 1D-CNN (Spilka) | Raw FHR Sequence | **0.564** | Fails without Uterine Contraction timing context. |
 | **Classical ML** | Logistic Regression | Tabular Features | **0.676** | Linear models cannot capture physiological complexity. |
 | **Classical ML** | Random Forest | Tabular Features | **0.837** | Strong, but fails to capture the physical shape of deceleration curves over time. |
-| **NeuroFetal AI (V5.0)** | Tri-Modal CMAF Ensemble | FHR + UC + Tabular | **0.8639** | Successfully captures spatial, temporal, and clinical context. |
+| **Mendis et al. (Reproduced)** | Dual-Branch Fusion ResNet | FHR + 5 Tabular | **0.7983** | Reproduced on same dataset; their 0.84 relied on private data. |
+| **NeuroFetal AI (V6.0)** | Tri-Modal CMAF Ensemble | FHR + UC + Tabular | **0.8566** | Leak-free per-fold TimeGAN — defensible for publication. |
 
 **Dataset Used:**
 *   **[CTU-CHB Intrapartum Cardiotocography Database v1.0.0](https://physionet.org/content/ctu-uhb-ctgdb/1.0.0/)** (via PhysioNet)
@@ -96,13 +97,14 @@ We don't just give a prediction; we give a **Confidence Score**.
 *   **NPU Accelerated**: Optimized with **Int8 Quantization** for dedicated AI hardware.
 *   **Privacy Preserved**: No patient data leaves the device.
 
-### 6. TimeGAN Data Augmentation (V4.0)
+### 6. Per-Fold TimeGAN Data Augmentation (V6.0)
 *   **WGAN-GP Architecture**: Custom 1D Transposed Convolution generator trained exclusively on pathological FHR+UC traces.
-*   **1,410 Synthetic Traces**: Generates 3x the original minority class with preserved temporal dynamics (late decelerations, contraction timing).
+*   **Per-Fold Training**: To prevent data leakage, the TimeGAN is trained **inside** each CV fold on only that fold's training-set pathological samples (1500 epochs, batch size 64). This ensures validation data never influences synthetic generation.
+*   **Dynamic Generation**: Synthetic traces are generated on-the-fly to balance each fold's class distribution, replacing the old global pre-computed approach.
 *   **Replaces SMOTE**: TimeGAN preserves the temporal structure of fetal distress patterns, unlike SMOTE's linear interpolation.
 *   **CLI Integration**: `--augmentation timegan` flag in `train.py` for seamless switching between augmentation strategies.
 
-### 7. Model Calibration & Advanced Uncertainty (V5.0)
+### 7. Model Calibration & Advanced Uncertainty (V6.0)
 *   **Platt Scaling**: Applies `CalibratedClassifierCV` to the ensemble output, yielding highly reliable probability estimates (Brier Score: 0.0460, ECE: 0.0543) directly interpretable as clinical risk.
 *   **Information Theory Metrics**: Computes Predictive Entropy and Mutual Information over MC Dropout samples to distinguish between Aleatoric (data inherent) and Epistemic (model ignorance) uncertainty.
 *   **Harder Cutout Augmentation**: Retrained base models with aggressive temporal dropout to ensure robust uncertainty estimates under noisy real-world data.
@@ -111,8 +113,8 @@ We don't just give a prediction; we give a **Confidence Score**.
 *   **Masked Autoencoder**: Pretrains the FHR encoder on unlabeled signal data to learn robust temporal representations before supervised fine-tuning.
 *   **Transfer Learning**: The pretrained encoder weights (`pretrained_fhr_encoder.weights.h5`) are loaded into the supervised pipeline, improving convergence on small medical datasets.
 
-### 9. Advanced Clinical Dashboard (V5.0)
-*   **Real-Time Feature Extraction**: Computes 16 tabular + 19 CSP features on-the-fly from uploaded signals.
+### 9. Advanced Clinical Dashboard (V6.0)
+*   **Real-Time Feature Extraction**: Computes 18 tabular + 19 CSP features on-the-fly from uploaded signals.
 *   **Uncertainty Analysis**: Live visualization of Calibrated Confidence, Predictive Entropy, and Interactive Uncertainty Gauges.
 *   **Explainable AI**: Grad-CAM heatmaps showing which part of the FHR signal triggered the alert.
 *   **Medical-Grade UI**: Dynamic Dark & Light mode support, native Material Design components, and graceful state management.
@@ -158,10 +160,11 @@ NeuroFetal-AI/
 ├── Code/
 │   ├── scripts/
 │   │   ├── app.py                  # Streamlit Dashboard (3-Input Ensemble Inference + XAI)
-│   │   ├── train.py                # Training Pipeline (Focal Loss + K-Fold)
+│   │   ├── train.py                # Training Pipeline (Per-Fold TimeGAN + Focal Loss + K-Fold)
 │   │   ├── train_diverse_ensemble.py # Diverse Ensemble Training (Phase 5)
 │   │   ├── pretrain.py             # SSL Masked Autoencoder Pretraining
-│   │   ├── data_ingestion.py       # Raw Signal → Processed .npy Arrays (16 Features)
+│   │   ├── data_ingestion.py       # Raw Signal → Processed .npy Arrays (18 Features)
+│   │   ├── validate_timegan.py     # TimeGAN Synthetic Data Validation (5 Tests)
 │   │   ├── evaluate_ensemble.py    # Stacking Ensemble Evaluation + TTA
 │   │   ├── evaluate_uncertainty.py # MC Dropout Calibration & Histograms
 │   │   ├── convert_to_tflite.py    # Keras → TFLite Int8 Quantization
@@ -169,6 +172,7 @@ NeuroFetal-AI/
 │   │   └── xai.py                  # Grad-CAM Implementation
 │   ├── utils/
 │   │   ├── model.py                # AttentionFusionResNet Architecture
+│   │   ├── timegan_utils.py        # Per-Fold TimeGAN WGAN-GP Module (V6.0)
 │   │   ├── attention_blocks.py     # Cross-Modal & Temporal Attention Layers
 │   │   ├── csp_features.py         # Common Spatial Patterns Extraction (19 Features)
 │   │   ├── ssl_models.py           # Masked Autoencoder (SSL)
@@ -179,23 +183,26 @@ NeuroFetal-AI/
 │   │   └── helpers.py              # CSS Injection & Utility Functions
 │   ├── models/
 │   │   ├── enhanced_model_fold_*.keras  # 5-Fold Enhanced 3-Input Models (27 MB each)
-│   │   ├── best_model_fold_*.keras     # Legacy 2-Input Models (2.6 MB each)
+│   │   ├── inception_model_fold_*.keras # 5-Fold InceptionNet Models
+│   │   ├── xgboost_model_fold_*.pkl    # 5-Fold XGBoost Models
 │   │   ├── stacking_meta_learner.pkl   # Stacking Ensemble Meta-Learner
 │   │   ├── pretrained_fhr_encoder.weights.h5  # SSL Pretrained Weights
 │   │   └── tflite/
 │   │       └── neurofetal_model_quant_int8.tflite  # Edge-Ready Model (1.9 MB)
+│   ├── Baseline/
+│   │   ├── Mendis_Baseline_Colab.ipynb  # Mendis et al. Reproduction (AUC 0.7983)
+│   │   └── mendis_baseline_results.json # Fair Comparison Results
 │   ├── notebooks/
-│   │   ├── Training_Colab.ipynb    # Google Colab Training Notebook (V4.0 TimeGAN)
-│   │   ├── TimeGAN_Colab.ipynb     # TimeGAN Training Notebook
-│   │   └── Calibration_Retrain_Colab.ipynb # Colab Model Calibration (V5.0)
+│   │   ├── Training_Colab.ipynb    # Google Colab Training Notebook (V6.0 Per-Fold TimeGAN)
+│   │   ├── TimeGAN_Colab.ipynb     # Standalone TimeGAN Training Notebook
+│   │   └── Calibration_Retrain_Colab.ipynb # Colab Model Calibration
 │   ├── assets/                     # Logo & Branding Assets
 │   └── run_app.py                  # Application Launcher (ngrok + Streamlit)
 ├── Datasets/
 │   ├── ctu_uhb_data/               # CTU-UHB PhysioNet Dataset (.dat/.hea)
-│   └── synthetic/                  # TimeGAN Synthetic Data (.npy)
+│   └── processed/                  # Preprocessed .npy Arrays
 ├── Paper/                          # Reference Paper & Literature
 ├── Reports/                        # Weekly Reports, Final Report & Analysis Plots
-├── Project_Context_v4.0.md         # Project Snapshot for AI Assistants
 ├── requirements.txt                # Python Dependencies
 ├── LICENSE                         # MIT License
 └── README.md
@@ -231,7 +238,7 @@ python run_app.py
 ```
 
 ### 3. Run Evaluation
-To verify the **0.8639 AUC** (Stacking Ensemble) and generate uncertainty plots:
+To verify the **0.8566 AUC** (Stacking Ensemble) and generate uncertainty plots:
 ```bash
 python Code/scripts/evaluate_ensemble.py
 ```

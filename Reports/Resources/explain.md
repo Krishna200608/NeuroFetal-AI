@@ -1,8 +1,8 @@
 # NeuroFetal AI — Comprehensive Project Documentation
 
-**A Tri-Modal Deep-Learning Clinical Decision Support System for Intrapartum Fetal Monitoring, featuring Stacking Ensemble, TimeGAN Augmentation, Uncertainty Quantification, and Edge-AI Deployment.**
+**A Tri-Modal Deep-Learning Clinical Decision Support System for Intrapartum Fetal Monitoring, featuring Stacking Ensemble, Per-Fold TimeGAN Augmentation, Uncertainty Quantification, and Edge-AI Deployment.**
 
-NeuroFetal AI fuses Fetal Heart Rate (FHR) time-series, Uterine Contraction (UC) signals, and Maternal Clinical Data through a **Stacking Ensemble** of diverse models (AttentionFusionResNet, 1D-InceptionNet, XGBoost) to predict fetal compromise during labor. V5.0 builds on TimeGAN augmentation (1,410 synthetic pathological traces) with rigorous **Platt Scaling Calibration** and achieves **96.34% Accuracy** and **0.8639 AUC** on public data (CTU-UHB, PhysioNet) — exceeding the 0.84 target (Mendis et al., which used 10k+ private samples). The system provides **uncertainty-aware predictions** (Brier Score: 0.046, ECE: 0.0543) via Monte Carlo Dropout combined with Information Theory metrics (Entropy/Mutual Information) and ships a **TFLite Int8 model** for offline inference on low-cost hardware. Designed for deployment in resource-limited clinical settings where specialist obstetricians are scarce.
+NeuroFetal AI fuses Fetal Heart Rate (FHR) time-series, Uterine Contraction (UC) signals, and Maternal Clinical Data through a **Stacking Ensemble** of diverse models (AttentionFusionResNet, 1D-InceptionNet, XGBoost) to predict fetal compromise during labor. V6.0 implements **per-fold TimeGAN augmentation** — training the WGAN-GP inside each cross-validation fold to prevent data leakage — with rigorous **Platt Scaling Calibration**. The leak-free ensemble achieves **AUC 0.8566** on public data (CTU-UHB, PhysioNet), outperforming the reproduced Mendis et al. baseline (AUC 0.7983 on identical data). The system provides **uncertainty-aware predictions** (Brier Score: 0.046, ECE: 0.0543) via Monte Carlo Dropout combined with Information Theory metrics (Entropy/Mutual Information) and ships a **TFLite Int8 model** for offline inference on low-cost hardware. Designed for deployment in resource-limited clinical settings where specialist obstetricians are scarce.
 
 ---
 
@@ -80,7 +80,7 @@ Obstetricians classify CTG traces using systems such as **FIGO (International Fe
 
 ### How NeuroFetal AI Addresses This
 
-NeuroFetal AI is a **tri-modal system** that jointly analyzes FHR, UC, and maternal clinical features (16 features: 3 demographic + 13 signal-derived). A **Stacking Ensemble** of 3 architecturally diverse models (AttentionFusionResNet, 1D-InceptionNet, XGBoost) with a Calibrated Logistic Regression meta-learner achieves **96.34% Accuracy and AUC 0.8639** (V5.0 with TimeGAN augmentation and Platt Scaling). It uses Cross-Modal Attention to learn the temporal relationship between FHR and UC signals — mimicking the clinical reasoning process where decelerations are interpreted relative to contraction timing.
+NeuroFetal AI is a **tri-modal system** that jointly analyzes FHR, UC, and maternal clinical features (18 features: 3 demographic + 15 signal-derived). A **Stacking Ensemble** of 3 architecturally diverse models (AttentionFusionResNet, 1D-InceptionNet, XGBoost) with a Calibrated Logistic Regression meta-learner achieves **AUC 0.8566** (V6.0 with per-fold TimeGAN augmentation and Platt Scaling). It uses Cross-Modal Attention to learn the temporal relationship between FHR and UC signals — mimicking the clinical reasoning process where decelerations are interpreted relative to contraction timing.
 
 ---
 
@@ -123,7 +123,7 @@ flowchart TD
 
     subgraph TRAIN ["Training Pipeline — Stacking Ensemble"]
         C --> D["5-Fold Stratified CV"]
-        D --> E["TimeGAN Augmentation (V4.0) + Focal Loss + Cosine LR"]
+        D --> E["Per-Fold TimeGAN (V6.0) + Focal Loss + Cosine LR"]
         E --> F1["Model A: AttentionFusionResNet"]
         E --> F2["Model B: 1D-InceptionNet"]
         E --> F3["Model C: XGBoost"]
@@ -132,14 +132,14 @@ flowchart TD
     end
 
     subgraph EVAL ["Evaluation"]
-        H --> I["Rank-Averaged OOF AUC: 0.8639"]
+        H --> I["Leak-Free OOF AUC: 0.8566"]
         H --> J["MC Dropout Uncertainty"]
         H --> K["Calibration Curves"]
     end
 
     subgraph DEPLOY ["Deployment"]
         H --> L["TFLite Int8 Quantization"]
-        H --> M["Streamlit Dashboard v4.0"]
+        H --> M["Streamlit Dashboard v6.0"]
     end
 
     style DATA fill:#1a1a2e,stroke:#e94560,color:#eee
@@ -159,7 +159,9 @@ flowchart TD
 | **Focal Loss** | `Code/utils/focal_loss.py` | FocalLoss, WeightedFocalLoss for class imbalance |
 | **Augmentation** | `Code/utils/augmentation.py` | Time-series augmentation (jitter, scaling, time warp) |
 | **SSL Pretraining** | `Code/utils/ssl_models.py`, `Code/scripts/pretrain.py` | Masked Autoencoder for self-supervised FHR encoder pretraining |
-| **Training** | `Code/scripts/train.py` | 5-fold CV, TimeGAN/SMOTE augmentation, cosine annealing, label smoothing |
+| **Training** | `Code/scripts/train.py` | 5-fold CV, per-fold TimeGAN augmentation, cosine annealing, label smoothing |
+| **Diverse Ensemble** | `Code/scripts/train_diverse_ensemble.py` | InceptionNet + XGBoost + Stacking Meta-Learner training |
+| **TimeGAN Module** | `Code/utils/timegan_utils.py` | Per-fold WGAN-GP architecture and `apply_per_fold_timegan_augmentation` |
 | **Evaluation** | `Code/scripts/evaluate_ensemble.py` | Rank-averaged OOF AUC computation |
 | **Uncertainty** | `Code/scripts/evaluate_uncertainty.py` | MC Dropout, ECE, calibration curves, uncertainty histograms |
 | **TFLite Conversion** | `Code/scripts/convert_to_tflite.py` | Keras → TFLite (float32 + Int8) with representative dataset |
@@ -227,7 +229,7 @@ flowchart TD
 
 ### Augmentation
 
-- **TimeGAN (V4.0)**: WGAN-GP time-series GAN trained on pathological FHR+UC traces. Generates 1,410 synthetic traces (3x minority class) with preserved temporal dynamics. Replaces SMOTE.
+- **TimeGAN (V6.0, Per-Fold)**: WGAN-GP time-series GAN trained **per fold** exclusively on the current fold's training-set pathological FHR+UC traces (1500 epochs, batch size 64). Generates synthetic traces dynamically to balance each fold's class distribution. This replaces the V4.0 global approach which had data leakage.
 - **SMOTE (V3.0, legacy)**: Synthetic Minority Over-sampling Technique applied to the flattened feature space.
 - **Time-Series Augmentation** (2x expansion): Jitter, scaling, and time warping applied to FHR signals.
 
@@ -337,8 +339,8 @@ FL(p_t) = -α_t · (1 - p_t)^γ · log(p_t)
 
 | Environment | Hardware | Training Time (5 folds) |
 | :--- | :--- | :--- |
-| **Google Colab (recommended)** | T4 GPU, 12 GB VRAM | ~1–2 hours |
-| **Local CPU** | Any modern CPU | ~6–8 hours |
+| **Google Colab (recommended)** | T4 GPU, 12 GB VRAM | ~2.5 hours (per-fold TimeGAN) |
+| **Local CPU** | Any modern CPU | ~8–12 hours |
 
 ### Framework & Reproducibility
 
@@ -362,26 +364,35 @@ FL(p_t) = -α_t · (1 - p_t)^γ · log(p_t)
 
 | Metric | Value |
 | :--- | :--- |
-| **Ensemble Accuracy / AUC** | **96.34% / 0.8639** (V5.0 Calibrated) |
+| **Ensemble AUC** | **0.8566** (V6.0 Leak-Free) |
 | **Brier Score & ECE** | **0.0460** Brier, **0.0543** ECE |
 | **Best Single-Model AUC** | 0.8512 (XGBoost) |
-| **Primary Model AUC** | 0.7910 ± 0.0322 (AttentionFusionResNet, 5-fold) |
+| **Primary Model AUC** | 0.7640 ± 0.0619 (AttentionFusionResNet, 5-fold) |
 | **Uncertainty Output** | Calibrated Confidence + Predictive Entropy + Mutual Information |
-| **Fold Std. Dev.** | Low (model is stable across folds) |
+
+### Per-Fold Breakdown (V6.0)
+
+| Model | Fold 1 | Fold 2 | Fold 3 | Fold 4 | Fold 5 | Mean ± Std |
+|---|---|---|---|---|---|---|
+| AttentionFusionResNet | 0.8089 | 0.7268 | 0.8256 | 0.6602 | 0.7983 | **0.7640 ± 0.0619** |
+| InceptionNet | 0.7707 | 0.7707 | 0.8264 | 0.7872 | 0.8240 | **0.7958 ± 0.0263** |
+| XGBoost | 0.8354 | 0.8701 | 0.8788 | 0.8388 | 0.8328 | **0.8512 ± 0.0210** |
+| **Stacking Ensemble** | — | — | — | — | — | **0.8566** |
 
 ### Benchmarking
 
 | Model | Data | AUC | Notes |
 | :--- | :--- | :--- | :--- |
 | Mendis et al. (Baseline) | FHR + Tabular (10k private) | 0.84 | Private dataset, larger scale |
+| **Mendis Reproduced (Fair)** | **FHR + 5 Tab (same 552)** | **0.7983** | **Fair comparison on identical data** |
 | Our Phase 1 (Basic Fusion) | FHR + Clinical (public, 3 features) | 0.74 | Initial architecture |
-| **NeuroFetal AI V3.0 (SMOTE)** | **FHR + UC + Clinical (public, 16+19 features)** | **0.87** | SMOTE augmentation |
-| **NeuroFetal AI V4.0 (TimeGAN)** | **FHR + UC + Clinical (public, 16+19 features)** | **0.8639** | TimeGAN augmentation |
-| **NeuroFetal AI V5.0 (Calibrated)**| **FHR + UC + Clinical (public, 16+19 features)** | **0.8639** | **Current (96.34% Acc, Brier: 0.046)** |
+| **NeuroFetal AI V3.0 (SMOTE)** | **FHR + UC + Clinical (public, 18+19 features)** | **0.87** | SMOTE augmentation |
+| **NeuroFetal AI V4.0 (TimeGAN)** | **FHR + UC + Clinical (public, 18+19 features)** | **0.8639** | Global TimeGAN (**had data leakage**) |
+| **NeuroFetal AI V6.0 (Per-Fold)**| **FHR + UC + Clinical (public, 18+19 features)** | **0.8566** | **Leak-free, defensible for publication** |
 
-### Key Insight: Rank Averaging + Stacking
+### Key Insight: Per-Fold TimeGAN + Stacking
 
-Standard probability averaging across folds yielded inconsistent calibration. **Rank Averaging** (normalizing prediction ranks per fold before aggregation) eliminated inter-fold calibration bias. Combined with a **Stacking Meta-Learner** over 3 diverse base models, this ensemble strategy achieved AUC 0.8639 in V4.0 (0.87 in V3.0 with SMOTE).
+The V4.0 global TimeGAN inflated the base model AUC from 0.7640 to ~0.79 via data leakage. With V6.0's per-fold training, the base model dropped but the ensemble (driven by XGBoost's strong 0.8512) maintains a defensible **0.8566**. Combined with a **Stacking Meta-Learner** over 3 diverse base models, this ensemble strategy delivers robust, publication-ready results.
 
 ### Uncertainty Stratification
 
@@ -642,7 +653,7 @@ python-dotenv
 
 - **Data sanity**: Assert `X_fhr.shape[1] == 1200`, all values in `[0, 1]`, no NaN in labels.
 - **Model output**: Assert output shape is `(batch, 1)`, values in `[0, 1]`.
-- **Reproducibility**: Assert that running the full ensemble pipeline with `random_state=42` produces AUC within ±0.01 of 0.87.
+- **Reproducibility**: Assert that running the full ensemble pipeline with `random_state=42` produces AUC within ±0.02 of 0.8566.
 - **TFLite parity**: Assert TFLite predictions match Keras predictions within acceptable tolerance.
 
 > **TODO**: Implement `pytest`-based test suite — @dev-team
@@ -838,8 +849,10 @@ NeuroFetal-AI/
 │   ├── scripts/
 │   │   ├── app.py                  # Streamlit Dashboard (13.8 KB)
 │   │   ├── train.py                # Training Pipeline (22.0 KB)
+│   │   ├── train_diverse_ensemble.py # Diverse Ensemble Training
 │   │   ├── pretrain.py             # SSL Pretraining (2.3 KB)
 │   │   ├── data_ingestion.py       # Data Pipeline (13.4 KB)
+│   │   ├── validate_timegan.py     # TimeGAN Validation (5 Tests)
 │   │   ├── evaluate_ensemble.py    # OOF Evaluation (6.6 KB)
 │   │   ├── evaluate_uncertainty.py # MC Dropout Analysis (15.9 KB)
 │   │   ├── convert_to_tflite.py    # TFLite Conversion (6.6 KB)
@@ -847,6 +860,7 @@ NeuroFetal-AI/
 │   │   └── xai.py                  # Grad-CAM (6.3 KB)
 │   ├── utils/
 │   │   ├── model.py                # Model Architecture (24.2 KB)
+│   │   ├── timegan_utils.py        # Per-Fold WGAN-GP Module (V6.0)
 │   │   ├── attention_blocks.py     # Attention Layers (17.0 KB)
 │   │   ├── csp_features.py         # CSP Extraction (19.9 KB)
 │   │   ├── ssl_models.py           # Masked Autoencoder (6.3 KB)
@@ -856,14 +870,14 @@ NeuroFetal-AI/
 │   │   ├── components.py           # Dashboard UI (17.3 KB)
 │   │   └── helpers.py              # Utilities (7.6 KB)
 │   ├── models/                     # Trained Checkpoints + TFLite
-│   ├── notebooks/                  # Colab Training Notebook
+│   ├── Baseline/                   # Mendis Reproduction (AUC 0.7983)
+│   ├── notebooks/                  # Colab Training Notebook (V6.0)
 │   ├── assets/                     # Logo & Branding
 │   └── run_app.py                  # App Launcher (5.2 KB)
 ├── Datasets/
 │   └── ctu_uhb_data/               # 552 .dat/.hea records
 ├── Reports/                        # Weekly Reports, Final Report, Analysis Plots
 ├── Paper/                          # Reference Literature
-├── Project_Context_v2.0.md         # AI Assistant Context Snapshot
 ├── requirements.txt                # Python Dependencies
 ├── LICENSE                         # MIT
 └── README.md                       # Project README
@@ -902,7 +916,7 @@ Fold 1/5 (AttentionFusionResNet)
   Best: val_auc=0.8102 at epoch 98
   Saved: Code/models/enhanced_model_fold_1.keras
 
-Stacking Ensemble (OOF): AUC = 0.87
+Stacking Ensemble (OOF): AUC = 0.8566 (leak-free)
 ```
 
 ### D. Handover Checklist for Clinical Partner
@@ -919,4 +933,4 @@ Stacking Ensemble (OOF): AUC = 0.87
 
 ---
 
-*Document version: 3.0 (V4.0 TimeGAN Update) | Last updated: February 21, 2026 | Author: NeuroFetal AI Team, IIIT Allahabad*
+*Document version: 4.0 (V6.0 Per-Fold TimeGAN Update) | Last updated: March 13, 2026 | Author: NeuroFetal AI Team, IIIT Allahabad*
