@@ -1,4 +1,3 @@
-import os
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -19,8 +18,8 @@ class TimeGANModel:
         self.generator = self._build_generator()
         self.critic = self._build_critic()
         
-        self.gen_optimizer = None
-        self.critic_optimizer = None
+        self.gen_optimizer = keras.optimizers.Adam(1e-4, beta_1=0.0, beta_2=0.9)
+        self.critic_optimizer = keras.optimizers.Adam(1e-4, beta_1=0.0, beta_2=0.9)
         
         # We need these to denormalize the generated data
         self.data_min = None
@@ -28,7 +27,8 @@ class TimeGANModel:
         
     def _build_generator(self):
         model = keras.Sequential(name="Generator")
-        model.add(layers.Dense(75 * 256, input_dim=self.noise_dim))
+        model.add(layers.Input(shape=(self.noise_dim,)))
+        model.add(layers.Dense(75 * 256))
         model.add(layers.Reshape((75, 256)))
         model.add(layers.BatchNormalization())
         model.add(layers.LeakyReLU(0.2))
@@ -61,7 +61,8 @@ class TimeGANModel:
         model = keras.Sequential(name="Critic")
 
         # Block 1: 1200 → 600
-        model.add(layers.Conv1D(32, kernel_size=5, strides=2, padding='same', input_shape=(self.seq_len, self.n_channels)))
+        model.add(layers.Input(shape=(self.seq_len, self.n_channels)))
+        model.add(layers.Conv1D(32, kernel_size=5, strides=2, padding='same'))
         model.add(layers.LeakyReLU(0.2))
         model.add(layers.Dropout(0.25))
 
@@ -88,7 +89,7 @@ class TimeGANModel:
     @tf.function
     def _gradient_penalty(self, real_samples, fake_samples):
         batch_size = tf.shape(real_samples)[0]
-        alpha = tf.random.uniform([batch_size, 1, 1], 0.0, 1.0)
+        alpha = tf.random.uniform(tf.stack([batch_size, 1, 1]), 0.0, 1.0)
         interpolated = real_samples + alpha * (fake_samples - real_samples)
 
         with tf.GradientTape() as gp_tape:
@@ -224,11 +225,13 @@ def apply_per_fold_timegan_augmentation(X_fhr_train, X_uc_train, X_tab_train, y_
     print(f"  [TimeGAN] Generating {n_needed} synthetic samples to balance classes...")
     X_syn_stacked = gan.generate(n_needed)
     
-    X_fhr_syn = X_syn_stacked[:, :, 0]
-    X_uc_syn = X_syn_stacked[:, :, 1]
-    
+    X_fhr_syn = X_syn_stacked[:, :, 0:1]  # (n, 1200, 1)
+    X_uc_syn = X_syn_stacked[:, :, 1:2]    # (n, 1200, 1)
+
+    # Match synthetic shapes to the original training data shapes
     if X_fhr_train.ndim == 2:
         X_fhr_syn = X_fhr_syn.reshape(n_needed, -1)
+    if X_uc_train.ndim == 2:
         X_uc_syn = X_uc_syn.reshape(n_needed, -1)
         
     # Generate tabular features by resampling from real pathological
