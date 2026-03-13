@@ -35,20 +35,19 @@
 
 ## 4. Mendis et al. Baseline Reproduction
 
-*   **Motivation:** During the mid-semester evaluation, a TA raised a concern about a potentially unfair comparison to the baseline model (Mendis et al., 2023). Mendis reported an AUC of 0.84, but their model was trained on a private dataset of nearly 10,000 samples, whereas our model (AUC 0.8639) was trained solely on the public 552-sample CTU-UHB dataset.
+*   **Motivation:** During the mid-semester evaluation, a TA raised a concern about a potentially unfair comparison to the baseline model (Mendis et al., 2023). Mendis reported an AUC of 0.84, but their model was trained on a private dataset of nearly 10,000 samples, whereas our model was trained solely on the public 552-sample CTU-UHB dataset.
 *   **Action Taken:** To ensure an "apples-to-apples" comparison, we set up a targeted reproduction experiment:
     *   We implemented the *exact* Mendis Fusion ResNet architecture natively.
     *   We restricted its training data exclusively to our 552-sample CTU-UHB dataset.
     *   We disabled all synthetic dataset augmentations (no TimeGAN) and trained using the identical 5-fold cross-validation scheme.
 *   **Results:** Under fair, identical dataset conditions on the CTU-UHB dataset, the Mendis architecture achieved a **Mean AUC of 0.7983 (±0.0633)**. 
-*   **Conclusion:** This validates that their initial reported 0.84 AUC heavily relied on their private, large-scale training set. Our full NeuroFetal TimeGAN+CSP+Focal Loss pipeline (AUC 0.8639) meaningfully and genuinely outperforms the baseline architecture given identical data boundaries.
+*   **Conclusion:** This validates that their initial reported 0.84 AUC heavily relied on their private, large-scale training set. Our full NeuroFetal TimeGAN+CSP+Focal Loss pipeline (V6.0 AUC 0.8566) meaningfully and genuinely outperforms the baseline architecture given identical data boundaries.
 
-## 5. Per-Fold TimeGAN Integration
-*   **Motivation:** The previous TimeGAN augmentation implementation generated synthetic data globally from all pathological samples, creating a potential data leakage vector within the cross-validation loop.
+## 5. Per-Fold TimeGAN Integration (V6.0 Complete)
+*   **Motivation:** The previous TimeGAN augmentation implementation generated synthetic data globally from all pathological samples, creating a potential data leakage vector within the cross-validation loop (which originally reported an artificially inflated AUC of 0.8639).
 *   **Action Taken:** We integrated the TimeGAN (WGAN-GP) training directly inside the 5-fold cross-validation loop. For each fold, the Generator is built from scratch and trained exclusively on that fold's pathological samples (for 1500 epochs), effectively eliminating validation set leakage into the synthetic generation process.
-*   **Expected Impact:** As a result of this methodological rigor, the subsequent re-calculated validation AUC represents the mathematically robust and defensible performance ceiling suitable for peer-reviewed publication. 
+*   **Results Strategy:** As a result of this methodological rigor, the subsequent re-calculated validation **AUC is 0.8566**. This represents the mathematically robust and defensible performance ceiling suitable for peer-reviewed publication. 
 
 ## 6. Next Steps
-*   Begin paper drafting phase.
-*   Execute the new per-fold model on Google Colab T4 (using the pushed `feat/v4.0-timegan` branch).
+*   Finalize paper drafts incorporating V6.0 metrics (`Paper.tex` and `result.tex`).
 *   Explore using a Conditional GAN variant that generates waveform + tabular jointly for even stronger consistency guarantees.
