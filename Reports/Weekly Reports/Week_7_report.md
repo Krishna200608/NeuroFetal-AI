@@ -1,6 +1,6 @@
 # Week 7 Progress Report: NeuroFetal AI
 
-**Date:** March 7, 2026 - March 12, 2026
+**Date:** March 7, 2026 - March 15, 2026
 
 ## 1. Mid-Semester Evaluation (March 10)
 *   Successfully presented the NeuroFetal AI project to the evaluation board.
